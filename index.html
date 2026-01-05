@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pi Dashboard</title>
+<title>Pi Dashboard Refined</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -14,21 +14,21 @@ body{
   font-family:Arial,Helvetica,sans-serif;
   height:100vh;
   display:grid;
-  grid-template-rows:auto 1fr auto auto;
-  overflow:hidden; /* NO SCROLL */
-  transition:background 0.3s;
+  grid-template-rows:auto 1fr auto;
+  overflow:hidden;
+  position:relative;
 }
 .center{display:flex;justify-content:center;align-items:center;}
 
 /* CLOCK */
-#clock{font-size:8vw;font-weight:bold;}
-body.pulse #clock{font-size:15vw;}
+#clock{font-size:8vw;font-weight:bold;text-align:center;}
+body.pulse #clock{font-size:15vw;transition:font-size 0.3s;}
 
-/* CALENDAR */
-#calendar{padding:2vh 4vw;font-size:1.5vw;}
+/* TOP-RIGHT INTERNET SPEED */
+#speed{position:absolute;top:1vh;right:1vw;font-size:1.5vw;text-align:right;}
 
 /* MAIN PANELS */
-#main{display:grid;grid-template-columns:1fr 1fr;gap:1vw;overflow:hidden;height:100%;padding:1vh;}
+#main{display:grid;grid-template-columns:1fr 1fr;gap:1vw;padding:1vh;height:100%;overflow:hidden;}
 .panel{background:#111;padding:1vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-radius:0.5vh;overflow:hidden;}
 
 /* WEATHER */
@@ -36,18 +36,25 @@ body.pulse #clock{font-size:15vw;}
 .forecast-tile{background:#222;margin:0.5vw;padding:1vh 1vw;min-width:12vw;flex:0 0 auto;border-radius:0.5vh;display:flex;flex-direction:column;align-items:center;transition:transform 0.5s;}
 .forecast-tile img{width:3vw;height:3vw;margin-bottom:0.5vh;}
 
-/* INTERNET SPEED */
-#speed{font-size:1.6vw;display:flex;flex-direction:column;align-items:center;}
+/* CALENDAR */
+#calendar{width:50%;padding:1vh;grid-column:1;display:grid;grid-template-rows:auto auto;justify-items:center;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:0.3vh;}
+.calendar-day{opacity:0.6;font-weight:bold;}
+.calendar-date{padding:0.5vh 0;border-radius:50%;display:flex;justify-content:center;align-items:center;}
+.today{background:white;color:black;font-weight:bold;}
 
-/* ROTATING TILES */
-#tiles{display:flex;justify-content:center;align-items:center;height:6vh;font-size:1.5vw;margin-top:1vh;}
+/* ROTATING TILES + COUNTDOWN */
+#tiles{display:flex;flex-direction:column;align-items:center;justify-content:center;height:6vh;font-size:1.5vw;margin-top:1vh;}
+#tileText{margin-bottom:0.5vh;}
+#tileSlider{width:80%;height:0.3vh;background:#555;position:relative;border-radius:0.2vh;}
+#tileSliderFill{background:#0f0;height:100%;width:0%;border-radius:0.2vh;transition:width 0.1s linear;}
 
 /* RESPONSIVE */
 @media(max-width:1024px){
   #clock{font-size:14vw;}
   body.pulse #clock{font-size:22vw;}
   #forecast{font-size:3vw;}
-  #speed{font-size:3vw;}
+  #speed{font-size:2.5vw;}
   .forecast-tile img{width:6vw;height:6vw;}
   #tiles{font-size:3vw;}
 }
@@ -56,6 +63,7 @@ body.pulse #clock{font-size:15vw;}
 
 <body>
 
+<div id="speed">Testing speed...</div>
 <div class="center"><div id="clock">--:--:--</div></div>
 
 <div id="main">
@@ -63,23 +71,25 @@ body.pulse #clock{font-size:15vw;}
     <div id="weather">Loading weather…</div>
     <div id="forecast">Loading forecast…</div>
   </div>
-  <div class="panel" id="speedPanel">
-    <div id="speed">Testing internet speed…</div>
+
+  <div class="panel" id="calendarPanel">
+    <div id="calendar"></div>
+    <div id="tiles">
+      <div id="tileText">Loading tile…</div>
+      <div id="tileSlider"><div id="tileSliderFill"></div></div>
+    </div>
   </div>
 </div>
 
-<div id="calendar"></div>
-<div id="tiles"></div>
-
 <script>
-/* ===================== CONFIG ===================== */
+/* ================= CONFIG ================= */
 const CONFIG={
-  location:{lat:39.5186,lon:-104.7614}, // Parker, CO
+  location:{lat:39.5186,lon:-104.7614},
   refreshMs:30*60*1000,
   rotateIntervalMs:5000
 };
 
-/* ===================== CLOCK ===================== */
+/* ================= CLOCK ================= */
 function updateClock(){
   const now=new Date();
   const timeString=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -89,9 +99,10 @@ function updateClock(){
     setTimeout(()=>document.body.classList.remove("pulse"),1000);
   }
 }
-setInterval(updateClock,1000);updateClock();
+setInterval(updateClock,1000);
+updateClock();
 
-/* ===================== CALENDAR ===================== */
+/* ================= CALENDAR ================= */
 function renderCalendar(){
   const now=new Date();
   const year=now.getFullYear(), month=now.getMonth(), today=now.getDate();
@@ -99,19 +110,20 @@ function renderCalendar(){
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
 
-  let html=`<div style="text-align:center; font-size:2vw">${monthName} ${year}</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.3vh">`;
-  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d=>html+=`<div style="opacity:0.6">${d}</div>`);
+  let html=`<div style="font-size:2vw;text-align:center">${monthName} ${year}</div>`;
+  html+=`<div class="calendar-grid">`;
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d=>html+=`<div class="calendar-day">${d}</div>`);
   for(let i=0;i<firstDay;i++) html+="<div></div>";
   for(let d=1;d<=daysInMonth;d++){
-    const cls=d===today?"background:white;color:black;font-weight:bold;":"";
-    html+=`<div style="padding:0.5vh 0; ${cls}">${d}</div>`;
+    const cls=d===today?"calendar-date today":"calendar-date";
+    html+=`<div class="${cls}">${d}</div>`;
   }
   html+="</div>";
   document.getElementById("calendar").innerHTML=html;
 }
 renderCalendar();
 
-/* ===================== WEATHER ===================== */
+/* ================= WEATHER ================= */
 let forecastData=[];
 async function loadWeather(){
   try{
@@ -133,11 +145,11 @@ loadWeather();
 setInterval(loadWeather,CONFIG.refreshMs);
 
 function getWeatherIcon(code){
-  if(code===0) return "☀️";
-  else if(code<=3) return "⛅";
-  else if(code>=61 && code<=63) return "🌧️";
-  else if(code>=71 && code<=73) return "❄️";
-  else return "☁️";
+  if(code===0)return"☀️";
+  else if(code<=3)return"⛅";
+  else if(code>=61 && code<=63)return"🌧️";
+  else if(code>=71 && code<=73)return"❄️";
+  else return"☁️";
 }
 
 function renderForecast(){
@@ -161,49 +173,56 @@ function renderForecast(){
     tile.innerHTML=`<div>${dayName}</div><div>${icon}</div><div>🌡️ ${hi}/${lo}°F</div><div>🌧️ ${rain}</div><div>❄️ ${snow}</div><div>💨 ${wind} mph</div><div>☔ ${pop}%</div><div>🌅 ${sunrise}</div><div>🌇 ${sunset}</div>`;
     container.appendChild(tile);
   });
-  // TODO: Add rotating tiles if forecast tiles overflow screen
 }
 
-/* ===================== INTERNET SPEED ===================== */
+/* ================= INTERNET SPEED ================= */
 async function testSpeed(){
   const speedDiv=document.getElementById("speed");
   try{
     const start=performance.now();
-    const fileSize=500000; // ~500KB
-    const url="https://cors-anywhere.herokuapp.com/https://speed.hetzner.de/100MB.bin"; // free test file
+    const fileSize=500000;
+    const url="https://cors-anywhere.herokuapp.com/https://speed.hetzner.de/100MB.bin";
     const res=await fetch(url,{method:'GET',cache:'no-cache'});
     const data=await res.blob();
-    const duration=(performance.now()-start)/1000; // seconds
+    const duration=(performance.now()-start)/1000;
     const bits=fileSize*8;
     const Mbps=(bits/duration/1000000).toFixed(1);
-    speedDiv.textContent=`Download: ${Mbps} Mbps\n(approx)`;
+    speedDiv.textContent=`⬇ ${Mbps} Mbps (approx)`;
   }catch{speedDiv.textContent="Speed test unavailable";}
 }
 testSpeed();
-setInterval(testSpeed,60000); // every minute
+setInterval(testSpeed,60000);
 
-/* ===================== ROTATING TILES ===================== */
+/* ================= ROTATING TILES + SLIDER ================= */
 const topGames=[
-  "Brass: Birmingham","Ark Nova","Pandemic Legacy: Season 1","Gloomhaven",
-  "Dune: Imperium","Twilight Imperium: Fourth Edition","Dune: Imperium – Uprising",
-  "War of the Ring: Second Edition","Terraforming Mars","Star Wars: Rebellion"
+  "Brass: Birmingham","Ark Nova","Pandemic Legacy: S1","Gloomhaven",
+  "Dune: Imperium","Twilight Imperium 4","Dune: Imperium – Uprising",
+  "War of the Ring 2nd","Terraforming Mars","Star Wars: Rebellion"
 ];
-
 let tileIndex=0;
+const tileText=document.getElementById("tileText");
+const sliderFill=document.getElementById("tileSliderFill");
 function rotateTiles(){
-  const tileDiv=document.getElementById("tiles");
-  tileDiv.textContent=topGames[tileIndex];
+  tileText.textContent=topGames[tileIndex];
   tileIndex=(tileIndex+1)%topGames.length;
+  sliderFill.style.width="0%";
+  const start=Date.now();
+  const interval=setInterval(()=>{
+    const elapsed=Date.now()-start;
+    const percent=Math.min(100,(elapsed/CONFIG.rotateIntervalMs)*100);
+    sliderFill.style.width=percent+"%";
+    if(percent>=100) clearInterval(interval);
+  },50);
 }
 rotateTiles();
 setInterval(rotateTiles,CONFIG.rotateIntervalMs);
 
-/* ===================== FUTURE FEATURES COMMENTS ===================== */
+/* ================= FUTURE FEATURES ================= */
 /*
-  - Rotating forecast tiles if too many for screen width
-  - Additional tiles: quotes, stocks, AQI, calendar events, moon phase
-  - Background color changes based on sunrise/sunset
-  - Internet speed more accurate with backend CLI (optional for Pi)
+  - Add rotating forecast tiles if more than screen width
+  - Add quotes, AQI, stock tickers as rotating tiles
+  - Add day/night background gradients based on sunrise/sunset
+  - Optionally show more system info (CPU/RAM/Network)
 */
 </script>
 
