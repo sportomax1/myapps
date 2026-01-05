@@ -6,57 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    /* =====================
-       GLOBAL STYLES
-    ====================== */
-    * {
-      box-sizing: border-box;
-    }
-
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       background: black;
       color: white;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
       height: 100vh;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto 1fr auto auto;
       transition: background 0.3s ease;
     }
+    .center { display: flex; justify-content: center; align-items: center; }
 
-    .center {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+    /* CLOCK */
+    #clock { font-size: 8vw; font-weight: bold; letter-spacing: 0.05em; transition: all 0.3s ease; }
+    body.pulse #clock { font-size: 15vw; }
 
-    /* =====================
-       CLOCK
-    ====================== */
-    #clock {
-      font-size: 8vw;
-      font-weight: bold;
-      letter-spacing: 0.05em;
-      transition: all 0.3s ease;
-    }
-
-    body.pulse #clock {
-      font-size: 15vw;
-    }
-
-    /* =====================
-       CALENDAR
-    ====================== */
-    #calendar {
-      padding: 2vh 4vw;
-    }
-
-    .calendar-header {
-      text-align: center;
-      font-size: 2.5vw;
-      margin-bottom: 1vh;
-    }
-
+    /* CALENDAR */
+    #calendar { padding: 2vh 4vw; }
+    .calendar-header { text-align: center; font-size: 2.5vw; margin-bottom: 1vh; }
     .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
@@ -64,52 +33,32 @@
       font-size: 1.5vw;
       text-align: center;
     }
+    .calendar-day { opacity: 0.6; font-weight: bold; }
+    .calendar-date { padding: 0.5vh 0; border-radius: 0.5vh; }
+    .today { background: white; color: black; font-weight: bold; }
 
-    .calendar-day {
-      opacity: 0.6;
-      font-weight: bold;
+    /* WEATHER */
+    #weather { text-align: center; font-size: 2vw; padding-bottom: 2vh; opacity: 0.9; }
+
+    /* FORECAST */
+    #forecast { padding: 1vh 2vw; font-size: 1.6vw; }
+    .forecast-day {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.5vh 1vw;
+      border-bottom: 1px solid #444;
     }
+    .forecast-day:nth-child(even) { background: #111; }
 
-    .calendar-date {
-      padding: 0.5vh 0;
-      border-radius: 0.5vh;
-    }
-
-    .today {
-      background: white;
-      color: black;
-      font-weight: bold;
-    }
-
-    /* =====================
-       WEATHER
-    ====================== */
-    #weather {
-      text-align: center;
-      font-size: 2vw;
-      padding-bottom: 2vh;
-      opacity: 0.9;
-    }
-
-    /* =====================
-       SMALL SCREENS (iPad / phone testing)
-    ====================== */
+    /* RESPONSIVE */
     @media (max-width: 1024px) {
-      #clock {
-        font-size: 14vw;
-      }
-      body.pulse #clock {
-        font-size: 22vw;
-      }
-      .calendar-header {
-        font-size: 4vw;
-      }
-      .calendar-grid {
-        font-size: 3vw;
-      }
-      #weather {
-        font-size: 3.5vw;
-      }
+      #clock { font-size: 14vw; }
+      body.pulse #clock { font-size: 22vw; }
+      .calendar-header { font-size: 4vw; }
+      .calendar-grid { font-size: 3vw; }
+      #weather { font-size: 3.5vw; }
+      #forecast { font-size: 3vw; }
+      .forecast-day { flex-direction: column; align-items: center; }
     }
   </style>
 </head>
@@ -124,49 +73,37 @@
   <!-- CALENDAR -->
   <div id="calendar"></div>
 
-  <!-- WEATHER -->
+  <!-- CURRENT WEATHER -->
   <div id="weather">Loading weather…</div>
 
+  <!-- 7 DAY FORECAST -->
+  <div id="forecast">Loading forecast…</div>
+
   <script>
-    /* =====================
-       CONFIG
-    ====================== */
+    /* ===================== CONFIG ===================== */
     const CONFIG = {
       location: {
-        lat: 40.7128,   // CHANGE ME
-        lon: -74.0060
+        lat: 39.5186,    // Parker, CO
+        lon: -104.7614
       },
-      weatherRefreshMs: 10 * 60 * 1000 // 10 minutes
+      weatherRefreshMs: 30 * 60 * 1000 // refresh every 30 minutes
     };
 
-    /* =====================
-       CLOCK + MINUTE PULSE
-    ====================== */
+    /* ===================== CLOCK + MINUTE PULSE ===================== */
     function updateClock() {
       const now = new Date();
-      const timeString = now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-
+      const timeString = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       document.getElementById("clock").textContent = timeString;
 
-      // FULLSCREEN pulse at each new minute
       if (now.getSeconds() === 0) {
         document.body.classList.add("pulse");
-        setTimeout(() => {
-          document.body.classList.remove("pulse");
-        }, 1000);
+        setTimeout(() => document.body.classList.remove("pulse"), 1000);
       }
     }
-
     setInterval(updateClock, 1000);
     updateClock();
 
-    /* =====================
-       CALENDAR
-    ====================== */
+    /* ===================== CALENDAR ===================== */
     function renderCalendar() {
       const now = new Date();
       const year = now.getFullYear();
@@ -177,56 +114,81 @@
       const firstDay = new Date(year, month, 1).getDay();
       const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-      let html = `
-        <div class="calendar-header">${monthName} ${year}</div>
-        <div class="calendar-grid">
-      `;
-
+      let html = `<div class="calendar-header">${monthName} ${year}</div><div class="calendar-grid">`;
       const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      dayNames.forEach(d => {
-        html += `<div class="calendar-day">${d}</div>`;
-      });
+      dayNames.forEach(d => html += `<div class="calendar-day">${d}</div>`);
 
-      for (let i = 0; i < firstDay; i++) {
-        html += `<div></div>`;
-      }
-
+      for (let i = 0; i < firstDay; i++) html += `<div></div>`;
       for (let d = 1; d <= daysInMonth; d++) {
         const cls = d === today ? "calendar-date today" : "calendar-date";
         html += `<div class="${cls}">${d}</div>`;
       }
+      html += "</div>";
 
-      html += `</div>`;
       document.getElementById("calendar").innerHTML = html;
     }
-
     renderCalendar();
 
-    /* =====================
-       WEATHER (OPEN-METEO)
-    ====================== */
+    /* ===================== CURRENT WEATHER ===================== */
     async function loadWeather() {
       try {
         const { lat, lon } = CONFIG.location;
         const url =
-          `https://api.open-meteo.com/v1/forecast` +
-          `?latitude=${lat}&longitude=${lon}` +
-          `&current_weather=true&temperature_unit=celsius`;
-
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+          `&current_weather=true&temperature_unit=celsius&windspeed_unit=kmh`;
         const res = await fetch(url);
         const data = await res.json();
         const w = data.current_weather;
-
         document.getElementById("weather").textContent =
           `🌡️ ${Math.round(w.temperature)}°C   💨 ${Math.round(w.windspeed)} km/h`;
-
-      } catch (e) {
+      } catch {
         document.getElementById("weather").textContent = "Weather unavailable";
       }
     }
-
     loadWeather();
     setInterval(loadWeather, CONFIG.weatherRefreshMs);
+
+    /* ===================== 7 DAY FORECAST ===================== */
+    async function loadForecast() {
+      try {
+        const { lat, lon } = CONFIG.location;
+        const url =
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+          `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,precipitation_probability_max` +
+          `&timezone=auto&temperature_unit=celsius&windspeed_unit=kmh&forecast_days=7`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const daily = data.daily;
+
+        let html = "";
+        const count = daily.time.length;
+        for (let i = 0; i < count; i++) {
+          const date = new Date(daily.time[i]);
+          const dayName = date.toLocaleDateString([], { weekday: "short" });
+          const hi = Math.round(daily.temperature_2m_max[i]);
+          const lo = Math.round(daily.temperature_2m_min[i]);
+          const precip = daily.precipitation_sum[i];
+          const wind = Math.round(daily.windspeed_10m_max[i]);
+          const pop = daily.precipitation_probability_max ? daily.precipitation_probability_max[i] : 0;
+
+          html += `
+            <div class="forecast-day">
+              <div>${dayName}</div>
+              <div>🌡️ ${hi}° / ${lo}°</div>
+              <div>💧 ${precip.toFixed(1)} mm</div>
+              <div>💨 ${wind} km/h</div>
+              <div>☔ ${pop}%</div>
+            </div>`;
+        }
+
+        document.getElementById("forecast").innerHTML = html;
+      } catch {
+        document.getElementById("forecast").textContent = "Forecast unavailable";
+      }
+    }
+    loadForecast();
+    setInterval(loadForecast, CONFIG.weatherRefreshMs);
   </script>
 
 </body>
