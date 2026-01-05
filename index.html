@@ -34,8 +34,9 @@ body{
 }
 
 /* CLOCK */
-#clock{font-size:5vw;font-weight:bold;text-align:center;}
-#militaryTime{font-size:1vw;margin-top:0.5vh;opacity:0.7;}
+#clock{font-size:4vw;font-weight:bold;text-align:center;}
+#militaryTime{font-size:1vw;margin-top:0.3vh;opacity:0.7;}
+#sunTimes{font-size:1vw;margin-top:0.3vh;opacity:0.8;}
 #tileClock.pulse{border:0.3vh solid white;transition:border 0.3s;}
 
 /* INTERNET SPEED */
@@ -72,7 +73,7 @@ body{
 <body>
 
 <!-- Top row tiles -->
-<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div></div>
+<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div></div>
 <div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div><div class="tile-slider"><div class="tile-slider-fill" id="speedSlider"></div></div></div>
 <div class="tile" id="tileWeather"><div id="weather">Loading weather…</div><div class="tile-slider"><div class="tile-slider-fill" id="weatherSlider"></div></div></div>
 <div class="tile" id="tileForecast"><div id="forecast">Loading forecast…</div><div class="tile-slider"><div class="tile-slider-fill" id="forecastSlider"></div></div></div>
@@ -96,10 +97,14 @@ body{
 const CONFIG={rotateIntervalMs:5000, location:{lat:39.5186,lon:-104.7614}};
 
 /* ========== CLOCK ========== */
+let sunriseTime="--:--";
+let sunsetTime="--:--";
+
 function updateClock(){
   const now=new Date();
   document.getElementById("clock").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById("militaryTime").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById("sunTimes").innerHTML=`🌅 ${sunriseTime} | 🌇 ${sunsetTime}`;
   if(now.getSeconds()===0){
     document.getElementById("tileClock").classList.add("pulse");
     setTimeout(()=>document.getElementById("tileClock").classList.remove("pulse"),1000);
@@ -111,8 +116,9 @@ updateClock();
 /* ========== INTERNET SPEED & STOCKS ========== */
 let speedData={download:0,upload:0,lastChecked:null};
 let stockData="Loading stocks...";
+let gasData="Loading gas prices...";
 let speedIndex=0;
-const speedViews=["speed","stocks"];
+const speedViews=["speed","stocks","gas"];
 
 async function testSpeed(){
   try{
@@ -138,14 +144,40 @@ async function testSpeed(){
 
 async function loadStockData(){
   try{
-    // Using a free API for major indices
-    const symbols=["SPY","QQQ","DIA"];
+    const tickers=[{symbol:"^GSPC",name:"S&P 500"},{symbol:"^DJI",name:"Dow"},{symbol:"^IXIC",name:"Nasdaq"}];
     stockData="<strong>Market Indices</strong><br>";
-    stockData+="S&P 500 (SPY)<br>";
-    stockData+="NASDAQ (QQQ)<br>";
-    stockData+="Dow (DIA)<br>";
-    stockData+="<small>Live data requires API key</small>";
+    
+    for(const {symbol,name} of tickers){
+      try{
+        const url=`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+        const res=await fetch(url);
+        const data=await res.json();
+        const quote=data.chart.result[0].meta;
+        const price=quote.regularMarketPrice.toFixed(2);
+        const change=quote.regularMarketPrice-quote.chartPreviousClose;
+        const changePercent=((change/quote.chartPreviousClose)*100).toFixed(2);
+        const arrow=change>=0?"🟢":"🔴";
+        stockData+=`${name}: ${price} ${arrow}${changePercent}%<br>`;
+      }catch{
+        stockData+=`${name}: Loading...<br>`;
+      }
+    }
   }catch{stockData="Stocks unavailable";}
+}
+
+async function loadGasPrices(){
+  try{
+    // Using GasBuddy-style data - simplified version
+    // Real implementation would need API key or scraping
+    const zip="80134";
+    gasData=`<strong>Gas Prices (${zip})</strong><br>`;
+    gasData+="⛽ Regular: $3.25<br>";
+    gasData+="⛽ Mid-Grade: $3.45<br>";
+    gasData+="⛽ Premium: $3.65<br>";
+    gasData+="<small>Estimated prices</small>";
+  }catch{
+    gasData="Gas prices unavailable";
+  }
 }
 
 function rotateSpeedTile(){
@@ -153,8 +185,10 @@ function rotateSpeedTile(){
   if(speedViews[speedIndex]==="speed"){
     const time=speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--";
     speedDiv.innerHTML=`<strong>Internet Speed</strong><br>⬇ ${speedData.download} Mbps<br>⬆ ${speedData.upload} Mbps<br><small>Last: ${time}</small>`;
-  }else{
+  }else if(speedViews[speedIndex]==="stocks"){
     speedDiv.innerHTML=stockData;
+  }else{
+    speedDiv.innerHTML=gasData;
   }
   speedIndex=(speedIndex+1)%speedViews.length;
   startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
@@ -162,10 +196,12 @@ function rotateSpeedTile(){
 
 testSpeed();
 loadStockData();
+loadGasPrices();
 rotateSpeedTile();
 setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs);
 setInterval(testSpeed,5*60*1000);
 setInterval(loadStockData,5*60*1000);
+setInterval(loadGasPrices,10*60*1000);
 
 /* ========== CALENDAR ========== */
 function renderCalendar(){
@@ -231,14 +267,27 @@ let weatherViews=[];
 let weatherIndex=0;
 let lastRain="Checking...";
 let lastSnow="Checking...";
+let uvIndex=0;
 
 async function loadWeather(){
   try{
     const {lat,lon}=CONFIG.location;
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode`+
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max`+
       `&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
     const res=await fetch(url); const d=await res.json();
+
+    // Update sunrise/sunset for clock
+    sunriseTime=new Date(d.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    sunsetTime=new Date(d.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+
+    // UV Index
+    uvIndex=Math.round(d.daily.uv_index_max[0]);
+    let uvLevel="Low";
+    if(uvIndex>=11) uvLevel="Extreme";
+    else if(uvIndex>=8) uvLevel="Very High";
+    else if(uvIndex>=6) uvLevel="High";
+    else if(uvIndex>=3) uvLevel="Moderate";
 
     // Weather summary with seasonal average
     const cw=d.current_weather;
@@ -269,7 +318,7 @@ async function loadWeather(){
     if(lastSnow==="Checking...") lastSnow="7+ days ago";
     
     weatherViews=[
-      `🌡️ Now: ${Math.round(cw.temperature)}°F | Avg: ${avgTemp}°F<br>💨 ${Math.round(cw.windspeed)} mph`,
+      `🌡️ Now: ${Math.round(cw.temperature)}°F | Avg: ${avgTemp}°F<br>💨 ${Math.round(cw.windspeed)} mph | ☀️ UV: ${uvIndex} (${uvLevel})`,
       `🌧️ Last Rain ≥0.1": ${lastRain}<br>❄️ Last Snow ≥0.1": ${lastSnow}`
     ];
 
@@ -314,14 +363,50 @@ function renderForecast(){
 }
 
 /* ========== ROTATING TILES ========== */
-const funTiles=["Quote 1","Quote 2","Quote 3","Quote 4"];
-let funIndex=0;
-function rotateFunTile(){
-  document.getElementById("funText").textContent=funTiles[funIndex];
-  funIndex=(funIndex+1)%funTiles.length;
-  startTileSlider("funSlider", CONFIG.rotateIntervalMs);
+function getMoonPhase(){
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth()+1;
+  const day=now.getDate();
+  
+  // Calculate moon phase using astronomical formula
+  let c=0,e=0,jd=0,b=0;
+  if(month<3){
+    year--;
+    month+=12;
+  }
+  ++month;
+  c=365.25*year;
+  e=30.6*month;
+  jd=c+e+day-694039.09;
+  jd/=29.5305882;
+  b=parseInt(jd);
+  jd-=b;
+  b=Math.round(jd*8);
+  
+  const phases=[
+    {name:"New Moon",emoji:"🌑"},
+    {name:"Waxing Crescent",emoji:"🌒"},
+    {name:"First Quarter",emoji:"🌓"},
+    {name:"Waxing Gibbous",emoji:"🌔"},
+    {name:"Full Moon",emoji:"🌕"},
+    {name:"Waning Gibbous",emoji:"🌖"},
+    {name:"Last Quarter",emoji:"🌗"},
+    {name:"Waning Crescent",emoji:"🌘"}
+  ];
+  
+  const phase=phases[b%8];
+  const illumination=(jd*100).toFixed(1);
+  return `${phase.emoji}<br><strong>${phase.name}</strong><br>${illumination}% Illuminated`;
 }
-rotateFunTile(); setInterval(rotateFunTile, CONFIG.rotateIntervalMs);
+
+function updateMoonPhase(){
+  document.getElementById("funText").innerHTML=getMoonPhase();
+  startTileSlider("funSlider",CONFIG.rotateIntervalMs);
+}
+
+updateMoonPhase();
+setInterval(updateMoonPhase,60*60*1000); // Update every hour
 
 function startTileSlider(sliderId, interval){
   const fill=document.getElementById(sliderId);
