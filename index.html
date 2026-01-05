@@ -57,6 +57,9 @@ body.pulse #clock{font-size:8vw;transition:font-size 0.3s;}
 /* BGG LIST */
 #bggList{text-align:left;width:90%;overflow:auto;}
 
+/* SPORTS SCORES */
+#sportsContent{text-align:left;width:90%;font-size:1.2vw;overflow:auto;}
+
 /* RESPONSIVE */
 @media(max-width:1024px){
   #clock{font-size:8vw;}
@@ -81,7 +84,10 @@ body.pulse #clock{font-size:8vw;transition:font-size 0.3s;}
   <div id="funText">Loading fun tile…</div>
   <div class="tile-slider"><div class="tile-slider-fill" id="funSlider"></div></div>
 </div>
-<div class="tile" id="tilePlaceholder">Placeholder Tile</div>
+<div class="tile" id="tileSports">
+  <div id="sportsContent">Loading scores…</div>
+  <div class="tile-slider"><div class="tile-slider-fill" id="sportsSlider"></div></div>
+</div>
 
 <script>
 /* ========== CONFIG ========== */
@@ -207,6 +213,72 @@ const bggTop10=[
   "8. War of the Ring 2nd","9. Terraforming Mars","10. Star Wars: Rebellion"
 ];
 document.getElementById("bggList").innerHTML=bggTop10.join("<br>");
+
+/* ========== SPORTS SCORES ========== */
+const sportsAPIs={
+  NBA:"https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard",
+  NFL:"https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
+  NHL:"https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard",
+  MLB:"https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard",
+  NCAAF:"https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
+  NCAAM:"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard"
+};
+let sportsData=[];
+let sportsIndex=0;
+
+async function loadSportsScores(){
+  sportsData=[];
+  const today=new Date();
+  const yesterday=new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  
+  for(const [league,baseUrl] of Object.entries(sportsAPIs)){
+    // Today's games
+    await fetchSportsDay(league,"Today",baseUrl,formatDate(today));
+    // Yesterday's games
+    await fetchSportsDay(league,"Yesterday",baseUrl,formatDate(yesterday));
+  }
+  
+  if(sportsData.length===0) sportsData.push("No games found");
+  rotateSportsTile();
+}
+
+async function fetchSportsDay(league,dayLabel,baseUrl,dateStr){
+  try{
+    const url=`${baseUrl}?dates=${dateStr}`;
+    const res=await fetch(url);
+    const data=await res.json();
+    
+    if(data.events && data.events.length>0){
+      let html=`<strong>${league} - ${dayLabel}</strong><br>`;
+      data.events.forEach(event=>{
+        const comp=event.competitions[0];
+        const homeTeam=comp.competitors.find(c=>c.homeAway==="home");
+        const awayTeam=comp.competitors.find(c=>c.homeAway==="away");
+        const status=comp.status.type.description;
+        html+=`${awayTeam.team.abbreviation} ${awayTeam.score} @ ${homeTeam.team.abbreviation} ${homeTeam.score} (${status})<br>`;
+      });
+      sportsData.push(html);
+    }
+  }catch(e){console.log(`Error fetching ${league}:`,e);}
+}
+
+function formatDate(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,'0');
+  const d=String(date.getDate()).padStart(2,'0');
+  return `${y}${m}${d}`;
+}
+
+function rotateSportsTile(){
+  if(sportsData.length===0) return;
+  document.getElementById("sportsContent").innerHTML=sportsData[sportsIndex];
+  sportsIndex=(sportsIndex+1)%sportsData.length;
+  startTileSlider("sportsSlider",CONFIG.rotateIntervalMs);
+}
+
+loadSportsScores();
+setInterval(rotateSportsTile,CONFIG.rotateIntervalMs);
+setInterval(loadSportsScores,10*60*1000); // Refresh every 10 minutes
 
 </script>
 </body>
