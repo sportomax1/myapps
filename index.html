@@ -2,59 +2,54 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pi Weather + Clock Dashboard</title>
+<title>Pi Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-* { box-sizing: border-box; }
-body {
+*{box-sizing:border-box;}
+body{
   margin:0;
   background:black;
   color:white;
-  font-family:Arial, Helvetica, sans-serif;
+  font-family:Arial,Helvetica,sans-serif;
   height:100vh;
   display:grid;
   grid-template-rows:auto 1fr auto auto;
   overflow:hidden; /* NO SCROLL */
-  transition: background 0.3s ease;
+  transition:background 0.3s;
 }
-.center { display:flex; justify-content:center; align-items:center; }
+.center{display:flex;justify-content:center;align-items:center;}
 
 /* CLOCK */
-#clock { font-size:8vw; font-weight:bold; }
-body.pulse #clock { font-size:15vw; }
+#clock{font-size:8vw;font-weight:bold;}
+body.pulse #clock{font-size:15vw;}
 
 /* CALENDAR */
-#calendar { padding:2vh 4vw; font-size:1.5vw; }
+#calendar{padding:2vh 4vw;font-size:1.5vw;}
 
-/* CURRENT WEATHER */
-#weather { text-align:center; font-size:2vw; padding-bottom:1vh; }
+/* MAIN PANELS */
+#main{display:grid;grid-template-columns:1fr 1fr;gap:1vw;overflow:hidden;height:100%;padding:1vh;}
+.panel{background:#111;padding:1vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;border-radius:0.5vh;overflow:hidden;}
 
-/* FORECAST */
-#forecast { padding:1vh 2vw; font-size:1.6vw; display:flex; flex-wrap:wrap; justify-content:center; align-items:center; overflow:hidden; }
+/* WEATHER */
+#forecast{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0.5vw;width:100%;}
+.forecast-tile{background:#222;margin:0.5vw;padding:1vh 1vw;min-width:12vw;flex:0 0 auto;border-radius:0.5vh;display:flex;flex-direction:column;align-items:center;transition:transform 0.5s;}
+.forecast-tile img{width:3vw;height:3vw;margin-bottom:0.5vh;}
 
-/* FORECAST TILE */
-.forecast-tile {
-  background:#111;
-  margin:0.5vw;
-  padding:1vh 1vw;
-  min-width:12vw;
-  flex:0 0 auto;
-  border-radius:0.5vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  transition:transform 0.5s ease;
-}
-.forecast-tile img { width:3vw; height:3vw; margin-bottom:0.5vh; }
+/* INTERNET SPEED */
+#speed{font-size:1.6vw;display:flex;flex-direction:column;align-items:center;}
+
+/* ROTATING TILES */
+#tiles{display:flex;justify-content:center;align-items:center;height:6vh;font-size:1.5vw;margin-top:1vh;}
 
 /* RESPONSIVE */
-@media (max-width:1024px){
+@media(max-width:1024px){
   #clock{font-size:14vw;}
   body.pulse #clock{font-size:22vw;}
-  #weather{font-size:3.5vw;}
   #forecast{font-size:3vw;}
+  #speed{font-size:3vw;}
   .forecast-tile img{width:6vw;height:6vw;}
+  #tiles{font-size:3vw;}
 }
 </style>
 </head>
@@ -62,38 +57,47 @@ body.pulse #clock { font-size:15vw; }
 <body>
 
 <div class="center"><div id="clock">--:--:--</div></div>
+
+<div id="main">
+  <div class="panel" id="weatherPanel">
+    <div id="weather">Loading weather…</div>
+    <div id="forecast">Loading forecast…</div>
+  </div>
+  <div class="panel" id="speedPanel">
+    <div id="speed">Testing internet speed…</div>
+  </div>
+</div>
+
 <div id="calendar"></div>
-<div id="weather">Loading weather…</div>
-<div id="forecast">Loading forecast…</div>
+<div id="tiles"></div>
 
 <script>
 /* ===================== CONFIG ===================== */
-const CONFIG = {
+const CONFIG={
   location:{lat:39.5186,lon:-104.7614}, // Parker, CO
-  refreshMs:30*60*1000, // 30 minutes
-  rotateIntervalMs:5000 // rotate forecast tiles every 5s if needed
+  refreshMs:30*60*1000,
+  rotateIntervalMs:5000
 };
 
 /* ===================== CLOCK ===================== */
 function updateClock(){
-  const now = new Date();
-  const timeString = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  document.getElementById("clock").textContent = timeString;
+  const now=new Date();
+  const timeString=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById("clock").textContent=timeString;
   if(now.getSeconds()===0){
     document.body.classList.add("pulse");
     setTimeout(()=>document.body.classList.remove("pulse"),1000);
   }
 }
-setInterval(updateClock,1000);
-updateClock();
+setInterval(updateClock,1000);updateClock();
 
 /* ===================== CALENDAR ===================== */
 function renderCalendar(){
-  const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth(), today = now.getDate();
-  const monthName = now.toLocaleString("default",{month:"long"});
-  const firstDay = new Date(year,month,1).getDay();
-  const daysInMonth = new Date(year,month+1,0).getDate();
+  const now=new Date();
+  const year=now.getFullYear(), month=now.getMonth(), today=now.getDate();
+  const monthName=now.toLocaleString("default",{month:"long"});
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
 
   let html=`<div style="text-align:center; font-size:2vw">${monthName} ${year}</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:0.3vh">`;
   ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach(d=>html+=`<div style="opacity:0.6">${d}</div>`);
@@ -107,39 +111,28 @@ function renderCalendar(){
 }
 renderCalendar();
 
-/* ===================== CURRENT WEATHER ===================== */
-async function loadCurrentWeather(){
-  try{
-    const {lat,lon}=CONFIG.location;
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
-              `&current_weather=true&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
-    const res=await fetch(url); const data=await res.json();
-    const w=data.current_weather;
-    document.getElementById("weather").textContent=`Now: 🌡️ ${Math.round(w.temperature)}°F 💨 ${Math.round(w.windspeed)} mph`;
-  }catch{document.getElementById("weather").textContent="Current weather unavailable";}
-}
-loadCurrentWeather();
-setInterval(loadCurrentWeather,CONFIG.refreshMs);
-
-/* ===================== 7 DAY FORECAST ===================== */
-let forecastData=[]; let forecastIndex=0;
-async function loadForecast(){
+/* ===================== WEATHER ===================== */
+let forecastData=[];
+async function loadWeather(){
   try{
     const {lat,lon}=CONFIG.location;
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
       `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode`+
-      `&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
+      `&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
     const res=await fetch(url); const d=await res.json();
-    forecastData=d.daily;
-    renderForecast(); // initial render
-  }catch{document.getElementById("forecast").textContent="Forecast unavailable";}
-}
-loadForecast();
-setInterval(loadForecast,CONFIG.refreshMs);
 
-/* ===================== FORECAST ICONS ===================== */
+    // Current weather
+    const cw=d.current_weather;
+    document.getElementById("weather").textContent=`Now: 🌡️ ${Math.round(cw.temperature)}°F 💨 ${Math.round(cw.windspeed)} mph`;
+
+    forecastData=d.daily;
+    renderForecast();
+  }catch{document.getElementById("weather").textContent="Weather unavailable";}
+}
+loadWeather();
+setInterval(loadWeather,CONFIG.refreshMs);
+
 function getWeatherIcon(code){
-  // basic mapping: 0=clear, 1-3=cloudy, 61-63=rain, 71-73=snow, others=cloud
   if(code===0) return "☀️";
   else if(code<=3) return "⛅";
   else if(code>=61 && code<=63) return "🌧️";
@@ -147,20 +140,20 @@ function getWeatherIcon(code){
   else return "☁️";
 }
 
-/* ===================== RENDER FORECAST ===================== */
 function renderForecast(){
   const container=document.getElementById("forecast");
-  container.innerHTML=""; // clear
+  container.innerHTML="";
   forecastData.time.forEach((t,i)=>{
-    const date=new Date(t); const dayName=date.toLocaleDateString([], {weekday:'short'});
+    const date=new Date(t);
+    const dayName=date.toLocaleDateString([],{weekday:'short'});
     const hi=Math.round(forecastData.temperature_2m_max[i]);
     const lo=Math.round(forecastData.temperature_2m_min[i]);
     const rain=forecastData.rain_sum[i].toFixed(2);
     const snow=forecastData.snowfall_sum[i].toFixed(2);
     const wind=Math.round(forecastData.windspeed_10m_max[i]);
     const pop=forecastData.precipitation_probability_max[i];
-    const sunrise=new Date(forecastData.sunrise[i]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    const sunset=new Date(forecastData.sunset[i]).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    const sunrise=new Date(forecastData.sunrise[i]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const sunset=new Date(forecastData.sunset[i]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const icon=getWeatherIcon(forecastData.weathercode[i]);
 
     const tile=document.createElement("div");
@@ -168,13 +161,50 @@ function renderForecast(){
     tile.innerHTML=`<div>${dayName}</div><div>${icon}</div><div>🌡️ ${hi}/${lo}°F</div><div>🌧️ ${rain}</div><div>❄️ ${snow}</div><div>💨 ${wind} mph</div><div>☔ ${pop}%</div><div>🌅 ${sunrise}</div><div>🌇 ${sunset}</div>`;
     container.appendChild(tile);
   });
-
-  // =====================
-  // Optional: rotate forecast tiles if they overflow screen
-  // =====================
-  // TODO: implement rotating tiles every CONFIG.rotateIntervalMs
-  // Comment added so we remember for later expansion
+  // TODO: Add rotating tiles if forecast tiles overflow screen
 }
+
+/* ===================== INTERNET SPEED ===================== */
+async function testSpeed(){
+  const speedDiv=document.getElementById("speed");
+  try{
+    const start=performance.now();
+    const fileSize=500000; // ~500KB
+    const url="https://cors-anywhere.herokuapp.com/https://speed.hetzner.de/100MB.bin"; // free test file
+    const res=await fetch(url,{method:'GET',cache:'no-cache'});
+    const data=await res.blob();
+    const duration=(performance.now()-start)/1000; // seconds
+    const bits=fileSize*8;
+    const Mbps=(bits/duration/1000000).toFixed(1);
+    speedDiv.textContent=`Download: ${Mbps} Mbps\n(approx)`;
+  }catch{speedDiv.textContent="Speed test unavailable";}
+}
+testSpeed();
+setInterval(testSpeed,60000); // every minute
+
+/* ===================== ROTATING TILES ===================== */
+const topGames=[
+  "Brass: Birmingham","Ark Nova","Pandemic Legacy: Season 1","Gloomhaven",
+  "Dune: Imperium","Twilight Imperium: Fourth Edition","Dune: Imperium – Uprising",
+  "War of the Ring: Second Edition","Terraforming Mars","Star Wars: Rebellion"
+];
+
+let tileIndex=0;
+function rotateTiles(){
+  const tileDiv=document.getElementById("tiles");
+  tileDiv.textContent=topGames[tileIndex];
+  tileIndex=(tileIndex+1)%topGames.length;
+}
+rotateTiles();
+setInterval(rotateTiles,CONFIG.rotateIntervalMs);
+
+/* ===================== FUTURE FEATURES COMMENTS ===================== */
+/*
+  - Rotating forecast tiles if too many for screen width
+  - Additional tiles: quotes, stocks, AQI, calendar events, moon phase
+  - Background color changes based on sunrise/sunset
+  - Internet speed more accurate with backend CLI (optional for Pi)
+*/
 </script>
 
 </body>
