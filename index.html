@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pi Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    /* =====================
+       GLOBAL STYLES
+    ====================== */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      font-family: Arial, Helvetica, sans-serif;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      transition: background 0.3s ease;
+    }
+
+    .center {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* =====================
+       CLOCK
+    ====================== */
+    #clock {
+      font-size: 8vw;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      transition: all 0.3s ease;
+    }
+
+    body.pulse #clock {
+      font-size: 15vw;
+    }
+
+    /* =====================
+       CALENDAR
+    ====================== */
+    #calendar {
+      padding: 2vh 4vw;
+    }
+
+    .calendar-header {
+      text-align: center;
+      font-size: 2.5vw;
+      margin-bottom: 1vh;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5vh;
+      font-size: 1.5vw;
+      text-align: center;
+    }
+
+    .calendar-day {
+      opacity: 0.6;
+      font-weight: bold;
+    }
+
+    .calendar-date {
+      padding: 0.5vh 0;
+      border-radius: 0.5vh;
+    }
+
+    .today {
+      background: white;
+      color: black;
+      font-weight: bold;
+    }
+
+    /* =====================
+       WEATHER
+    ====================== */
+    #weather {
+      text-align: center;
+      font-size: 2vw;
+      padding-bottom: 2vh;
+      opacity: 0.9;
+    }
+
+    /* =====================
+       SMALL SCREENS (iPad / phone testing)
+    ====================== */
+    @media (max-width: 1024px) {
+      #clock {
+        font-size: 14vw;
+      }
+      body.pulse #clock {
+        font-size: 22vw;
+      }
+      .calendar-header {
+        font-size: 4vw;
+      }
+      .calendar-grid {
+        font-size: 3vw;
+      }
+      #weather {
+        font-size: 3.5vw;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CLOCK -->
+  <div class="center">
+    <div id="clock">--:--:--</div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div id="calendar"></div>
+
+  <!-- WEATHER -->
+  <div id="weather">Loading weather…</div>
+
+  <script>
+    /* =====================
+       CONFIG
+    ====================== */
+    const CONFIG = {
+      location: {
+        lat: 40.7128,   // CHANGE ME
+        lon: -74.0060
+      },
+      weatherRefreshMs: 10 * 60 * 1000 // 10 minutes
+    };
+
+    /* =====================
+       CLOCK + MINUTE PULSE
+    ====================== */
+    function updateClock() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      document.getElementById("clock").textContent = timeString;
+
+      // FULLSCREEN pulse at each new minute
+      if (now.getSeconds() === 0) {
+        document.body.classList.add("pulse");
+        setTimeout(() => {
+          document.body.classList.remove("pulse");
+        }, 1000);
+      }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    /* =====================
+       CALENDAR
+    ====================== */
+    function renderCalendar() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const today = now.getDate();
+
+      const monthName = now.toLocaleString("default", { month: "long" });
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      let html = `
+        <div class="calendar-header">${monthName} ${year}</div>
+        <div class="calendar-grid">
+      `;
+
+      const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      dayNames.forEach(d => {
+        html += `<div class="calendar-day">${d}</div>`;
+      });
+
+      for (let i = 0; i < firstDay; i++) {
+        html += `<div></div>`;
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const cls = d === today ? "calendar-date today" : "calendar-date";
+        html += `<div class="${cls}">${d}</div>`;
+      }
+
+      html += `</div>`;
+      document.getElementById("calendar").innerHTML = html;
+    }
+
+    renderCalendar();
+
+    /* =====================
+       WEATHER (OPEN-METEO)
+    ====================== */
+    async function loadWeather() {
+      try {
+        const { lat, lon } = CONFIG.location;
+        const url =
+          `https://api.open-meteo.com/v1/forecast` +
+          `?latitude=${lat}&longitude=${lon}` +
+          `&current_weather=true&temperature_unit=celsius`;
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const w = data.current_weather;
+
+        document.getElementById("weather").textContent =
+          `🌡️ ${Math.round(w.temperature)}°C   💨 ${Math.round(w.windspeed)} km/h`;
+
+      } catch (e) {
+        document.getElementById("weather").textContent = "Weather unavailable";
+      }
+    }
+
+    loadWeather();
+    setInterval(loadWeather, CONFIG.weatherRefreshMs);
+  </script>
+
+</body>
+</html>
