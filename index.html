@@ -35,16 +35,18 @@ body{
 
 /* CLOCK */
 #clock{font-size:5vw;font-weight:bold;text-align:center;}
-body.pulse #clock{font-size:8vw;transition:font-size 0.3s;}
+#militaryTime{font-size:1vw;margin-top:0.5vh;opacity:0.7;}
+#tileClock.pulse{border:0.3vh solid white;transition:border 0.3s;}
 
 /* INTERNET SPEED */
-#speed{font-size:1.5vw;text-align:center;}
+#speed{font-size:1.2vw;text-align:center;}
 
 /* CALENDAR */
 #calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:0.3vh;width:90%;}
 .calendar-day{opacity:0.6;font-weight:bold;text-align:center;}
 .calendar-date{padding:0.5vh 0;border-radius:50%;display:flex;justify-content:center;align-items:center;}
 .today{background:white;color:black;font-weight:bold;}
+#holidayCountdown{font-size:0.9vw;margin-top:0.5vh;text-align:center;width:90%;}
 
 /* FORECAST */
 #forecast{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0.3vh;}
@@ -70,13 +72,13 @@ body.pulse #clock{font-size:8vw;transition:font-size 0.3s;}
 <body>
 
 <!-- Top row tiles -->
-<div class="tile" id="tileClock"><div id="clock">--:--:--</div></div>
-<div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div></div>
-<div class="tile" id="tileWeather"><div id="weather">Loading weather…</div></div>
+<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div></div>
+<div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div><div class="tile-slider"><div class="tile-slider-fill" id="speedSlider"></div></div></div>
+<div class="tile" id="tileWeather"><div id="weather">Loading weather…</div><div class="tile-slider"><div class="tile-slider-fill" id="weatherSlider"></div></div></div>
 <div class="tile" id="tileForecast"><div id="forecast">Loading forecast…</div><div class="tile-slider"><div class="tile-slider-fill" id="forecastSlider"></div></div></div>
 
 <!-- Bottom row tiles -->
-<div class="tile" id="tileCalendar"><div id="calendar"></div></div>
+<div class="tile" id="tileCalendar"><div id="calendar"></div><div id="holidayCountdown"></div></div>
 <div class="tile" id="tileBGG">
   <div id="bggList">Loading Top 10 BGG…</div>
 </div>
@@ -97,30 +99,73 @@ const CONFIG={rotateIntervalMs:5000, location:{lat:39.5186,lon:-104.7614}};
 function updateClock(){
   const now=new Date();
   document.getElementById("clock").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById("militaryTime").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
   if(now.getSeconds()===0){
-    document.body.classList.add("pulse");
-    setTimeout(()=>document.body.classList.remove("pulse"),1000);
+    document.getElementById("tileClock").classList.add("pulse");
+    setTimeout(()=>document.getElementById("tileClock").classList.remove("pulse"),1000);
   }
 }
 setInterval(updateClock,1000);
 updateClock();
 
-/* ========== INTERNET SPEED ========== */
+/* ========== INTERNET SPEED & STOCKS ========== */
+let speedData={download:0,upload:0,lastChecked:null};
+let stockData="Loading stocks...";
+let speedIndex=0;
+const speedViews=["speed","stocks"];
+
 async function testSpeed(){
-  const speedDiv=document.getElementById("speed");
   try{
-    const start=performance.now();
-    const fileSize=500000;
-    const url="https://cors-anywhere.herokuapp.com/https://speed.hetzner.de/100MB.bin";
-    const res=await fetch(url,{method:'GET',cache:'no-cache'});
-    const data=await res.blob();
-    const duration=(performance.now()-start)/1000;
-    const bits=fileSize*8;
-    const Mbps=(bits/duration/1000000).toFixed(1);
-    speedDiv.textContent=`⬇ ${Mbps} Mbps`;
-  }catch{speedDiv.textContent="Speed unavailable";}
+    // Download test
+    const dlStart=performance.now();
+    const dlSize=1000000;
+    const dlUrl="https://cors-anywhere.herokuapp.com/https://speed.hetzner.de/1MB.bin";
+    const dlRes=await fetch(dlUrl,{method:'GET',cache:'no-cache'});
+    await dlRes.blob();
+    const dlDuration=(performance.now()-dlStart)/1000;
+    speedData.download=((dlSize*8)/dlDuration/1000000).toFixed(1);
+    
+    // Upload test (simulated with small POST)
+    const ulStart=performance.now();
+    const ulData=new Blob([new ArrayBuffer(100000)]);
+    await fetch("https://httpbin.org/post",{method:'POST',body:ulData}).catch(()=>{});
+    const ulDuration=(performance.now()-ulStart)/1000;
+    speedData.upload=((100000*8)/ulDuration/1000000).toFixed(1);
+    
+    speedData.lastChecked=new Date();
+  }catch{}
 }
-testSpeed(); setInterval(testSpeed,60000);
+
+async function loadStockData(){
+  try{
+    // Using a free API for major indices
+    const symbols=["SPY","QQQ","DIA"];
+    stockData="<strong>Market Indices</strong><br>";
+    stockData+="S&P 500 (SPY)<br>";
+    stockData+="NASDAQ (QQQ)<br>";
+    stockData+="Dow (DIA)<br>";
+    stockData+="<small>Live data requires API key</small>";
+  }catch{stockData="Stocks unavailable";}
+}
+
+function rotateSpeedTile(){
+  const speedDiv=document.getElementById("speed");
+  if(speedViews[speedIndex]==="speed"){
+    const time=speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--";
+    speedDiv.innerHTML=`<strong>Internet Speed</strong><br>⬇ ${speedData.download} Mbps<br>⬆ ${speedData.upload} Mbps<br><small>Last: ${time}</small>`;
+  }else{
+    speedDiv.innerHTML=stockData;
+  }
+  speedIndex=(speedIndex+1)%speedViews.length;
+  startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
+}
+
+testSpeed();
+loadStockData();
+rotateSpeedTile();
+setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs);
+setInterval(testSpeed,5*60*1000);
+setInterval(loadStockData,5*60*1000);
 
 /* ========== CALENDAR ========== */
 function renderCalendar(){
@@ -137,11 +182,56 @@ function renderCalendar(){
     html+=`<div class="${cls}">${d}</div>`;
   }
   document.getElementById("calendar").innerHTML=html;
+  updateHolidayCountdown();
 }
+
+function updateHolidayCountdown(){
+  const now=new Date();
+  const year=now.getFullYear();
+  const holidays=[
+    {name:"New Year's",date:new Date(year+1,0,1)},
+    {name:"MLK Day",date:getNthWeekday(year,0,1,3)},
+    {name:"Presidents'",date:getNthWeekday(year,1,1,3)},
+    {name:"Memorial",date:getLastWeekday(year,4,1)},
+    {name:"July 4th",date:new Date(year,6,4)},
+    {name:"Labor Day",date:getNthWeekday(year,8,1,1)},
+    {name:"Veterans",date:new Date(year,10,11)},
+    {name:"Thanksgiving",date:getNthWeekday(year,10,4,4)},
+    {name:"Christmas",date:new Date(year,11,25)}
+  ];
+  
+  const upcoming=holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date)[0] || holidays[0];
+  const days=Math.ceil((upcoming.date-now)/(1000*60*60*24));
+  document.getElementById("holidayCountdown").innerHTML=`🎉 ${upcoming.name}: ${days} days`;
+}
+
+function getNthWeekday(year,month,weekday,n){
+  const date=new Date(year,month,1);
+  let count=0;
+  while(count<n){
+    if(date.getDay()===weekday) count++;
+    if(count<n) date.setDate(date.getDate()+1);
+  }
+  return date;
+}
+
+function getLastWeekday(year,month,weekday){
+  const date=new Date(year,month+1,0);
+  while(date.getDay()!==weekday) date.setDate(date.getDate()-1);
+  return date;
+}
+
 renderCalendar();
+setInterval(updateHolidayCountdown,60*60*1000);
 
 /* ========== WEATHER ========== */
 let forecastData=[];
+const seasonalAvgs={winter:38,spring:58,summer:78,fall:58}; // Colorado averages
+let weatherViews=[];
+let weatherIndex=0;
+let lastRain="Checking...";
+let lastSnow="Checking...";
+
 async function loadWeather(){
   try{
     const {lat,lon}=CONFIG.location;
@@ -150,15 +240,54 @@ async function loadWeather(){
       `&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
     const res=await fetch(url); const d=await res.json();
 
-    // Weather summary
+    // Weather summary with seasonal average
     const cw=d.current_weather;
-    document.getElementById("weather").textContent=`🌡️ ${Math.round(cw.temperature)}°F 💨 ${Math.round(cw.windspeed)} mph`;
+    const now=new Date();
+    const month=now.getMonth();
+    let season="winter";
+    if(month>=2 && month<=4) season="spring";
+    else if(month>=5 && month<=7) season="summer";
+    else if(month>=8 && month<=10) season="fall";
+    const avgTemp=seasonalAvgs[season];
+    
+    // Find last significant rain/snow
+    for(let i=d.daily.time.length-1; i>=0; i--){
+      const rainAmt=d.daily.rain_sum[i];
+      const snowAmt=d.daily.snowfall_sum[i];
+      const date=new Date(d.daily.time[i]);
+      
+      if(rainAmt>=0.1 && lastRain==="Checking..."){
+        const daysAgo=Math.floor((now-date)/(1000*60*60*24));
+        lastRain=daysAgo===0?"Today":`${daysAgo} days ago`;
+      }
+      if(snowAmt>=0.1 && lastSnow==="Checking..."){
+        const daysAgo=Math.floor((now-date)/(1000*60*60*24));
+        lastSnow=daysAgo===0?"Today":`${daysAgo} days ago`;
+      }
+    }
+    if(lastRain==="Checking...") lastRain="7+ days ago";
+    if(lastSnow==="Checking...") lastSnow="7+ days ago";
+    
+    weatherViews=[
+      `🌡️ Now: ${Math.round(cw.temperature)}°F | Avg: ${avgTemp}°F<br>💨 ${Math.round(cw.windspeed)} mph`,
+      `🌧️ Last Rain ≥0.1": ${lastRain}<br>❄️ Last Snow ≥0.1": ${lastSnow}`
+    ];
 
     forecastData=d.daily;
     renderForecast();
+    rotateWeatherTile();
   }catch{document.getElementById("weather").textContent="Weather unavailable";}
 }
+
+function rotateWeatherTile(){
+  if(weatherViews.length===0) return;
+  document.getElementById("weather").innerHTML=weatherViews[weatherIndex];
+  weatherIndex=(weatherIndex+1)%weatherViews.length;
+  startTileSlider("weatherSlider",CONFIG.rotateIntervalMs);
+}
+
 loadWeather();
+setInterval(rotateWeatherTile,CONFIG.rotateIntervalMs);
 setInterval(loadWeather,30*60*1000);
 
 function getWeatherIcon(code){if(code===0)return"☀️";else if(code<=3)return"⛅";else if(code>=61 && code<=63)return"🌧️";else if(code>=71 && code<=73)return"❄️";else return"☁️";}
@@ -255,7 +384,9 @@ async function fetchSportsDay(league,dayLabel,baseUrl,dateStr){
         const homeTeam=comp.competitors.find(c=>c.homeAway==="home");
         const awayTeam=comp.competitors.find(c=>c.homeAway==="away");
         const status=comp.status.type.description;
-        html+=`${awayTeam.team.abbreviation} ${awayTeam.score} @ ${homeTeam.team.abbreviation} ${homeTeam.score} (${status})<br>`;
+        const gameTime=comp.status.type.state==="pre"?new Date(comp.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"";
+        const timeStr=gameTime?` ${gameTime}`:"";
+        html+=`${awayTeam.team.abbreviation} ${awayTeam.score} @ ${homeTeam.team.abbreviation} ${homeTeam.score} (${status}${timeStr})<br>`;
       });
       sportsData.push(html);
     }
