@@ -237,9 +237,17 @@ function updateHolidayCountdown(){
     {name:"Christmas",date:new Date(year,11,25)}
   ];
   
-  const upcoming=holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date)[0] || holidays[0];
-  const days=Math.ceil((upcoming.date-now)/(1000*60*60*24));
-  document.getElementById("holidayCountdown").innerHTML=`🎉 ${upcoming.name}: ${days} days`;
+  const upcoming=holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date);
+  if(upcoming.length===0) upcoming.push(holidays[0]);
+  
+  let html="";
+  for(let i=0;i<Math.min(3,upcoming.length);i++){
+    const days=Math.ceil((upcoming[i].date-now)/(1000*60*60*24));
+    const emoji=i===0?"🎉":i===1?"🎈":"🎁";
+    html+=`${emoji} ${upcoming[i].name}: ${days} days`;
+    if(i<Math.min(3,upcoming.length)-1) html+="<br>";
+  }
+  document.getElementById("holidayCountdown").innerHTML=html;
 }
 
 function getNthWeekday(year,month,weekday,n){
@@ -296,7 +304,7 @@ async function loadWeather(){
     const todayLo=Math.round(d.daily.temperature_2m_min[0]);
     document.getElementById("currentWeather").innerHTML=`🌡️ ${todayHi}/${todayLo}°F | 💨 ${Math.round(cw.windspeed)} mph | ☀️ UV: ${uvIndex}`;
 
-    // Get historical averages for today's date
+    // Calculate historical averages from available data (last 7 days)
     const now=new Date();
     const month=now.getMonth();
     let season="winter";
@@ -305,10 +313,20 @@ async function loadWeather(){
     else if(month>=8 && month<=10) season="fall";
     const avgTemp=seasonalAvgs[season];
     
-    // Track last 10 significant rain/snow events
+    // Calculate actual hi/lo from last 7 days of data
+    let sumHi=0,sumLo=0,count=0;
+    for(let i=0;i<Math.min(7,d.daily.time.length);i++){
+      sumHi+=d.daily.temperature_2m_max[i];
+      sumLo+=d.daily.temperature_2m_min[i];
+      count++;
+    }
+    const recentAvgHi=count>0?Math.round(sumHi/count):avgTemp+5;
+    const recentAvgLo=count>0?Math.round(sumLo/count):avgTemp-5;
+    
+    // Track last 10 significant rain/snow EVENTS (not just last 10 days)
     rainHistory=[];
     snowHistory=[];
-    for(let i=d.daily.time.length-1; i>=0 && (rainHistory.length<10 || snowHistory.length<10); i--){
+    for(let i=d.daily.time.length-1; i>=0; i--){
       const rainAmt=d.daily.rain_sum[i];
       const snowAmt=d.daily.snowfall_sum[i];
       const date=new Date(d.daily.time[i]);
@@ -323,9 +341,9 @@ async function loadWeather(){
     }
     
     weatherViews=[
-      `<strong>Historical Averages</strong><br>Temp: ${avgTemp}°F (${season})<br>This date typically ${season==='summer'?'warm':'cool'}`,
-      `<strong>Last 10 Rains ≥0.1"</strong><br>${rainHistory.length>0?rainHistory.join('<br>'):'None in last 7 days'}`,
-      `<strong>Last 10 Snows ≥0.1"</strong><br>${snowHistory.length>0?snowHistory.join('<br>'):'None in last 7 days'}`
+      `<strong>Historical Averages (${season})</strong><br>Seasonal: ${avgTemp}°F<br>Recent Hi/Lo: ${recentAvgHi}/${recentAvgLo}°F<br><small>Last 7 days avg</small>`,
+      `<strong>Last 10 Rain Events ≥0.1"</strong><br>${rainHistory.length>0?rainHistory.join('<br>'):'No events in forecast period'}`,
+      `<strong>Last 10 Snow Events ≥0.1"</strong><br>${snowHistory.length>0?snowHistory.join('<br>'):'No events in forecast period'}`
     ];
 
     forecastData=d.daily;
