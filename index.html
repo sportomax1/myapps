@@ -37,6 +37,7 @@ body{
 #clock{font-size:4vw;font-weight:bold;text-align:center;}
 #militaryTime{font-size:1vw;margin-top:0.3vh;opacity:0.7;}
 #sunTimes{font-size:1vw;margin-top:0.3vh;opacity:0.8;}
+#currentWeather{font-size:0.9vw;margin-top:0.3vh;opacity:0.85;text-align:center;}
 #tileClock.pulse{border:0.3vh solid white;transition:border 0.3s;}
 
 /* INTERNET SPEED */
@@ -73,7 +74,7 @@ body{
 <body>
 
 <!-- Top row tiles -->
-<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div></div>
+<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div><div id="currentWeather">Loading...</div></div>
 <div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div><div class="tile-slider"><div class="tile-slider-fill" id="speedSlider"></div></div></div>
 <div class="tile" id="tileWeather"><div id="weather">Loading weather…</div><div class="tile-slider"><div class="tile-slider-fill" id="weatherSlider"></div></div></div>
 <div class="tile" id="tileForecast"><div id="forecast">Loading forecast…</div><div class="tile-slider"><div class="tile-slider-fill" id="forecastSlider"></div></div></div>
@@ -265,8 +266,8 @@ let forecastData=[];
 const seasonalAvgs={winter:38,spring:58,summer:78,fall:58}; // Colorado averages
 let weatherViews=[];
 let weatherIndex=0;
-let lastRain="Checking...";
-let lastSnow="Checking...";
+let rainHistory=[];
+let snowHistory=[];
 let uvIndex=0;
 
 async function loadWeather(){
@@ -289,8 +290,13 @@ async function loadWeather(){
     else if(uvIndex>=6) uvLevel="High";
     else if(uvIndex>=3) uvLevel="Moderate";
 
-    // Weather summary with seasonal average
+    // Current weather for clock tile
     const cw=d.current_weather;
+    const todayHi=Math.round(d.daily.temperature_2m_max[0]);
+    const todayLo=Math.round(d.daily.temperature_2m_min[0]);
+    document.getElementById("currentWeather").innerHTML=`🌡️ ${todayHi}/${todayLo}°F | 💨 ${Math.round(cw.windspeed)} mph | ☀️ UV: ${uvIndex}`;
+
+    // Get historical averages for today's date
     const now=new Date();
     const month=now.getMonth();
     let season="winter";
@@ -299,27 +305,27 @@ async function loadWeather(){
     else if(month>=8 && month<=10) season="fall";
     const avgTemp=seasonalAvgs[season];
     
-    // Find last significant rain/snow
-    for(let i=d.daily.time.length-1; i>=0; i--){
+    // Track last 10 significant rain/snow events
+    rainHistory=[];
+    snowHistory=[];
+    for(let i=d.daily.time.length-1; i>=0 && (rainHistory.length<10 || snowHistory.length<10); i--){
       const rainAmt=d.daily.rain_sum[i];
       const snowAmt=d.daily.snowfall_sum[i];
       const date=new Date(d.daily.time[i]);
+      const dateStr=date.toLocaleDateString([],{month:'short',day:'numeric'});
       
-      if(rainAmt>=0.1 && lastRain==="Checking..."){
-        const daysAgo=Math.floor((now-date)/(1000*60*60*24));
-        lastRain=daysAgo===0?"Today":`${daysAgo} days ago`;
+      if(rainAmt>=0.1 && rainHistory.length<10){
+        rainHistory.push(`${dateStr}: ${rainAmt.toFixed(2)}"`);
       }
-      if(snowAmt>=0.1 && lastSnow==="Checking..."){
-        const daysAgo=Math.floor((now-date)/(1000*60*60*24));
-        lastSnow=daysAgo===0?"Today":`${daysAgo} days ago`;
+      if(snowAmt>=0.1 && snowHistory.length<10){
+        snowHistory.push(`${dateStr}: ${snowAmt.toFixed(2)}"`);
       }
     }
-    if(lastRain==="Checking...") lastRain="7+ days ago";
-    if(lastSnow==="Checking...") lastSnow="7+ days ago";
     
     weatherViews=[
-      `🌡️ Now: ${Math.round(cw.temperature)}°F | Avg: ${avgTemp}°F<br>💨 ${Math.round(cw.windspeed)} mph | ☀️ UV: ${uvIndex} (${uvLevel})`,
-      `🌧️ Last Rain ≥0.1": ${lastRain}<br>❄️ Last Snow ≥0.1": ${lastSnow}`
+      `<strong>Historical Averages</strong><br>Temp: ${avgTemp}°F (${season})<br>This date typically ${season==='summer'?'warm':'cool'}`,
+      `<strong>Last 10 Rains ≥0.1"</strong><br>${rainHistory.length>0?rainHistory.join('<br>'):'None in last 7 days'}`,
+      `<strong>Last 10 Snows ≥0.1"</strong><br>${snowHistory.length>0?snowHistory.join('<br>'):'None in last 7 days'}`
     ];
 
     forecastData=d.daily;
@@ -347,9 +353,15 @@ const forecastViews=[7,3];
 function renderForecast(){
   const container=document.getElementById("forecast"); container.innerHTML="";
   const daysToShow=forecastViews[forecastViewIndex];
+  const now=new Date();
   
   for(let i=0;i<Math.min(daysToShow,forecastData.time.length);i++){
-    const date=new Date(forecastData.time[i]); const day=date.toLocaleDateString([], {weekday:'short'});
+    const date=new Date(forecastData.time[i]);
+    let dayLabel;
+    if(i===0) dayLabel="Today";
+    else if(i===1) dayLabel="Tomorrow";
+    else dayLabel=date.toLocaleDateString([], {weekday:'short'});
+    
     const hi=Math.round(forecastData.temperature_2m_max[i]);
     const lo=Math.round(forecastData.temperature_2m_min[i]);
     const rain=forecastData.rain_sum[i].toFixed(2); const snow=forecastData.snowfall_sum[i].toFixed(2);
@@ -357,7 +369,7 @@ function renderForecast(){
     const icon=getWeatherIcon(forecastData.weathercode[i]);
 
     const dayDiv=document.createElement("div"); dayDiv.className="forecast-day";
-    dayDiv.innerHTML=`${day} ${icon} 🌡️ ${hi}/${lo}°F 🌧️ ${rain} ❄️ ${snow} 💨 ${wind} mph ☔ ${pop}%`;
+    dayDiv.innerHTML=`${dayLabel} ${icon} 🌡️ ${hi}/${lo}°F 🌧️ ${rain} ❄️ ${snow} 💨 ${wind} mph ☔ ${pop}%`;
     container.appendChild(dayDiv);
   }
 
@@ -374,6 +386,9 @@ function rotateForecastView(){
 setInterval(rotateForecastView,CONFIG.rotateIntervalMs);
 
 /* ========== ROTATING TILES ========== */
+let funTileViews=[];
+let funTileIndex=0;
+
 function getMoonPhase(){
   const now=new Date();
   let year=now.getFullYear();
@@ -411,13 +426,50 @@ function getMoonPhase(){
   return `${phase.emoji}<br><strong>${phase.name}</strong><br>${illumination}% Illuminated`;
 }
 
-function updateMoonPhase(){
-  document.getElementById("funText").innerHTML=getMoonPhase();
+async function getTravelTime(origin,destination,originCoords,destCoords,shortName){
+  try{
+    const url=`https://router.project-osrm.org/route/v1/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?overview=false`;
+    const res=await fetch(url);
+    const data=await res.json();
+    
+    if(data.routes && data.routes.length>0){
+      const route=data.routes[0];
+      const distanceMiles=(route.distance*0.000621371).toFixed(1);
+      const durationMins=Math.round(route.duration/60);
+      const hours=Math.floor(durationMins/60);
+      const mins=durationMins%60;
+      const timeStr=hours>0?`${hours}h ${mins}m`:`${mins}m`;
+      
+      return `🚗 <strong>Travel Time</strong><br>${shortName}<br>${distanceMiles} mi | ${timeStr}<br><small>No tolls</small>`;
+    }
+  }catch(e){console.log("Travel time error:",e);}
+  
+  return `🚗 <strong>Travel Time</strong><br>${shortName}<br>Calculating...<br><small>No tolls</small>`;
+}
+
+async function updateFunTile(){
+  const azaleaCoords=[-104.8319,39.6345];
+  const delNorteCoords=[-104.6099,39.7151];
+  const maroonCoords=[-104.8756,39.5803];
+  
+  funTileViews=[
+    getMoonPhase(),
+    await getTravelTime("16106 Azalea Ave","23100 E Del Norte Cir",azaleaCoords,delNorteCoords,"Azalea → Del Norte"),
+    await getTravelTime("16106 Azalea Ave","9655 Maroon Cir, Englewood",azaleaCoords,maroonCoords,"Azalea → Maroon Cir")
+  ];
+  rotateFunTile();
+}
+
+function rotateFunTile(){
+  if(funTileViews.length===0) return;
+  document.getElementById("funText").innerHTML=funTileViews[funTileIndex];
+  funTileIndex=(funTileIndex+1)%funTileViews.length;
   startTileSlider("funSlider",CONFIG.rotateIntervalMs);
 }
 
-updateMoonPhase();
-setInterval(updateMoonPhase,60*60*1000); // Update every hour
+updateFunTile();
+setInterval(rotateFunTile,CONFIG.rotateIntervalMs);
+setInterval(updateFunTile,10*60*1000); // Refresh every 10 minutes
 
 function startTileSlider(sliderId, interval){
   const fill=document.getElementById(sliderId);
