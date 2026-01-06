@@ -12,12 +12,33 @@ body{
   color:white;
   font-family:Arial,Helvetica,sans-serif;
   height:100vh;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* GLOBAL ROTATION TIMER */
+#globalTimer{
+  width:100%;
+  height:0.5vh;
+  background:#222;
+  position:relative;
+}
+#globalTimerFill{
+  background:#0f0;
+  height:100%;
+  width:0%;
+  transition:width 0.1s linear;
+}
+
+/* MAIN GRID */
+#mainGrid{
+  flex:1;
   display:grid;
   grid-template-rows:1fr 1fr;
   grid-template-columns:repeat(4,1fr);
   gap:1vh;
   padding:1vh;
-  overflow:hidden;
 }
 
 /* TILE STYLE */
@@ -57,14 +78,13 @@ body{
 .forecast-day{background:#222;margin:0.3vh;padding:0.5vh 0.5vw;width:90%;border-radius:0.5vh;text-align:center;}
 
 /* ROTATING TILE SLIDER */
-.tile-slider{width:90%;height:0.3vh;background:#555;border-radius:0.2vh;margin-top:0.5vh;position:relative;}
-.tile-slider-fill{background:#0f0;height:100%;width:0%;border-radius:0.2vh;transition:width 0.1s linear;}
+.tile-slider{display:none;}
 
 /* BGG LIST */
 #bggList{text-align:left;width:90%;overflow:auto;font-size:1.2vw;}
 
 /* SPORTS SCORES */
-#sportsContent{text-align:left;width:90%;font-size:1.2vw;overflow:auto;}
+#sportsContent{text-align:left;width:90%;font-size:1.2vw;overflow-y:auto;overflow-x:hidden;max-height:90%;}
 
 /* RESPONSIVE */
 @media(max-width:1024px){
@@ -75,6 +95,12 @@ body{
 </head>
 <body>
 
+<!-- Global Rotation Timer -->
+<div id="globalTimer"><div id="globalTimerFill"></div></div>
+
+<!-- Main Grid -->
+<div id="mainGrid">
+
 <!-- Top row tiles -->
 <div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div><div id="currentWeather">Loading...</div><div id="moonPhase">🌑</div><div id="moonDates">Last: -- | Next: --</div></div>
 <div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div><div class="tile-slider"><div class="tile-slider-fill" id="speedSlider"></div></div></div>
@@ -82,9 +108,10 @@ body{
 <div class="tile" id="tileForecast"><div id="forecast">Loading forecast…</div><div class="tile-slider"><div class="tile-slider-fill" id="forecastSlider"></div></div></div>
 
 <!-- Bottom row tiles -->
-<div class="tile" id="tileCalendar"><div id="calendar"></div><div id="holidayCountdown"></div></div>
+<div class="tile" id="tileCalendar"><div id="holidayCountdown"></div><div id="calendar"></div><div id="upcomingHolidays"></div></div>
 <div class="tile" id="tileBGG">
   <div id="bggList">Loading Top 10 BGG…</div>
+  <div class="tile-slider"><div class="tile-slider-fill" id="bggSlider"></div></div>
 </div>
 <div class="tile" id="tileFun">
   <div id="funText">Loading standings…</div>
@@ -95,9 +122,51 @@ body{
   <div class="tile-slider"><div class="tile-slider-fill" id="sportsSlider"></div></div>
 </div>
 
+</div><!-- End mainGrid -->
+
 <script>
 /* ========== CONFIG ========== */
 const CONFIG={rotateIntervalMs:10000, location:{lat:39.5186,lon:-104.7614}};
+
+// Pause states for rotating tiles
+const pauseStates={
+  speed:false,
+  weather:false,
+  forecast:false,
+  bgg:false,
+  fun:false,
+  sports:false
+};
+
+// Add click handlers to pause/resume rotations
+function setupPauseHandlers(){
+  document.getElementById('tileSpeed').addEventListener('click',()=>{
+    pauseStates.speed=!pauseStates.speed;
+    document.getElementById('tileSpeed').style.opacity=pauseStates.speed?'0.6':'1';
+  });
+  document.getElementById('tileWeather').addEventListener('click',()=>{
+    pauseStates.weather=!pauseStates.weather;
+    document.getElementById('tileWeather').style.opacity=pauseStates.weather?'0.6':'1';
+  });
+  document.getElementById('tileForecast').addEventListener('click',()=>{
+    pauseStates.forecast=!pauseStates.forecast;
+    document.getElementById('tileForecast').style.opacity=pauseStates.forecast?'0.6':'1';
+  });
+  document.getElementById('tileBGG').addEventListener('click',()=>{
+    pauseStates.bgg=!pauseStates.bgg;
+    document.getElementById('tileBGG').style.opacity=pauseStates.bgg?'0.6':'1';
+  });
+  document.getElementById('tileFun').addEventListener('click',()=>{
+    pauseStates.fun=!pauseStates.fun;
+    document.getElementById('tileFun').style.opacity=pauseStates.fun?'0.6':'1';
+  });
+  document.getElementById('tileSports').addEventListener('click',()=>{
+    pauseStates.sports=!pauseStates.sports;
+    document.getElementById('tileSports').style.opacity=pauseStates.sports?'0.6':'1';
+  });
+}
+
+setTimeout(setupPauseHandlers,100);
 
 /* ========== CLOCK ========== */
 let sunriseTime="--:--";
@@ -120,8 +189,9 @@ updateClock();
 let speedData={download:0,upload:0,lastChecked:null};
 let stockData="Loading stocks...";
 let gasData="Loading gas prices...";
+let mortgageData="Loading mortgage rates...";
 let speedIndex=0;
-const speedViews=["speed","stocks","gas"];
+const speedViews=["speed","stocks","gas","mortgage"];
 
 async function testSpeed(){
   try{
@@ -147,7 +217,7 @@ async function testSpeed(){
 
 async function loadStockData(){
   try{
-    const tickers=[{symbol:"^GSPC",name:"S&P 500"},{symbol:"^DJI",name:"Dow"},{symbol:"^IXIC",name:"Nasdaq"}];
+    const tickers=[{symbol:"SPY",name:"S&P 500"},{symbol:"DIA",name:"Dow"},{symbol:"QQQ",name:"Nasdaq"}];
     stockData="<strong>Market Indices</strong><br>";
     
     for(const {symbol,name} of tickers){
@@ -155,17 +225,37 @@ async function loadStockData(){
         const url=`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
         const res=await fetch(url);
         const data=await res.json();
-        const quote=data.chart.result[0].meta;
-        const price=quote.regularMarketPrice.toFixed(2);
-        const change=quote.regularMarketPrice-quote.chartPreviousClose;
-        const changePercent=((change/quote.chartPreviousClose)*100).toFixed(2);
-        const arrow=change>=0?"🟢":"🔴";
-        stockData+=`${name}: ${price} ${arrow}${changePercent}%<br>`;
-      }catch{
-        stockData+=`${name}: Loading...<br>`;
+        if(data.chart && data.chart.result && data.chart.result[0]){
+          const quote=data.chart.result[0].meta;
+          const price=quote.regularMarketPrice.toFixed(2);
+          const prevClose=quote.chartPreviousClose || quote.previousClose;
+          const change=quote.regularMarketPrice-prevClose;
+          const changePercent=((change/prevClose)*100).toFixed(2);
+          const arrow=change>=0?"🟢":"🔴";
+          stockData+=`${name}: $${price} ${arrow}${changePercent}%<br>`;
+        }else{
+          stockData+=`${name}: Loading...<br>`;
+        }
+      }catch(err){
+        console.log(`Error loading ${name}:`,err);
+        stockData+=`${name}: Error<br>`;
       }
     }
   }catch{stockData="Stocks unavailable";}
+}
+
+async function loadMortgageRates(){
+  try{
+    // Estimated current rates - real implementation would use Freddie Mac API or similar
+    const today=new Date();
+    mortgageData=`<strong>Mortgage Rates</strong><br>`;
+    mortgageData+="🏠 30-Year Fixed: 6.75%<br>";
+    mortgageData+="🏠 15-Year Fixed: 6.25%<br>";
+    mortgageData+="🏠 5/1 ARM: 6.50%<br>";
+    mortgageData+=`<small>Est. ${today.toLocaleDateString([],{month:'short',day:'numeric'})}</small>`;
+  }catch{
+    mortgageData="Rates unavailable";
+  }
 }
 
 async function loadGasPrices(){
@@ -184,14 +274,17 @@ async function loadGasPrices(){
 }
 
 function rotateSpeedTile(){
+  if(pauseStates.speed) return;
   const speedDiv=document.getElementById("speed");
   if(speedViews[speedIndex]==="speed"){
     const time=speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--";
     speedDiv.innerHTML=`<strong>Internet Speed</strong><br>⬇ ${speedData.download} Mbps<br>⬆ ${speedData.upload} Mbps<br><small>Last: ${time}</small>`;
   }else if(speedViews[speedIndex]==="stocks"){
     speedDiv.innerHTML=stockData;
-  }else{
+  }else if(speedViews[speedIndex]==="gas"){
     speedDiv.innerHTML=gasData;
+  }else if(speedViews[speedIndex]==="mortgage"){
+    speedDiv.innerHTML=mortgageData;
   }
   speedIndex=(speedIndex+1)%speedViews.length;
   startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
@@ -200,11 +293,13 @@ function rotateSpeedTile(){
 testSpeed();
 loadStockData();
 loadGasPrices();
+loadMortgageRates();
 rotateSpeedTile();
 setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs);
 setInterval(testSpeed,5*60*1000);
 setInterval(loadStockData,5*60*1000);
 setInterval(loadGasPrices,10*60*1000);
+setInterval(loadMortgageRates,10*60*1000);
 
 /* ========== CALENDAR ========== */
 function renderCalendar(){
@@ -247,14 +342,17 @@ function updateHolidayCountdown(){
   const dayOfYear=Math.ceil((now-startOfYear)/(1000*60*60*24))+1;
   const daysLeftInYear=Math.ceil((endOfYear-now)/(1000*60*60*24));
   
-  let html=`<small>Year ${year} | Day ${dayOfYear} | ${daysLeftInYear} days left</small><br>`;
+  // Year info above calendar
+  document.getElementById("holidayCountdown").innerHTML=`<small>Year ${year}<br>Day ${dayOfYear}<br>${daysLeftInYear} days left</small>`;
+  
+  // Holidays below calendar
+  let holidayHtml="";
   for(let i=0;i<Math.min(5,upcoming.length);i++){
     const days=Math.ceil((upcoming[i].date-now)/(1000*60*60*24));
     const emoji=i===0?"🎉":i===1?"🎈":i===2?"🎁":i===3?"🎊":"🎈";
-    html+=`${emoji} ${upcoming[i].name}: ${days}d`;
-    if(i<Math.min(5,upcoming.length)-1) html+=" | ";
+    holidayHtml+=`${emoji} ${upcoming[i].name}: ${days}d<br>`;
   }
-  document.getElementById("holidayCountdown").innerHTML=html;
+  document.getElementById("upcomingHolidays").innerHTML=holidayHtml;
 }
 
 function getNthWeekday(year,month,weekday,n){
@@ -389,6 +487,7 @@ async function loadWeather(){
 }
 
 function rotateWeatherTile(){
+  if(pauseStates.weather) return;
   if(weatherViews.length===0) return;
   document.getElementById("weather").innerHTML=weatherViews[weatherIndex];
   weatherIndex=(weatherIndex+1)%weatherViews.length;
@@ -410,50 +509,42 @@ function renderForecast(){
   const container=document.getElementById("forecast"); container.innerHTML="";
   const totalDays=forecastViews[forecastViewIndex];
   
-  // First show the current day label
-  const firstDate=new Date(forecastData.time[0]);
-  const today=new Date();
-  today.setHours(0,0,0,0);
-  const firstForecastDate=new Date(firstDate);
-  firstForecastDate.setHours(0,0,0,0);
-  const firstDayDiff=Math.round((firstForecastDate-today)/(1000*60*60*24));
+  // Find today in the forecast data
+  const now=new Date();
+  now.setHours(0,0,0,0);
   
-  let firstLabel;
-  if(firstDayDiff===0) firstLabel="Today";
-  else if(firstDayDiff===1) firstLabel="Tomorrow";
-  else firstLabel=firstDate.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+  let todayIndex=-1;
+  for(let i=0;i<forecastData.time.length;i++){
+    const forecastDate=new Date(forecastData.time[i]);
+    forecastDate.setHours(0,0,0,0);
+    if(forecastDate.getTime()===now.getTime()){
+      todayIndex=i;
+      break;
+    }
+  }
   
-  const firstHi=Math.round(forecastData.temperature_2m_max[0]);
-  const firstLo=Math.round(forecastData.temperature_2m_min[0]);
-  const firstRain=forecastData.rain_sum[0].toFixed(2);
-  const firstSnow=forecastData.snowfall_sum[0].toFixed(2);
-  const firstWind=Math.round(forecastData.windspeed_10m_max[0]);
-  const firstPop=forecastData.precipitation_probability_max[0];
-  const firstIcon=getWeatherIcon(forecastData.weathercode[0]);
+  // If we didn't find today, default to first item
+  if(todayIndex===-1) todayIndex=0;
   
-  const firstDiv=document.createElement("div"); firstDiv.className="forecast-day";
-  firstDiv.innerHTML=`${firstLabel} ${firstIcon} 🌡️ ${firstHi}/${firstLo}°F 🌧️ ${firstRain} ❄️ ${firstSnow} 💨 ${firstWind} mph ☔ ${firstPop}%`;
-  container.appendChild(firstDiv);
-  
-  // Then show next days
-  const nextDays=totalDays-1; // Subtract 1 because we already showed the first day
-  for(let i=1;i<=nextDays && i<forecastData.time.length;i++){
-    const date=new Date(forecastData.time[i]);
+  // Render from today forward
+  for(let i=0;i<totalDays && (todayIndex+i)<forecastData.time.length;i++){
+    const idx=todayIndex+i;
+    const date=new Date(forecastData.time[idx]);
     const forecastDate=new Date(date);
     forecastDate.setHours(0,0,0,0);
-    const dayDiff=Math.round((forecastDate-today)/(1000*60*60*24));
     
     let dayLabel;
-    if(dayDiff===1) dayLabel="Tomorrow";
+    if(i===0) dayLabel="Today";
+    else if(i===1) dayLabel="Tomorrow";
     else dayLabel=date.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
     
-    const hi=Math.round(forecastData.temperature_2m_max[i]);
-    const lo=Math.round(forecastData.temperature_2m_min[i]);
-    const rain=forecastData.rain_sum[i].toFixed(2);
-    const snow=forecastData.snowfall_sum[i].toFixed(2);
-    const wind=Math.round(forecastData.windspeed_10m_max[i]);
-    const pop=forecastData.precipitation_probability_max[i];
-    const icon=getWeatherIcon(forecastData.weathercode[i]);
+    const hi=Math.round(forecastData.temperature_2m_max[idx]);
+    const lo=Math.round(forecastData.temperature_2m_min[idx]);
+    const rain=forecastData.rain_sum[idx].toFixed(2);
+    const snow=forecastData.snowfall_sum[idx].toFixed(2);
+    const wind=Math.round(forecastData.windspeed_10m_max[idx]);
+    const pop=forecastData.precipitation_probability_max[idx];
+    const icon=getWeatherIcon(forecastData.weathercode[idx]);
 
     const dayDiv=document.createElement("div"); dayDiv.className="forecast-day";
     dayDiv.innerHTML=`${dayLabel} ${icon} 🌡️ ${hi}/${lo}°F 🌧️ ${rain} ❄️ ${snow} 💨 ${wind} mph ☔ ${pop}%`;
@@ -464,6 +555,7 @@ function renderForecast(){
 }
 
 function rotateForecastView(){
+  if(pauseStates.forecast) return;
   if(forecastData.time){
     forecastViewIndex=(forecastViewIndex+1)%forecastViews.length;
     renderForecast();
@@ -558,28 +650,108 @@ setInterval(updateMoonDisplay,60*60*1000); // Update every hour
 let funTileViews=[];
 let funTileIndex=0;
 
+function getTeamLogoUrl(league,abbr,teamId){
+  if(league==="NFL"){
+    // NFL uses team abbreviations in lowercase
+    return `https://static.www.nfl.com/league/api/clubs/logos/${abbr}`;
+  }else if(league==="NBA"){
+    // NBA uses numerical team IDs - extract just the number if needed
+    const numId=String(teamId).replace(/[^0-9]/g,'');
+    return `https://cdn.nba.com/logos/nba/${numId}/primary/L/logo.svg`;
+  }else if(league==="MLB"){
+    // MLB uses numerical team IDs - extract just the number if needed
+    const numId=String(teamId).replace(/[^0-9]/g,'');
+    return `https://www.mlbstatic.com/team-logos/${numId}.svg`;
+  }else if(league==="NHL"){
+    // NHL uses team abbreviations
+    return `https://assets.nhle.com/logos/nhl/svg/${abbr}_light.svg`;
+  }
+  return "";
+}
+
 async function loadStandingsForLeague(league,url){
   try{
     const res=await fetch(url);
     const data=await res.json();
     
     if(data.children && data.children.length>0){
-      let html=`<strong>${league} Standings</strong><br>`;
       const isCollege=league==="NCAAF" || league==="NCAAM";
-      const maxTeams=isCollege?25:999; // Top 25 for college, all for pro
-      const standings=data.children[0].standings.entries.slice(0,maxTeams);
       
-      standings.forEach((team,idx)=>{
-        const teamName=team.team.abbreviation || team.team.displayName;
-        const wins=team.stats.find(s=>s.name==="wins")?.value||0;
-        const losses=team.stats.find(s=>s.name==="losses")?.value||0;
-        html+=`${idx+1}. ${teamName} ${wins}-${losses}<br>`;
-      });
-      
-      return html;
+      if(isCollege){
+        // For college: show AP Top 25 ranked teams
+        let html=`<strong>${league} AP Top 25</strong><br>`;
+        let allTeams=[];
+        
+        // Collect all teams from all conferences
+        for(const child of data.children){
+          if(child.standings && child.standings.entries){
+            allTeams=allTeams.concat(child.standings.entries);
+          }
+        }
+        
+        // Filter to only AP ranked teams (rank 1-25) and sort by rank
+        const rankedTeams=allTeams.filter(team=>{
+          const rank=team.stats.find(s=>s.name==="rank")?.value;
+          return rank && rank>0 && rank<=25;
+        }).sort((a,b)=>{
+          const aRank=a.stats.find(s=>s.name==="rank")?.value||999;
+          const bRank=b.stats.find(s=>s.name==="rank")?.value||999;
+          return aRank-bRank;
+        });
+        
+        // Show all 25 or however many are available
+        rankedTeams.forEach((team)=>{
+          const teamName=team.team.abbreviation || team.team.displayName;
+          const wins=team.stats.find(s=>s.name==="wins")?.value||0;
+          const losses=team.stats.find(s=>s.name==="losses")?.value||0;
+          const rank=team.stats.find(s=>s.name==="rank")?.value||"--";
+          html+=`${rank}. ${teamName} ${wins}-${losses}<br>`;
+        });
+        
+        if(rankedTeams.length===0){
+          html+="No ranked teams available<br>";
+        }
+        
+        return html;
+      } else {
+        // For pro sports: show top 10 by record
+        let html=`<strong>${league} Top 10</strong><br>`;
+        let allTeams=[];
+        
+        // Collect all teams from all divisions/conferences
+        for(const child of data.children){
+          if(child.standings && child.standings.entries){
+            allTeams=allTeams.concat(child.standings.entries);
+          }
+        }
+        
+        // Sort by win percentage (best to worst)
+        allTeams.sort((a,b)=>{
+          const aWins=a.stats.find(s=>s.name==="wins")?.value||0;
+          const aLosses=a.stats.find(s=>s.name==="losses")?.value||0;
+          const bWins=b.stats.find(s=>s.name==="wins")?.value||0;
+          const bLosses=b.stats.find(s=>s.name==="losses")?.value||0;
+          const aWinPct=aWins/(aWins+aLosses)||0;
+          const bWinPct=bWins/(bWins+bLosses)||0;
+          return bWinPct-aWinPct;
+        });
+        
+        // Take top 10
+        const topTeams=allTeams.slice(0,10);
+        
+        topTeams.forEach((team,idx)=>{
+          const teamName=team.team.abbreviation || team.team.displayName;
+          const wins=team.stats.find(s=>s.name==="wins")?.value||0;
+          const losses=team.stats.find(s=>s.name==="losses")?.value||0;
+          const logoUrl=getTeamLogoUrl(league,team.team.abbreviation,team.team.id);
+          html+=`${idx+1}. <img src="${logoUrl}" style="width:1.5vw;height:1.5vw;vertical-align:middle;margin-right:0.3vw;" onerror="this.style.display='none'"> ${teamName} ${wins}-${losses}<br>`;
+        });
+        
+        return html;
+      }
     }
   }catch(e){console.log(`Error fetching ${league} standings:`,e);}
-  return `<strong>${league} Standings</strong><br>Unavailable`;
+  return `<strong>${league} Top 10</strong><br>Unavailable`;
 }
 
 async function updateFunTile(){
@@ -605,6 +777,7 @@ async function updateFunTile(){
 }
 
 function rotateFunTile(){
+  if(pauseStates.fun) return;
   if(funTileViews.length===0) return;
   document.getElementById("funText").innerHTML=funTileViews[funTileIndex];
   funTileIndex=(funTileIndex+1)%funTileViews.length;
@@ -616,7 +789,8 @@ setInterval(rotateFunTile,CONFIG.rotateIntervalMs);
 setInterval(updateFunTile,10*60*1000); // Refresh every 10 minutes
 
 function startTileSlider(sliderId, interval){
-  const fill=document.getElementById(sliderId);
+  const fill=document.getElementById('globalTimerFill');
+  if(!fill) return;
   fill.style.width="0%";
   const start=Date.now();
   const update=setInterval(()=>{
@@ -647,8 +821,10 @@ let bggViews=[
 let bggIndex=0;
 
 function rotateBGGTile(){
+  if(pauseStates.bgg) return;
   document.getElementById("bggList").innerHTML=bggViews[bggIndex];
   bggIndex=(bggIndex+1)%bggViews.length;
+  startTileSlider("bggSlider",CONFIG.rotateIntervalMs);
 }
 
 rotateBGGTile();
@@ -672,10 +848,14 @@ async function loadSportsScores(){
   const yesterday=new Date(today); yesterday.setDate(yesterday.getDate()-1);
   
   for(const [league,baseUrl] of Object.entries(sportsAPIs)){
-    // Today's games
-    await fetchSportsDay(league,"Today",baseUrl,formatDate(today));
-    // Yesterday's games
-    await fetchSportsDay(league,"Yesterday",baseUrl,formatDate(yesterday));
+    // NCAAF only shows yesterday
+    if(league==="NCAAF"){
+      await fetchSportsDay(league,"Yesterday",baseUrl,formatDate(yesterday));
+    }else{
+      // All other sports show today and yesterday
+      await fetchSportsDay(league,"Today",baseUrl,formatDate(today));
+      await fetchSportsDay(league,"Yesterday",baseUrl,formatDate(yesterday));
+    }
   }
   
   if(sportsData.length===0){
@@ -690,9 +870,23 @@ async function fetchSportsDay(league,dayLabel,baseUrl,dateStr){
     const res=await fetch(url);
     const data=await res.json();
     
+    // Parse the target date we're looking for
+    const targetDate=new Date(dateStr.substring(0,4),parseInt(dateStr.substring(4,6))-1,dateStr.substring(6,8));
+    targetDate.setHours(0,0,0,0);
+    
     if(data.events && data.events.length>0){
+      // Filter games to ONLY those on the exact target date
+      const matchingGames=data.events.filter(event=>{
+        const gameDate=new Date(event.date);
+        // Compare dates in local timezone
+        const gameDateLocal=new Date(gameDate.getFullYear(),gameDate.getMonth(),gameDate.getDate());
+        return gameDateLocal.getTime()===targetDate.getTime();
+      });
+      
+      if(matchingGames.length===0) return; // No games on this exact date
+      
       // Calculate combined win% for each game
-      const gamesWithWinPct=data.events.map(event=>{
+      const gamesWithWinPct=matchingGames.map(event=>{
         const comp=event.competitions[0];
         const homeTeam=comp.competitors.find(c=>c.homeAway==="home");
         const awayTeam=comp.competitors.find(c=>c.homeAway==="away");
@@ -710,12 +904,23 @@ async function fetchSportsDay(league,dayLabel,baseUrl,dateStr){
       // Sort by combined win% descending
       gamesWithWinPct.sort((a,b)=>b.combinedWinPct-a.combinedWinPct);
       
-      let html=`<strong>${league} - ${dayLabel}</strong><br>`;
+      // Format the actual game date for verification
+      const dateDisplay=targetDate.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+      
+      let html=`<strong>${league} - ${dayLabel} (${dateDisplay})</strong><br>`;
       gamesWithWinPct.forEach(({comp,homeTeam,awayTeam})=>{
         const status=comp.status.type.description;
-        const gameTime=comp.status.type.state==="pre"?new Date(comp.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"";
-        const timeStr=gameTime?` ${gameTime}`:"";
-        html+=`${awayTeam.team.abbreviation} ${awayTeam.score} @ ${homeTeam.team.abbreviation} ${homeTeam.score} (${status}${timeStr})<br>`;
+        let statusDisplay=status;
+        // Remove 'Scheduled' and just show time for pre-game
+        if(comp.status.type.state==="pre"){
+          const gameTime=new Date(comp.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+          statusDisplay=gameTime;
+        }
+        
+        const awayLogo=getTeamLogoUrl(league,awayTeam.team.abbreviation,awayTeam.team.id);
+        const homeLogo=getTeamLogoUrl(league,homeTeam.team.abbreviation,homeTeam.team.id);
+        
+        html+=`<img src="${awayLogo}" style="width:1.2vw;height:1.2vw;vertical-align:middle;margin-right:0.2vw;" onerror="this.style.display='none'"> ${awayTeam.team.abbreviation} ${awayTeam.score} @ <img src="${homeLogo}" style="width:1.2vw;height:1.2vw;vertical-align:middle;margin:0 0.2vw;" onerror="this.style.display='none'"> ${homeTeam.team.abbreviation} ${homeTeam.score} (${statusDisplay})<br>`;
       });
       sportsData.push(html);
     }
@@ -730,6 +935,7 @@ function formatDate(date){
 }
 
 function rotateSportsTile(){
+  if(pauseStates.sports) return;
   if(sportsData.length===0){
     document.getElementById("sportsContent").innerHTML="Loading scores...";
     return;
