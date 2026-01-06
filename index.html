@@ -38,6 +38,8 @@ body{
 #militaryTime{font-size:1vw;margin-top:0.3vh;opacity:0.7;}
 #sunTimes{font-size:1vw;margin-top:0.3vh;opacity:0.8;}
 #currentWeather{font-size:0.9vw;margin-top:0.3vh;opacity:0.85;text-align:center;}
+#moonPhase{font-size:1.5vw;margin-top:0.3vh;opacity:0.9;text-align:center;}
+#moonDates{font-size:0.8vw;margin-top:0.2vh;opacity:0.7;text-align:center;}
 #tileClock.pulse{border:0.3vh solid white;transition:border 0.3s;}
 
 /* INTERNET SPEED */
@@ -74,7 +76,7 @@ body{
 <body>
 
 <!-- Top row tiles -->
-<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div><div id="currentWeather">Loading...</div></div>
+<div class="tile" id="tileClock"><div id="clock">--:--:--</div><div id="militaryTime">--:--</div><div id="sunTimes">🌅 --:-- | 🌇 --:--</div><div id="currentWeather">Loading...</div><div id="moonPhase">🌑</div><div id="moonDates">Last: -- | Next: --</div></div>
 <div class="tile" id="tileSpeed"><div id="speed">Testing speed...</div><div class="tile-slider"><div class="tile-slider-fill" id="speedSlider"></div></div></div>
 <div class="tile" id="tileWeather"><div id="weather">Loading weather…</div><div class="tile-slider"><div class="tile-slider-fill" id="weatherSlider"></div></div></div>
 <div class="tile" id="tileForecast"><div id="forecast">Loading forecast…</div><div class="tile-slider"><div class="tile-slider-fill" id="forecastSlider"></div></div></div>
@@ -85,7 +87,7 @@ body{
   <div id="bggList">Loading Top 10 BGG…</div>
 </div>
 <div class="tile" id="tileFun">
-  <div id="funText">Loading fun tile…</div>
+  <div id="funText">Loading standings…</div>
   <div class="tile-slider"><div class="tile-slider-fill" id="funSlider"></div></div>
 </div>
 <div class="tile" id="tileSports">
@@ -278,9 +280,52 @@ let rainHistory=[];
 let snowHistory=[];
 let uvIndex=0;
 
+async function loadHistoricalPrecipitation(){
+  // Parker 80134 coordinates
+  const lat=39.5186, lon=-104.7614;
+  const today=new Date();
+  const endDate=today.toISOString().split('T')[0];
+  
+  // Start from 3 years ago to ensure we get 10 events
+  const startDate=new Date(today);
+  startDate.setFullYear(startDate.getFullYear()-3);
+  const startDateStr=startDate.toISOString().split('T')[0];
+  
+  try{
+    const url=`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}`+
+      `&start_date=${startDateStr}&end_date=${endDate}`+
+      `&daily=rain_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
+    const res=await fetch(url);
+    const data=await res.json();
+    
+    rainHistory=[];
+    snowHistory=[];
+    
+    // Go backwards through time to find last 10 events
+    for(let i=data.daily.time.length-1; i>=0 && (rainHistory.length<10 || snowHistory.length<10); i--){
+      const rainAmt=data.daily.rain_sum[i];
+      const snowAmt=data.daily.snowfall_sum[i];
+      const date=new Date(data.daily.time[i]);
+      const dateStr=date.toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'});
+      
+      if(rainAmt>=0.1 && rainHistory.length<10){
+        rainHistory.push(`${dateStr}: ${rainAmt.toFixed(2)}"`);
+      }
+      if(snowAmt>=0.1 && snowHistory.length<10){
+        snowHistory.push(`${dateStr}: ${snowAmt.toFixed(2)}"`);
+      }
+    }
+  }catch(e){
+    console.log('Error loading historical precipitation:',e);
+    rainHistory=['Historical data unavailable'];
+    snowHistory=['Historical data unavailable'];
+  }
+}
+
 async function loadWeather(){
   try{
-    const {lat,lon}=CONFIG.location;
+    // Parker 80134 coordinates
+    const lat=39.5186, lon=-104.7614;
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`+
       `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max`+
       `&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`;
@@ -323,27 +368,13 @@ async function loadWeather(){
     const recentAvgHi=count>0?Math.round(sumHi/count):avgTemp+5;
     const recentAvgLo=count>0?Math.round(sumLo/count):avgTemp-5;
     
-    // Track last 10 significant rain/snow EVENTS (not just last 10 days)
-    rainHistory=[];
-    snowHistory=[];
-    for(let i=d.daily.time.length-1; i>=0; i--){
-      const rainAmt=d.daily.rain_sum[i];
-      const snowAmt=d.daily.snowfall_sum[i];
-      const date=new Date(d.daily.time[i]);
-      const dateStr=date.toLocaleDateString([],{month:'short',day:'numeric'});
-      
-      if(rainAmt>=0.1 && rainHistory.length<10){
-        rainHistory.push(`${dateStr}: ${rainAmt.toFixed(2)}"`);
-      }
-      if(snowAmt>=0.1 && snowHistory.length<10){
-        snowHistory.push(`${dateStr}: ${snowAmt.toFixed(2)}"`);
-      }
-    }
+    // Load historical precipitation data (last 10 actual events)
+    await loadHistoricalPrecipitation();
     
     weatherViews=[
       `<strong>Historical Averages (${season})</strong><br>Seasonal: ${avgTemp}°F<br>Recent Hi/Lo: ${recentAvgHi}/${recentAvgLo}°F<br><small>Last 7 days avg</small>`,
-      `<strong>Last 10 Rain Events ≥0.1"</strong><br>${rainHistory.length>0?rainHistory.join('<br>'):'No events in forecast period'}`,
-      `<strong>Last 10 Snow Events ≥0.1"</strong><br>${snowHistory.length>0?snowHistory.join('<br>'):'No events in forecast period'}`
+      `<strong>Last 10 Rain Events ≥0.1"</strong><br>${rainHistory.length>0?rainHistory.join('<br>'):'No events found'}`,
+      `<strong>Last 10 Snow Events ≥0.1"</strong><br>${snowHistory.length>0?snowHistory.join('<br>'):'No events found'}`
     ];
 
     forecastData=d.daily;
@@ -369,16 +400,23 @@ let forecastViewIndex=0;
 const forecastViews=[7,3];
 
 function renderForecast(){
+  if(!forecastData || !forecastData.time) return;
+  
   const container=document.getElementById("forecast"); container.innerHTML="";
   const daysToShow=forecastViews[forecastViewIndex];
-  const now=new Date();
   
   for(let i=0;i<Math.min(daysToShow,forecastData.time.length);i++){
     const date=new Date(forecastData.time[i]);
+    const today=new Date();
+    today.setHours(0,0,0,0);
+    const forecastDate=new Date(date);
+    forecastDate.setHours(0,0,0,0);
+    const dayDiff=Math.round((forecastDate-today)/(1000*60*60*24));
+    
     let dayLabel;
-    if(i===0) dayLabel="Today";
-    else if(i===1) dayLabel="Tomorrow";
-    else dayLabel=date.toLocaleDateString([], {weekday:'short'});
+    if(dayDiff===0) dayLabel="Today";
+    else if(dayDiff===1) dayLabel="Tomorrow";
+    else dayLabel=date.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
     
     const hi=Math.round(forecastData.temperature_2m_max[i]);
     const lo=Math.round(forecastData.temperature_2m_min[i]);
@@ -403,17 +441,12 @@ function rotateForecastView(){
 
 setInterval(rotateForecastView,CONFIG.rotateIntervalMs);
 
-/* ========== ROTATING TILES ========== */
-let funTileViews=[];
-let funTileIndex=0;
-
-function getMoonPhase(){
-  const now=new Date();
-  let year=now.getFullYear();
-  let month=now.getMonth()+1;
-  const day=now.getDate();
+/* ========== MOON PHASE ========== */
+function calculateMoonPhase(date){
+  let year=date.getFullYear();
+  let month=date.getMonth()+1;
+  const day=date.getDate();
   
-  // Calculate moon phase using astronomical formula
   let c,e,jd,b;
   if(month<3){
     year--;
@@ -429,52 +462,112 @@ function getMoonPhase(){
   b=Math.round(jd*8);
   
   const phases=[
-    {name:"New Moon",emoji:"🌑"},
-    {name:"Waxing Crescent",emoji:"🌒"},
-    {name:"First Quarter",emoji:"🌓"},
-    {name:"Waxing Gibbous",emoji:"🌔"},
-    {name:"Full Moon",emoji:"🌕"},
-    {name:"Waning Gibbous",emoji:"🌖"},
-    {name:"Last Quarter",emoji:"🌗"},
-    {name:"Waning Crescent",emoji:"🌘"}
+    {name:"New Moon",emoji:"🌑",index:0},
+    {name:"Waxing Crescent",emoji:"🌒",index:1},
+    {name:"First Quarter",emoji:"🌓",index:2},
+    {name:"Waxing Gibbous",emoji:"🌔",index:3},
+    {name:"Full Moon",emoji:"🌕",index:4},
+    {name:"Waning Gibbous",emoji:"🌖",index:5},
+    {name:"Last Quarter",emoji:"🌗",index:6},
+    {name:"Waning Crescent",emoji:"🌘",index:7}
   ];
   
   const phase=phases[b%8];
   const illumination=(jd*100).toFixed(1);
-  return `${phase.emoji}<br><strong>${phase.name}</strong><br>${illumination}% Illuminated`;
+  return {phase,illumination,phaseIndex:b%8};
 }
 
-async function getTravelTime(origin,destination,originCoords,destCoords,shortName){
+function findFullMoonDates(){
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  
+  // Search backwards for last full moon (up to 30 days)
+  let lastFull=null;
+  for(let i=0;i<=30;i++){
+    const testDate=new Date(today);
+    testDate.setDate(testDate.getDate()-i);
+    const moonData=calculateMoonPhase(testDate);
+    if(moonData.phaseIndex===4){
+      lastFull=testDate;
+      break;
+    }
+  }
+  
+  // Search forwards for next full moon (up to 30 days)
+  let nextFull=null;
+  for(let i=1;i<=30;i++){
+    const testDate=new Date(today);
+    testDate.setDate(testDate.getDate()+i);
+    const moonData=calculateMoonPhase(testDate);
+    if(moonData.phaseIndex===4){
+      nextFull=testDate;
+      break;
+    }
+  }
+  
+  return {lastFull,nextFull};
+}
+
+function updateMoonDisplay(){
+  const now=new Date();
+  const moonData=calculateMoonPhase(now);
+  const {lastFull,nextFull}=findFullMoonDates();
+  
+  document.getElementById("moonPhase").innerHTML=`${moonData.phase.emoji} ${moonData.phase.name} (${moonData.illumination}%)`;
+  
+  const lastStr=lastFull?lastFull.toLocaleDateString([],{month:'short',day:'numeric'}):"--";
+  const nextStr=nextFull?nextFull.toLocaleDateString([],{month:'short',day:'numeric'}):"--";
+  document.getElementById("moonDates").innerHTML=`Last Full: ${lastStr} | Next Full: ${nextStr}`;
+}
+
+updateMoonDisplay();
+setInterval(updateMoonDisplay,60*60*1000); // Update every hour
+
+/* ========== ROTATING TILES ========== */
+let funTileViews=[];
+let funTileIndex=0;
+
+async function loadStandingsForLeague(league,url){
   try{
-    const url=`https://router.project-osrm.org/route/v1/driving/${originCoords[0]},${originCoords[1]};${destCoords[0]},${destCoords[1]}?overview=false`;
     const res=await fetch(url);
     const data=await res.json();
     
-    if(data.routes && data.routes.length>0){
-      const route=data.routes[0];
-      const distanceMiles=(route.distance*0.000621371).toFixed(1);
-      const durationMins=Math.round(route.duration/60);
-      const hours=Math.floor(durationMins/60);
-      const mins=durationMins%60;
-      const timeStr=hours>0?`${hours}h ${mins}m`:`${mins}m`;
+    if(data.children && data.children.length>0){
+      let html=`<strong>${league} Standings</strong><br>`;
+      const standings=data.children[0].standings.entries.slice(0,10);
       
-      return `🚗 <strong>Travel Time</strong><br>${shortName}<br>${distanceMiles} mi | ${timeStr}<br><small>No tolls</small>`;
+      standings.forEach((team,idx)=>{
+        const teamName=team.team.abbreviation;
+        const wins=team.stats.find(s=>s.name==="wins")?.value||0;
+        const losses=team.stats.find(s=>s.name==="losses")?.value||0;
+        html+=`${idx+1}. ${teamName} ${wins}-${losses}<br>`;
+      });
+      
+      return html;
     }
-  }catch(e){console.log("Travel time error:",e);}
-  
-  return `🚗 <strong>Travel Time</strong><br>${shortName}<br>Calculating...<br><small>No tolls</small>`;
+  }catch(e){console.log(`Error fetching ${league} standings:`,e);}
+  return `<strong>${league} Standings</strong><br>Unavailable`;
 }
 
 async function updateFunTile(){
-  const azaleaCoords=[-104.8319,39.6345];
-  const delNorteCoords=[-104.6099,39.7151];
-  const maroonCoords=[-104.8756,39.5803];
+  const standingsAPIs={
+    NBA:"https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
+    NFL:"https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings",
+    NHL:"https://site.web.api.espn.com/apis/v2/sports/hockey/nhl/standings",
+    MLB:"https://site.web.api.espn.com/apis/v2/sports/baseball/mlb/standings",
+    NCAAF:"https://site.web.api.espn.com/apis/v2/sports/football/college-football/standings",
+    NCAAM:"https://site.web.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/standings"
+  };
   
-  funTileViews=[
-    getMoonPhase(),
-    await getTravelTime("16106 Azalea Ave","23100 E Del Norte Cir",azaleaCoords,delNorteCoords,"Azalea → Del Norte"),
-    await getTravelTime("16106 Azalea Ave","9655 Maroon Cir, Englewood",azaleaCoords,maroonCoords,"Azalea → Maroon Cir")
-  ];
+  funTileViews=[];
+  for(const [league,url] of Object.entries(standingsAPIs)){
+    const standings=await loadStandingsForLeague(league,url);
+    funTileViews.push(standings);
+  }
+  
+  if(funTileViews.length===0){
+    funTileViews=["No standings available"];
+  }
   rotateFunTile();
 }
 
