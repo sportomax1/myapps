@@ -61,7 +61,7 @@ body{
 .tile-slider-fill{background:#0f0;height:100%;width:0%;border-radius:0.2vh;transition:width 0.1s linear;}
 
 /* BGG LIST */
-#bggList{text-align:left;width:90%;overflow:auto;}
+#bggList{text-align:left;width:90%;overflow:auto;font-size:1.2vw;}
 
 /* SPORTS SCORES */
 #sportsContent{text-align:left;width:90%;font-size:1.2vw;overflow:auto;}
@@ -97,7 +97,7 @@ body{
 
 <script>
 /* ========== CONFIG ========== */
-const CONFIG={rotateIntervalMs:5000, location:{lat:39.5186,lon:-104.7614}};
+const CONFIG={rotateIntervalMs:10000, location:{lat:39.5186,lon:-104.7614}};
 
 /* ========== CLOCK ========== */
 let sunriseTime="--:--";
@@ -242,12 +242,17 @@ function updateHolidayCountdown(){
   const upcoming=holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date);
   if(upcoming.length===0) upcoming.push(holidays[0]);
   
-  let html="";
-  for(let i=0;i<Math.min(3,upcoming.length);i++){
+  const startOfYear=new Date(year,0,1);
+  const endOfYear=new Date(year,11,31,23,59,59);
+  const dayOfYear=Math.ceil((now-startOfYear)/(1000*60*60*24))+1;
+  const daysLeftInYear=Math.ceil((endOfYear-now)/(1000*60*60*24));
+  
+  let html=`<small>Year ${year} | Day ${dayOfYear} | ${daysLeftInYear} days left</small><br>`;
+  for(let i=0;i<Math.min(5,upcoming.length);i++){
     const days=Math.ceil((upcoming[i].date-now)/(1000*60*60*24));
-    const emoji=i===0?"🎉":i===1?"🎈":"🎁";
-    html+=`${emoji} ${upcoming[i].name}: ${days} days`;
-    if(i<Math.min(3,upcoming.length)-1) html+="<br>";
+    const emoji=i===0?"🎉":i===1?"🎈":i===2?"🎁":i===3?"🎊":"🎈";
+    html+=`${emoji} ${upcoming[i].name}: ${days}d`;
+    if(i<Math.min(5,upcoming.length)-1) html+=" | ";
   }
   document.getElementById("holidayCountdown").innerHTML=html;
 }
@@ -397,31 +402,57 @@ setInterval(loadWeather,30*60*1000);
 function getWeatherIcon(code){if(code===0)return"☀️";else if(code<=3)return"⛅";else if(code>=61 && code<=63)return"🌧️";else if(code>=71 && code<=73)return"❄️";else return"☁️";}
 
 let forecastViewIndex=0;
-const forecastViews=[7,3];
+const forecastViews=[3,7]; // 3-day and 7-day views
 
 function renderForecast(){
   if(!forecastData || !forecastData.time) return;
   
   const container=document.getElementById("forecast"); container.innerHTML="";
-  const daysToShow=forecastViews[forecastViewIndex];
+  const totalDays=forecastViews[forecastViewIndex];
   
-  for(let i=0;i<Math.min(daysToShow,forecastData.time.length);i++){
+  // First show the current day label
+  const firstDate=new Date(forecastData.time[0]);
+  const today=new Date();
+  today.setHours(0,0,0,0);
+  const firstForecastDate=new Date(firstDate);
+  firstForecastDate.setHours(0,0,0,0);
+  const firstDayDiff=Math.round((firstForecastDate-today)/(1000*60*60*24));
+  
+  let firstLabel;
+  if(firstDayDiff===0) firstLabel="Today";
+  else if(firstDayDiff===1) firstLabel="Tomorrow";
+  else firstLabel=firstDate.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+  
+  const firstHi=Math.round(forecastData.temperature_2m_max[0]);
+  const firstLo=Math.round(forecastData.temperature_2m_min[0]);
+  const firstRain=forecastData.rain_sum[0].toFixed(2);
+  const firstSnow=forecastData.snowfall_sum[0].toFixed(2);
+  const firstWind=Math.round(forecastData.windspeed_10m_max[0]);
+  const firstPop=forecastData.precipitation_probability_max[0];
+  const firstIcon=getWeatherIcon(forecastData.weathercode[0]);
+  
+  const firstDiv=document.createElement("div"); firstDiv.className="forecast-day";
+  firstDiv.innerHTML=`${firstLabel} ${firstIcon} 🌡️ ${firstHi}/${firstLo}°F 🌧️ ${firstRain} ❄️ ${firstSnow} 💨 ${firstWind} mph ☔ ${firstPop}%`;
+  container.appendChild(firstDiv);
+  
+  // Then show next days
+  const nextDays=totalDays-1; // Subtract 1 because we already showed the first day
+  for(let i=1;i<=nextDays && i<forecastData.time.length;i++){
     const date=new Date(forecastData.time[i]);
-    const today=new Date();
-    today.setHours(0,0,0,0);
     const forecastDate=new Date(date);
     forecastDate.setHours(0,0,0,0);
     const dayDiff=Math.round((forecastDate-today)/(1000*60*60*24));
     
     let dayLabel;
-    if(dayDiff===0) dayLabel="Today";
-    else if(dayDiff===1) dayLabel="Tomorrow";
+    if(dayDiff===1) dayLabel="Tomorrow";
     else dayLabel=date.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
     
     const hi=Math.round(forecastData.temperature_2m_max[i]);
     const lo=Math.round(forecastData.temperature_2m_min[i]);
-    const rain=forecastData.rain_sum[i].toFixed(2); const snow=forecastData.snowfall_sum[i].toFixed(2);
-    const wind=Math.round(forecastData.windspeed_10m_max[i]); const pop=forecastData.precipitation_probability_max[i];
+    const rain=forecastData.rain_sum[i].toFixed(2);
+    const snow=forecastData.snowfall_sum[i].toFixed(2);
+    const wind=Math.round(forecastData.windspeed_10m_max[i]);
+    const pop=forecastData.precipitation_probability_max[i];
     const icon=getWeatherIcon(forecastData.weathercode[i]);
 
     const dayDiv=document.createElement("div"); dayDiv.className="forecast-day";
@@ -534,10 +565,12 @@ async function loadStandingsForLeague(league,url){
     
     if(data.children && data.children.length>0){
       let html=`<strong>${league} Standings</strong><br>`;
-      const standings=data.children[0].standings.entries.slice(0,10);
+      const isCollege=league==="NCAAF" || league==="NCAAM";
+      const maxTeams=isCollege?25:999; // Top 25 for college, all for pro
+      const standings=data.children[0].standings.entries.slice(0,maxTeams);
       
       standings.forEach((team,idx)=>{
-        const teamName=team.team.abbreviation;
+        const teamName=team.team.abbreviation || team.team.displayName;
         const wins=team.stats.find(s=>s.name==="wins")?.value||0;
         const losses=team.stats.find(s=>s.name==="losses")?.value||0;
         html+=`${idx+1}. ${teamName} ${wins}-${losses}<br>`;
@@ -600,7 +633,26 @@ const bggTop10=[
   "5. Dune: Imperium","6. Twilight Imperium 4th","7. Dune: Imperium – Uprising",
   "8. War of the Ring 2nd","9. Terraforming Mars","10. Star Wars: Rebellion"
 ];
-document.getElementById("bggList").innerHTML=bggTop10.join("<br>");
+
+const spielDesJahres=[
+  "2024: Sky Team","2023: Dorfromantik","2022: Cascadia","2021: MicroMacro: Crime City",
+  "2020: Pictures","2019: Just One","2018: Azul","2017: Kingdomino",
+  "2016: Codenames","2015: Colt Express"
+];
+
+let bggViews=[
+  `<strong>BGG Top 10</strong><br>${bggTop10.join("<br>")}`,
+  `<strong>Spiel des Jahres<br>Last 10 Winners</strong><br>${spielDesJahres.join("<br>")}`
+];
+let bggIndex=0;
+
+function rotateBGGTile(){
+  document.getElementById("bggList").innerHTML=bggViews[bggIndex];
+  bggIndex=(bggIndex+1)%bggViews.length;
+}
+
+rotateBGGTile();
+setInterval(rotateBGGTile,CONFIG.rotateIntervalMs);
 
 /* ========== SPORTS SCORES ========== */
 const sportsAPIs={
@@ -639,11 +691,27 @@ async function fetchSportsDay(league,dayLabel,baseUrl,dateStr){
     const data=await res.json();
     
     if(data.events && data.events.length>0){
-      let html=`<strong>${league} - ${dayLabel}</strong><br>`;
-      data.events.forEach(event=>{
+      // Calculate combined win% for each game
+      const gamesWithWinPct=data.events.map(event=>{
         const comp=event.competitions[0];
         const homeTeam=comp.competitors.find(c=>c.homeAway==="home");
         const awayTeam=comp.competitors.find(c=>c.homeAway==="away");
+        
+        // Calculate win percentage for each team
+        const homeRecord=homeTeam.records?.[0];
+        const awayRecord=awayTeam.records?.[0];
+        const homeWinPct=homeRecord?.stats?.find(s=>s.name==="winPercent")?.value||0;
+        const awayWinPct=awayRecord?.stats?.find(s=>s.name==="winPercent")?.value||0;
+        const combinedWinPct=parseFloat(homeWinPct)+parseFloat(awayWinPct);
+        
+        return {event,comp,homeTeam,awayTeam,combinedWinPct};
+      });
+      
+      // Sort by combined win% descending
+      gamesWithWinPct.sort((a,b)=>b.combinedWinPct-a.combinedWinPct);
+      
+      let html=`<strong>${league} - ${dayLabel}</strong><br>`;
+      gamesWithWinPct.forEach(({comp,homeTeam,awayTeam})=>{
         const status=comp.status.type.description;
         const gameTime=comp.status.type.state==="pre"?new Date(comp.date).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"";
         const timeStr=gameTime?` ${gameTime}`:"";
