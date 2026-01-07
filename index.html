@@ -81,7 +81,12 @@ body{
 .tile-slider{display:none;}
 
 /* BGG LIST */
-#bggList{text-align:left;width:90%;overflow:auto;font-size:1.2vw;}
+#bggList{width:100%;height:100%;overflow:auto;}
+#bggGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4vh;width:100%;height:100%;padding:0.5vh;overflow:auto;}
+.bgg-card{background:#222;border:1px solid #333;border-radius:0.5vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.5vh;position:relative;overflow:hidden;aspect-ratio:1/1;}
+.bgg-rank{position:absolute;top:0.2vh;left:0.2vh;background:#000;color:#fff;font-weight:bold;font-size:0.6vw;padding:0.2vh 0.3vh;border-radius:0.2vh;z-index:10;}
+.bgg-card img{width:80%;height:80%;object-fit:cover;margin-bottom:0.3vh;border-radius:0.3vh;}
+.bgg-info{font-size:0.5vw;text-align:center;color:#ccc;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;width:100%;}
 
 /* SPORTS TEAM SCHEDULE */
 #sportsContent{display:flex;flex-direction:column;width:95%;height:95%;overflow:hidden;font-size:0.7vw;text-align:left;}
@@ -136,7 +141,7 @@ body{
 <!-- Bottom row tiles -->
 <div class="tile" id="tileCalendar"><div id="holidayCountdown"></div><div id="calendar"></div><div id="upcomingHolidays"></div></div>
 <div class="tile" id="tileBGG">
-  <div id="bggList">Loading Top 10 BGG…</div>
+  <div id="bggList"><div id="bggGrid">Loading Top 25...</div></div>
   <div class="tile-slider"><div class="tile-slider-fill" id="bggSlider"></div></div>
 </div>
 <div class="tile" id="tileFun">
@@ -798,33 +803,60 @@ function startTileSlider(sliderId, interval){
   },50);
 }
 
-/* ========== BOARD GAME GEEK TOP 10 ========== */
-const bggTop10=[
-  "1. Brass: Birmingham","2. Ark Nova","3. Pandemic Legacy: Season 1","4. Gloomhaven",
-  "5. Dune: Imperium","6. Twilight Imperium 4th","7. Dune: Imperium – Uprising",
-  "8. War of the Ring 2nd","9. Terraforming Mars","10. Star Wars: Rebellion"
+/* ========== BOARD GAME GEEK TOP 25 ========== */
+const BGG_TOP_25=[
+  {rank:1,name:'Brass: Birmingham',image:'https://cf.geekdo-images.com/ssLVxklP7smcAuch5NbZFQ__imagepage/img/WNrXV5hXiLz1M6dEPHw-Bwc3Y4E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3505132.jpg'},
+  {rank:2,name:'Ark Nova',image:'https://cf.geekdo-images.com/zxeRjiKuU_0BY-gKQFjZIQ__imagepage/img/lHl-vDRPyALGK5mzjEyVkp-_S3I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6294115.jpg'},
+  {rank:3,name:'Pandemic Legacy: Season 1',image:'https://cf.geekdo-images.com/wndsKfZQcVIbKZ03nVbUJg__imagepage/img/XhpXHj0yKYXx3KeQ_63gMqLVBo8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2452841.jpg'},
+  {rank:4,name:'Gloomhaven',image:'https://cf.geekdo-images.com/PrgvAVnDHJbHvFEaV1q1Iw__imagepage/img/tL-F1WhWaBUUK4DDFSX6CaL9EYk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2437871.jpg'},
+  {rank:5,name:'Dune: Imperium',image:'https://cf.geekdo-images.com/TnUvRVDusVcROeDP73UC_A__imagepage/img/KHc8BHdXVfaYwVWUEPPNtqO6-Eg=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5666597.jpg'},
+  {rank:6,name:'Twilight Imperium 4th',image:'https://cf.geekdo-images.com/4h1QyC-jYMQzh0uaqy3a_w__imagepage/img/1z96cObVEsAfJ4A_VrAy7XBBwWw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3727516.jpg'},
+  {rank:7,name:'Dune: Imperium – Uprising',image:'https://cf.geekdo-images.com/Aj_D-5KzYgTMXn0TwOc7qA__imagepage/img/NMcNT9phwrCH3SDcQYJEPF5A63w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6718999.jpg'},
+  {rank:8,name:'War of the Ring 2nd',image:'https://cf.geekdo-images.com/JMHcnvAjLHNdNxK7W7hJ1A__imagepage/img/5lVqB7xn3DG2rHj6M8lAqWzJqH8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5160037.jpg'},
+  {rank:9,name:'Terraforming Mars',image:'https://cf.geekdo-images.com/oMtSjfzUlYYCnhk_OZr0dA__imagepage/img/Sm_FzQhKoX4-Trc5k7cbVuPhxhA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3398571.jpg'},
+  {rank:10,name:'Star Wars: Rebellion',image:'https://cf.geekdo-images.com/_nHjbpKlGjCqEgbJtBzHsw__imagepage/img/EVKEeI5F2bBELq0-OFG7LE7Bvkk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2396598.jpg'},
+  {rank:11,name:'Agricola',image:'https://cf.geekdo-images.com/F0hlyKnx5s0humaQysM9zA__imagepage/img/Oy3ggbXWdUnlHxV-5X0vWxZg-_E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5123242.jpg'},
+  {rank:12,name:'Dominion',image:'https://cf.geekdo-images.com/iw7jLOq07Yd5Gte1d3VQOA__imagepage/img/hBNqiCQXYTGNNgV_8s-HCfJSKTw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic4697900.jpg'},
+  {rank:13,name:'7 Wonders',image:'https://cf.geekdo-images.com/B0F4snJHZHhg8uHVknDViA__imagepage/img/0tPOvlqNH-jyb8qqxT5sKLm9yEA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic860217.jpg'},
+  {rank:14,name:'Carcassonne',image:'https://cf.geekdo-images.com/rax5TCu77xiclqzqeHHfhw__imagepage/img/cZJbMB7pAg3kKDDEKuJ8nWGJ3J0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3122885.jpg'},
+  {rank:15,name:'Power Grid',image:'https://cf.geekdo-images.com/B0i2eV3lzDSIJcYLtKjTeA__imagepage/img/nCSrGmZEAx9-L8E2HVGmJSN9JQE=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5155124.jpg'},
+  {rank:16,name:'Innovation',image:'https://cf.geekdo-images.com/Vz4aXNyf3mXR9qATMx0J0A__imagepage/img/AkzrVCSp0uXmXt2hG4BxQaZmQ8w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1532154.jpg'},
+  {rank:17,name:'Ticket to Ride',image:'https://cf.geekdo-images.com/A5rMG_yM_b-OMkM1tnnYbA__imagepage/img/9wQxBQaHp9IZGNBxiUzLeELt-T4=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5900549.jpg'},
+  {rank:18,name:'Codenames',image:'https://cf.geekdo-images.com/D5VgarmHCd0SS03x4SHBYg__imagepage/img/w4VZQ4rKwP8CVJ3XnP08ZPwqg8Y=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2582706.jpg'},
+  {rank:19,name:'Puerto Rico',image:'https://cf.geekdo-images.com/i3tB6KREKSmCGJEWyaVHJA__imagepage/img/EH3JiCqWWJL6pNQdGkQFCwfm-3o=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1407726.jpg'},
+  {rank:20,name:'Food Chain Magnate',image:'https://cf.geekdo-images.com/EYdCLvH0mD_N7-g5OLqELg__imagepage/img/Q0-5C6QLs4xXqwLGhgxVt71nfLc=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5316558.jpg'},
+  {rank:21,name:'Splendor',image:'https://cf.geekdo-images.com/w6yKE37jZN7UjDHrDGr8Sw__imagepage/img/9H2_Yk6vX8Y3x3rJHYPQZz5h34g=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2449179.jpg'},
+  {rank:22,name:'Imperial 2030',image:'https://cf.geekdo-images.com/UgGWzVBGP8N6JV3SUdDL0Q__imagepage/img/XJk1G0qTDGJcM2GCo-EE8fKIzG8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic414216.jpg'},
+  {rank:23,name:'The Castles of Burgundy',image:'https://cf.geekdo-images.com/RTx1E6BvzTEf8umdBUjXiA__imagepage/img/vFSg3lcMqHwNh9xpPHM5IYqjPt0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3785264.jpg'},
+  {rank:24,name:'Twilight Struggle',image:'https://cf.geekdo-images.com/I0-SEWmakM-8SmT0ZrDnzQ__imagepage/img/RIqqGnvA3I7xKf1J8mfWEz-_B0I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic486635.jpg'},
+  {rank:25,name:'Azul',image:'https://cf.geekdo-images.com/aPjyaLg_CiHfQEwlqXJ4nA__imagepage/img/p_RgRZJHNcSDh7cYMm1a9j-sZ6w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3718275.jpg'}
 ];
 
-const spielDesJahres=[
-  "2024: Sky Team","2023: Dorfromantik","2022: Cascadia","2021: MicroMacro: Crime City",
-  "2020: Pictures","2019: Just One","2018: Azul","2017: Kingdomino",
-  "2016: Codenames","2015: Colt Express"
-];
-
-let bggViews=[
-  `<strong>BGG Top 10</strong><br>${bggTop10.join("<br>")}`,
-  `<strong>Spiel des Jahres<br>Last 10 Winners</strong><br>${spielDesJahres.join("<br>")}`
-];
 let bggIndex=0;
+
+function renderBGGGrid(){
+  const grid=document.getElementById('bggGrid');
+  grid.innerHTML='';
+  BGG_TOP_25.forEach((game)=>{
+    const card=document.createElement('div');
+    card.className='bgg-card';
+    
+    card.innerHTML=`
+      <div class="bgg-rank">${game.rank}</div>
+      <img src="${game.image}" onerror="this.src='https://via.placeholder.com/300x300?text=BGG'" alt="${game.name}">
+      <div class="bgg-info">${game.name}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
 
 function rotateBGGTile(){
   if(pauseStates.bgg) return;
-  document.getElementById("bggList").innerHTML=bggViews[bggIndex];
-  bggIndex=(bggIndex+1)%bggViews.length;
+  renderBGGGrid();
   startTileSlider("bggSlider",CONFIG.rotateIntervalMs);
 }
 
-rotateBGGTile();
+renderBGGGrid();
 setInterval(rotateBGGTile,CONFIG.rotateIntervalMs);
 
 /* ========== SPORTS TEAM SCHEDULE ========== */
@@ -867,7 +899,7 @@ async function loadTeamSchedule(team){
       const upcoming=sorted.filter(e=>
         e.competitions[0].status.type.state==='pre'&&
         new Date(e.date)>=now
-      ).slice(0,5);
+      ).slice(0,3);
       
       sportsScheduleData[team.id]={last:lastGame,upcoming:upcoming};
     }
