@@ -86,6 +86,15 @@ body{
 /* SPORTS SCORES */
 #sportsContent{text-align:left;width:90%;font-size:1.2vw;overflow-y:auto;overflow-x:hidden;max-height:90%;}
 
+/* TOP 25 RANKINGS GRID */
+#funGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.4vh;width:100%;height:100%;padding:0.5vh;overflow:auto;}
+.ranking-card{background:#222;border:1px solid #333;border-radius:0.5vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0.5vh;position:relative;overflow:hidden;aspect-ratio:1/1;}
+.ranking-rank{position:absolute;top:0.2vh;left:0.2vh;background:#000;color:#fff;font-weight:bold;font-size:0.6vw;padding:0.2vh 0.3vh;border-radius:0.2vh;z-index:10;}
+.ranking-card img{width:70%;height:70%;object-fit:contain;margin-bottom:0.3vh;}
+.ranking-info{font-size:0.5vw;text-align:center;color:#ccc;}
+.ranking-info .team-abbr{font-weight:bold;font-size:0.55vw;color:#fff;}
+.ranking-info .team-record{font-size:0.45vw;color:#888;}
+
 /* RESPONSIVE */
 @media(max-width:1024px){
   #clock{font-size:8vw;}
@@ -114,7 +123,7 @@ body{
   <div class="tile-slider"><div class="tile-slider-fill" id="bggSlider"></div></div>
 </div>
 <div class="tile" id="tileFun">
-  <div id="funText">Loading standings…</div>
+  <div id="funGrid">Loading Top 25...</div>
   <div class="tile-slider"><div class="tile-slider-fill" id="funSlider"></div></div>
 </div>
 <div class="tile" id="tileSports">
@@ -646,147 +655,118 @@ function updateMoonDisplay(){
 updateMoonDisplay();
 setInterval(updateMoonDisplay,60*60*1000); // Update every hour
 
-/* ========== ROTATING TILES ========== */
-let funTileViews=[];
-let funTileIndex=0;
+/* ========== TOP 25 RANKINGS GRID ========== */
+const LEAGUES={
+  basketball:{name:'NCAAB',type:'rankings',url:"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings"},
+  football:{name:'NCAAF',type:'rankings',url:"https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings"},
+  nba:{name:'NBA',type:'standings',url:"https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings"},
+  nfl:{name:'NFL',type:'standings',url:"https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings"},
+  nhl:{name:'NHL',type:'standings',url:"https://site.web.api.espn.com/apis/v2/sports/hockey/nhl/standings"},
+  mlb:{name:'MLB',type:'standings',url:"https://site.web.api.espn.com/apis/v2/sports/baseball/mlb/standings"}
+};
 
-function getTeamLogoUrl(league,abbr,teamId){
-  if(league==="NFL"){
-    // NFL uses team abbreviations in lowercase
-    return `https://static.www.nfl.com/league/api/clubs/logos/${abbr}`;
-  }else if(league==="NBA"){
-    // NBA uses numerical team IDs - extract just the number if needed
-    const numId=String(teamId).replace(/[^0-9]/g,'');
-    return `https://cdn.nba.com/logos/nba/${numId}/primary/L/logo.svg`;
-  }else if(league==="MLB"){
-    // MLB uses numerical team IDs - extract just the number if needed
-    const numId=String(teamId).replace(/[^0-9]/g,'');
-    return `https://www.mlbstatic.com/team-logos/${numId}.svg`;
-  }else if(league==="NHL"){
-    // NHL uses team abbreviations
-    return `https://assets.nhle.com/logos/nhl/svg/${abbr}_light.svg`;
-  }
-  return "";
-}
+let funCurrentKey='basketball';
+let funLeagueKeys=Object.keys(LEAGUES);
+let funLeagueIndex=0;
 
-async function loadStandingsForLeague(league,url){
+async function funFetchData(){
   try{
-    const res=await fetch(url);
-    const data=await res.json();
+    const response=await fetch(LEAGUES[funCurrentKey].url);
+    if(!response.ok) throw new Error('Network response not ok');
+    const data=await response.json();
     
-    if(data.children && data.children.length>0){
-      const isCollege=league==="NCAAF" || league==="NCAAM";
-      
-      if(isCollege){
-        // For college: show AP Top 25 ranked teams
-        let html=`<strong>${league} AP Top 25</strong><br>`;
-        let allTeams=[];
-        
-        // Collect all teams from all conferences
-        for(const child of data.children){
-          if(child.standings && child.standings.entries){
-            allTeams=allTeams.concat(child.standings.entries);
-          }
-        }
-        
-        // Filter to only AP ranked teams (rank 1-25) and sort by rank
-        const rankedTeams=allTeams.filter(team=>{
-          const rank=team.stats.find(s=>s.name==="rank")?.value;
-          return rank && rank>0 && rank<=25;
-        }).sort((a,b)=>{
-          const aRank=a.stats.find(s=>s.name==="rank")?.value||999;
-          const bRank=b.stats.find(s=>s.name==="rank")?.value||999;
-          return aRank-bRank;
-        });
-        
-        // Show all 25 or however many are available
-        rankedTeams.forEach((team)=>{
-          const teamName=team.team.abbreviation || team.team.displayName;
-          const wins=team.stats.find(s=>s.name==="wins")?.value||0;
-          const losses=team.stats.find(s=>s.name==="losses")?.value||0;
-          const rank=team.stats.find(s=>s.name==="rank")?.value||"--";
-          html+=`${rank}. ${teamName} ${wins}-${losses}<br>`;
-        });
-        
-        if(rankedTeams.length===0){
-          html+="No ranked teams available<br>";
-        }
-        
-        return html;
-      } else {
-        // For pro sports: show top 10 by record
-        let html=`<strong>${league} Top 10</strong><br>`;
-        let allTeams=[];
-        
-        // Collect all teams from all divisions/conferences
-        for(const child of data.children){
-          if(child.standings && child.standings.entries){
-            allTeams=allTeams.concat(child.standings.entries);
-          }
-        }
-        
-        // Sort by win percentage (best to worst)
-        allTeams.sort((a,b)=>{
-          const aWins=a.stats.find(s=>s.name==="wins")?.value||0;
-          const aLosses=a.stats.find(s=>s.name==="losses")?.value||0;
-          const bWins=b.stats.find(s=>s.name==="wins")?.value||0;
-          const bLosses=b.stats.find(s=>s.name==="losses")?.value||0;
-          const aWinPct=aWins/(aWins+aLosses)||0;
-          const bWinPct=bWins/(bWins+bLosses)||0;
-          return bWinPct-aWinPct;
-        });
-        
-        // Take top 10
-        const topTeams=allTeams.slice(0,10);
-        
-        topTeams.forEach((team,idx)=>{
-          const teamName=team.team.abbreviation || team.team.displayName;
-          const wins=team.stats.find(s=>s.name==="wins")?.value||0;
-          const losses=team.stats.find(s=>s.name==="losses")?.value||0;
-          const logoUrl=getTeamLogoUrl(league,team.team.abbreviation,team.team.id);
-          html+=`${idx+1}. <img src="${logoUrl}" style="width:1.5vw;height:1.5vw;vertical-align:middle;margin-right:0.3vw;" onerror="this.style.display='none'"> ${teamName} ${wins}-${losses}<br>`;
-        });
-        
-        return html;
+    let teamList=[];
+
+    if(LEAGUES[funCurrentKey].type==='rankings'){
+      const poll=data.rankings?.find(p=>p.shortName==='AP' || p.name?.includes('Associated Press'))||data.rankings?.[0];
+      if(poll && poll.ranks){
+        teamList=poll.ranks.map(r=>({
+          rank:r.current,
+          name:r.team?.location||r.team?.displayName||r.team?.shortDisplayName||"Unknown",
+          short:r.team?.abbreviation||r.team?.shortDisplayName||"UNK",
+          logo:r.team?.logo||(r.team?.logos?r.team.logos[0].href:null),
+          record:r.recordSummary||"0-0"
+        }));
       }
+    }else{
+      const allTeams=[];
+      const findEntries=(obj)=>{
+        let entries=[];
+        if(obj.standings && obj.standings.entries) entries=entries.concat(obj.standings.entries);
+        if(obj.children && Array.isArray(obj.children)){
+          obj.children.forEach(child=>entries=entries.concat(findEntries(child)));
+        }
+        if(obj.entries && Array.isArray(obj.entries) && !obj.children) entries=entries.concat(obj.entries);
+        return entries;
+      };
+
+      const rawEntries=findEntries(data);
+      rawEntries.forEach(entry=>{
+        if(!entry.team) return;
+        const stats=entry.stats||[];
+        
+        const winPct=stats.find(s=>['winPercent','winPercentage','percentage'].includes(s.name))?.value||0;
+        const points=stats.find(s=>['points','pts'].includes(s.name))?.value||0;
+        
+        let recordStr="0-0";
+        const recordStat=stats.find(s=>['summary','record','total','overall'].includes(s.name));
+        if(recordStat){
+          recordStr=recordStat.displayValue||recordStat.value||"0-0";
+        }
+
+        allTeams.push({
+          name:entry.team.displayName||entry.team.name||"Unknown",
+          short:entry.team.abbreviation||entry.team.shortDisplayName||"UNK",
+          logo:entry.team.logos?.[0]?.href,
+          record:recordStr,
+          winPct:winPct,
+          points:points,
+          sortValue:funCurrentKey==='nhl'?points:winPct
+        });
+      });
+
+      allTeams.sort((a,b)=>b.sortValue-a.sortValue);
+      teamList=allTeams.slice(0,25).map((t,idx)=>({...t,rank:idx+1}));
     }
-  }catch(e){console.log(`Error fetching ${league} standings:`,e);}
-  return `<strong>${league} Top 10</strong><br>Unavailable`;
+
+    if(teamList.length===0) throw new Error('No teams found');
+    funRenderGrid(teamList);
+  }catch(err){
+    console.error("Fetch error:",err);
+    document.getElementById("funGrid").innerHTML="<div style='color:#f00;text-align:center;width:100%;height:100%;display:flex;align-items:center;justify-content:center;'>Data unavailable</div>";
+  }
 }
 
-async function updateFunTile(){
-  const standingsAPIs={
-    NBA:"https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings",
-    NFL:"https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings",
-    NHL:"https://site.web.api.espn.com/apis/v2/sports/hockey/nhl/standings",
-    MLB:"https://site.web.api.espn.com/apis/v2/sports/baseball/mlb/standings",
-    NCAAF:"https://site.web.api.espn.com/apis/v2/sports/football/college-football/standings",
-    NCAAM:"https://site.web.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/standings"
-  };
-  
-  funTileViews=[];
-  for(const [league,url] of Object.entries(standingsAPIs)){
-    const standings=await loadStandingsForLeague(league,url);
-    funTileViews.push(standings);
-  }
-  
-  if(funTileViews.length===0){
-    funTileViews=["No standings available"];
-  }
-  rotateFunTile();
+function funRenderGrid(teams){
+  const grid=document.getElementById('funGrid');
+  grid.innerHTML='';
+  teams.forEach((team)=>{
+    const card=document.createElement('div');
+    card.className='ranking-card';
+    const logo=team.logo||'https://a.espncdn.com/combiner/i?img=/i/teamlogos/default-team-logo-500.png';
+    
+    card.innerHTML=`
+      <div class="ranking-rank">${team.rank}</div>
+      <img src="${logo}" onerror="this.src='https://a.espncdn.com/combiner/i?img=/i/teamlogos/default-team-logo-500.png'">
+      <div class="ranking-info">
+        <div class="team-abbr">${team.short}</div>
+        <div class="team-record">${team.record}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
 }
 
-function rotateFunTile(){
+function rotateFunLeague(){
   if(pauseStates.fun) return;
-  if(funTileViews.length===0) return;
-  document.getElementById("funText").innerHTML=funTileViews[funTileIndex];
-  funTileIndex=(funTileIndex+1)%funTileViews.length;
-  startTileSlider("funSlider",CONFIG.rotateIntervalMs);
+  funLeagueIndex=(funLeagueIndex+1)%funLeagueKeys.length;
+  funCurrentKey=funLeagueKeys[funLeagueIndex];
+  funFetchData().then(()=>startTileSlider("funSlider",CONFIG.rotateIntervalMs));
 }
 
-updateFunTile();
-setInterval(rotateFunTile,CONFIG.rotateIntervalMs);
-setInterval(updateFunTile,10*60*1000); // Refresh every 10 minutes
+funFetchData();
+setInterval(rotateFunLeague,CONFIG.rotateIntervalMs);
+setInterval(funFetchData,10*60*1000); // Refresh every 10 minutes
 
 function startTileSlider(sliderId, interval){
   const fill=document.getElementById('globalTimerFill');
