@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Sports Schedule</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .nuggets-bg { background-color: #0E2240; }
+        .avs-bg { background-color: #6F263D; }
+        .duke-bg { background-color: #003087; }
+        .broncos-bg { background-color: #FB4F14; }
+        .csu-bg { background-color: #1E4D2B; }
+        .rockies-bg { background-color: #330066; }
+
+        /* ===== LAYOUT: fixed top bar + scroll container below ===== */
+        /* Top bar is position:fixed so it never moves */
+        .site-header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            background: white;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 2px 8px rgba(2,6,23,.06);
+        }
+
+        /* The scroll container fills the remaining viewport below the top bar.
+           BOTH horizontal & vertical overflow happen here.
+           This is the same pattern as html.html's working sticky table. */
+        #table-scroll {
+            overflow: auto;
+            /* height is set dynamically by JS after top bar renders */
+        }
+
+        /* ===== STICKY HEADERS (just like html.html) ===== */
+        /* Each th sticks to the TOP of #table-scroll — works because
+           #table-scroll is the scroll container (overflow:auto). */
+        thead.sticky-header th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            vertical-align: middle;
+        }
+
+        /* Left-sticky date column (horizontal scroll) */
+        thead.sticky-header th:first-child,
+        tbody td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 11;
+            background: white;
+        }
+
+        /* Top-left corner cell sits above both sticky axes */
+        thead.sticky-header th:first-child {
+            z-index: 12;
+        }
+
+        /* Visual hint when dragging over a header */
+        th.drag-over { outline: 2px dashed #3b82f6; }
+
+        .sticky-header { background: white; }
+
+        tr:nth-child(even) { background-color: #f9fafb; }
+        .logo-img { width: 42px; height: 42px; object-fit: contain; }
+        .header-logo { width: 28px; height: 28px; object-fit: contain; margin: 0 auto; }
+        .date-cell { min-width: 64px; }
+        .today-row { border-left: 4px solid #3b82f6; background-color: #eff6ff !important; }
+        html { scroll-behavior: smooth; }
+
+        /* Draggable Styles */
+        .dragging { opacity: 0.5; border: 2px dashed #3b82f6; }
+    </style>
+    <style>
+        /* Compact / responsive tweaks for narrow viewports (phones) */
+        @media (max-width: 640px) {
+            /* Reduce overall table typography so everything fits */
+            #table-scroll { font-size: 13px; }
+
+            /* Less padding inside header and cells */
+            thead.sticky-header th,
+            tbody td { padding: 6px 6px !important; }
+
+            /* Smaller logos */
+            .logo-img { width: 28px !important; height: 28px !important; }
+            .header-logo { width: 18px !important; height: 18px !important; }
+
+            /* Narrow the date column */
+            .date-cell { min-width: 64px !important; }
+
+            /* Tighter header spacing */
+            .site-header { padding: 8px 12px !important; }
+            .site-header h1 { font-size: 1rem !important; }
+
+            /* Reduce gaps inside cells */
+            td .flex { gap: 6px !important; }
+
+            /* Allow table to compress more on small screens */
+            #table-scroll table { min-width: 600px !important; }
+        }
+
+        /* Also add a medium-width compacting breakpoint */
+        @media (max-width: 920px) {
+            #table-scroll { font-size: 14px; }
+            thead.sticky-header th, tbody td { padding: 8px 8px !important; }
+            .logo-img { width: 34px !important; height: 34px !important; }
+            .header-logo { width: 22px !important; height: 22px !important; }
+            #table-scroll table { min-width: 800px !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900" style="margin:0;overflow:hidden;height:100vh">
+        <header id="topBar" class="site-header flex flex-col md:flex-row items-center justify-between gap-4 px-4 py-2">
+            <div class="text-center md:text-left">
+                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight uppercase italic text-gray-800 leading-none">Master Sports Schedule</h1>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="toggleOrderModal()" class="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-full shadow hover:bg-gray-700 transition-all active:scale-95 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
+                    ORDER TEAMS
+                </button>
+                <button onclick="scrollToToday()" class="px-6 py-2 bg-blue-600 text-white text-xs font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all active:scale-95">
+                    JUMP TO TODAY
+                </button>
+            </div>
+        </header>
+
+    <!-- Spacer so content starts below the fixed header -->
+    <div id="header-spacer"></div>
+
+    <div class="max-w-7xl mx-auto px-2 md:px-8">
+
+        <!-- Team Ordering Modal -->
+        <div id="order-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold uppercase tracking-tight">Set Column Order</h2>
+                    <button onclick="toggleOrderModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+                </div>
+                <p class="text-xs text-gray-500 mb-4">Drag and drop teams to reorder columns.</p>
+                <ul id="draggable-list" class="space-y-2">
+                    <!-- Teams injected here -->
+                </ul>
+                <div class="mt-6 flex gap-2">
+                    <button onclick="saveAndReorder()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">SAVE ORDER</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="mt-4 font-bold text-gray-600 animate-pulse uppercase tracking-widest text-sm">Syncing All Teams...</p>
+        </div>
+
+        <div id="content" class="hidden">
+            <div class="bg-white rounded-xl shadow-xl border border-gray-200">
+                <!-- #table-scroll is the SOLE scroll container (like html.html's div with max-height + overflow:auto).
+                     Its height is set by JS to fill the viewport below the fixed top bar. -->
+                <div id="table-scroll">
+                    <table class="w-full text-center border-collapse table-fixed min-w-[1000px]">
+                        <thead id="table-head" class="sticky-header shadow-md">
+                            <!-- Headers injected dynamically -->
+                        </thead>
+                        <tbody id="master-list" class="divide-y divide-gray-100">
+                            <!-- Data injected here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="error-display" class="hidden mt-4 p-6 bg-white border border-red-200 rounded-xl shadow-lg text-center">
+            <h3 class="font-bold text-red-600">Sync Error</h3>
+            <p class="text-sm text-gray-600">Unable to reach sports data feeds.</p>
+            <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded">RETRY</button>
+        </div>
+    </div><!-- end max-w-7xl -->
+
+    <script>
+        let TEAMS = [
+            { key: "nba", id: "7", sport: "basketball", league: "nba", accent: "text-blue-700 bg-blue-700", bgClass: "nuggets-bg", img: "https://a.espncdn.com/i/teamlogos/nba/500/den.png", name: "Nuggets" },
+            { key: "nhl", id: "21", sport: "hockey", league: "nhl", accent: "text-red-800 bg-red-800", bgClass: "avs-bg", img: "https://a.espncdn.com/i/teamlogos/nhl/500/col.png", name: "Avalanche" },
+            { key: "nfl", id: "7", sport: "football", league: "nfl", accent: "text-orange-700 bg-orange-700", bgClass: "broncos-bg", img: "https://a.espncdn.com/i/teamlogos/nfl/500/den.png", name: "Broncos" },
+            { key: "duke", id: "150", sport: "basketball", league: "mens-college-basketball", accent: "text-blue-900 bg-blue-900", bgClass: "duke-bg", img: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", name: "Duke" },
+            { key: "csu", id: "36", sport: "basketball", league: "mens-college-basketball", accent: "text-green-800 bg-green-800", bgClass: "csu-bg", img: "https://a.espncdn.com/i/teamlogos/ncaa/500/36.png", name: "CSU" },
+            { key: "mlb", id: "27", sport: "baseball", league: "mlb", accent: "text-purple-900 bg-purple-900", bgClass: "rockies-bg", img: "https://a.espncdn.com/i/teamlogos/mlb/500/col.png", name: "Rockies" }
+        ];
+
+        let CACHED_SCHEDULES = {};
+
+        function toggleOrderModal() {
+            const modal = document.getElementById('order-modal');
+            modal.classList.toggle('hidden');
+            if (!modal.classList.contains('hidden')) {
+                renderDraggableList();
+            }
+        }
+
+        function renderDraggableList() {
+            const list = document.getElementById('draggable-list');
+            list.innerHTML = TEAMS.map(team => `
+                <li draggable="true" data-key="${team.key}" class="flex items-center gap-3 p-2 bg-gray-50 border border-gray-200 rounded-xl cursor-move active:scale-[0.98] transition-all">
+                    <div class="w-8 h-8 rounded-full ${team.bgClass} flex items-center justify-center p-1 overflow-hidden">
+                        <img src="${team.img}" class="w-full h-full object-contain" alt="${team.name}">
+                    </div>
+                    <span class="font-bold text-sm uppercase tracking-tight truncate max-w-[120px]">${team.name}</span>
+                    <div class="ml-auto text-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                    </div>
+                </li>
+            `).join('');
+
+            // Add Drag and Drop Events
+            const items = list.querySelectorAll('li');
+            items.forEach(item => {
+                item.addEventListener('dragstart', () => item.classList.add('dragging'));
+                item.addEventListener('dragend', () => item.classList.remove('dragging'));
+            });
+
+            list.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(list, e.clientY);
+                const draggable = document.querySelector('.dragging');
+                if (afterElement == null) {
+                    list.appendChild(draggable);
+                } else {
+                    list.insertBefore(draggable, afterElement);
+                }
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function saveAndReorder() {
+            const listItems = [...document.querySelectorAll('#draggable-list li')];
+            const newKeys = listItems.map(li => li.dataset.key);
+            
+            // Reorder the TEAMS array based on new keys
+            TEAMS = newKeys.map(key => TEAMS.find(t => t.key === key));
+            
+            toggleOrderModal();
+            renderTable();
+        }
+
+        function scrollToToday() {
+            const todayEl = document.querySelector('.today-row');
+            const scrollEl = document.getElementById('table-scroll');
+            if (todayEl && scrollEl) {
+                // Scroll within the table scroll container, not the page
+                const rowTop = todayEl.offsetTop;
+                const headerRow = document.querySelector('thead.sticky-header');
+                const headerH = headerRow ? headerRow.offsetHeight : 60;
+                scrollEl.scrollTo({ top: rowTop - headerH - 8, behavior: 'smooth' });
+            }
+        }
+
+        function getScore(competitor) {
+            if (!competitor || !competitor.score) return 0;
+            if (typeof competitor.score === 'object') {
+                return parseInt(competitor.score.value || competitor.score.displayValue || 0);
+            }
+            return parseInt(competitor.score || 0);
+        }
+
+        async function fetchTeamSchedule(team) {
+            const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/schedule`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                const schedule = {};
+                if (!data || !data.events) return {};
+
+                data.events.forEach(event => {
+                    if (!event.date) return;
+                    const dateObj = new Date(event.date);
+                    // Use local date components to avoid UTC date-shift issues
+                    const dateKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`;
+                    const competition = event.competitions?.[0];
+                    if (!competition) return;
+
+                    const opponent = competition.competitors?.find(c => String(c.id) !== String(team.id));
+                    const teamData = competition.competitors?.find(c => String(c.id) === String(team.id));
+                    
+                    if (opponent && opponent.team) {
+                        const state = event.status?.type?.state;
+                        // Determine whether this date is before today (local)
+                        const now = new Date();
+                        const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                        const isPastDate = dateKey < todayKey && state !== 'in';
+                        const isFinishedOrLive = state === 'post' || state === 'in' || isPastDate;
+
+                        let displayStatus = event.status?.type?.shortDetail || "Scheduled";
+
+                        if (isFinishedOrLive) {
+                            const teamScore = getScore(teamData);
+                            const oppScore = getScore(opponent);
+                            const resultChar = state === 'in' ? 'LIVE' : (teamScore > oppScore ? 'W' : (teamScore < oppScore ? 'L' : 'T'));
+                            displayStatus = `${resultChar} ${teamScore}-${oppScore}`;
+                        }
+
+                        schedule[dateKey] = {
+                            logo: opponent.team.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/${team.league}/500/${opponent.team.abbreviation?.toLowerCase()}.png`,
+                            isAway: opponent.homeAway === 'home',
+                            time: (isFinishedOrLive && state !== 'in') ? 'Final' : dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+                            status: displayStatus,
+                            isPost: state === 'post' || isPastDate,
+                            isLive: state === 'in',
+                            accent: team.accent
+                        };
+                    }
+                });
+                return schedule;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        /* Size the scroll container so it fills the viewport below the fixed top bar.
+           This is the KEY to making sticky headers work — the scroll container must
+           have a defined height and overflow:auto, exactly like html.html. */
+        function sizeScrollContainer(){
+            const topBar = document.getElementById('topBar');
+            const spacer = document.getElementById('header-spacer');
+            const scrollEl = document.getElementById('table-scroll');
+            if (!topBar) return;
+            const barH = topBar.offsetHeight;
+            // Push content below fixed header
+            if (spacer) spacer.style.height = barH + 'px';
+            // Fill remaining viewport height
+            if (scrollEl) scrollEl.style.height = (window.innerHeight - barH - 24) + 'px';
+        }
+
+        function renderTable() {
+            const listEl = document.getElementById('master-list');
+            const headEl = document.getElementById('table-head');
+            const now = new Date();
+            const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+            // Render Header
+            headEl.innerHTML = `
+                <tr class="bg-white border-b-2 border-gray-200">
+                    <th class="w-16 p-2 border-r border-gray-200 text-[10px] uppercase tracking-widest text-left font-bold text-gray-800">Date</th>
+                    ${TEAMS.map(team => `
+                        <th data-key="${team.key}" class="p-2 border-r border-gray-200 draggable-col" draggable="true">
+                            <div class="flex flex-col items-center justify-center gap-1">
+                                <div class="w-8 h-8 rounded-full ${team.bgClass} flex items-center justify-center p-1.5 overflow-hidden">
+                                    <img src="${team.img}" class="w-full h-full object-contain" alt="${team.name}">
+                                </div>
+                                <span class="text-xs font-bold uppercase tracking-tight text-gray-800">${team.name}</span>
+                            </div>
+                        </th>
+                    `).join('')}
+                </tr>
+            `;
+
+            // Attach drag handlers to header columns so users can drag to reorder columns
+            (function attachHeaderDrag() {
+                const headers = headEl.querySelectorAll('th.draggable-col');
+                let dragKey = null;
+
+                headers.forEach(h => {
+                    h.addEventListener('dragstart', (e) => {
+                        dragKey = h.dataset.key;
+                        e.dataTransfer.effectAllowed = 'move';
+                        try { e.dataTransfer.setData('text/plain', dragKey); } catch (_) {}
+                        h.classList.add('dragging');
+                    });
+
+                    h.addEventListener('dragend', () => {
+                        dragKey = null;
+                        headers.forEach(x => x.classList.remove('dragging','drag-over'));
+                    });
+
+                    h.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        headers.forEach(x => x.classList.remove('drag-over'));
+                        h.classList.add('drag-over');
+                    });
+
+                    h.addEventListener('dragleave', () => {
+                        h.classList.remove('drag-over');
+                    });
+
+                    h.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        const sourceKey = e.dataTransfer.getData('text/plain') || dragKey;
+                        const targetKey = h.dataset.key;
+                        if (!sourceKey || !targetKey || sourceKey === targetKey) return;
+
+                        // Reorder TEAMS: move source to position of target
+                        const srcIndex = TEAMS.findIndex(t => t.key === sourceKey);
+                        const tgtIndex = TEAMS.findIndex(t => t.key === targetKey);
+                        if (srcIndex === -1 || tgtIndex === -1) return;
+
+                        const [moved] = TEAMS.splice(srcIndex, 1);
+                        TEAMS.splice(tgtIndex, 0, moved);
+
+                        // Re-render table with new order
+                        renderTable();
+                    });
+                });
+            })();
+
+            // Collect all unique dates
+            const allDates = [...new Set(TEAMS.flatMap(t => Object.keys(CACHED_SCHEDULES[t.key] || {})))].sort();
+
+            if (allDates.length === 0) return;
+
+            listEl.innerHTML = allDates.map(dateKey => {
+                const [y, m, d] = dateKey.split('-');
+                const dObj = new Date(y, m - 1, d);
+                const isToday = dateKey === todayKey;
+                const weekday = dObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const monthDay = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                return `
+                    <tr class="${isToday ? 'today-row' : ''} transition-colors" data-date="${dateKey}">
+                        <td class="p-2 border-r border-gray-100 bg-gray-50/30 date-cell text-left">
+                            <div class="flex flex-col leading-none">
+                                <span class="text-[8px] font-black text-blue-600 uppercase mb-0.5">${weekday}</span>
+                                <span class="text-xs font-bold text-gray-800">${monthDay}</span>
+                            </div>
+                        </td>
+                        ${TEAMS.map(team => {
+                            const game = CACHED_SCHEDULES[team.key][dateKey];
+                            if (!game) return `<td class="p-1 border-r border-gray-100"><div class="py-6 opacity-5 grayscale">—</div></td>`;
+                            
+                            let statusClass = 'text-gray-400 font-bold';
+                            if (game.isLive) statusClass = 'text-orange-600 font-black animate-pulse';
+                            else if (game.isPost) {
+                                if (game.status.startsWith('W')) statusClass = 'text-green-600 font-bold';
+                                else if (game.status.startsWith('L')) statusClass = 'text-red-600 font-bold';
+                                else statusClass = 'text-gray-700 font-bold';
+                            }
+
+                            // Determine cell background based on win/loss for finished games
+                            const isWin = game.status && game.status.startsWith && game.status.startsWith('W');
+                            const isLoss = game.status && game.status.startsWith && game.status.startsWith('L');
+                            const cellBg = isWin ? 'bg-green-50 rounded-lg' : (isLoss ? 'bg-red-50 rounded-lg' : '');
+
+                            // Use emoji for location: plane for away, house for home
+                            const locationEmoji = game.isAway ? '✈️' : '🏠';
+
+                            return `
+                                <td class="p-1 border-r border-gray-100">
+                                    <div class="flex flex-col items-center justify-center py-2 px-1 ${cellBg}">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-[12px] font-black px-1 py-0.5 rounded ${game.accent} bg-opacity-10" title="${game.isAway ? 'Away' : 'Home'}">${locationEmoji}</span>
+                                            <span class="text-[7px] text-gray-400 font-bold">${game.time}</span>
+                                        </div>
+                                        <img src="${game.logo}" class="logo-img" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
+                                        <div class="text-[8px] uppercase tracking-tighter mt-1 ${statusClass}">${game.status}</div>
+                                    </div>
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `;
+            }).join('');
+
+            // Scroll Logic
+            if (!document.querySelector('.today-row')) {
+                const rows = document.querySelectorAll('#master-list tr');
+                for (let row of rows) {
+                    if (row.dataset.date >= todayKey) {
+                        row.classList.add('today-row');
+                        break;
+                    }
+                }
+            }
+            // Size scroll container so sticky headers work
+            sizeScrollContainer();
+            setTimeout(scrollToToday, 300);
+        }
+
+        async function init() {
+            const loadingEl = document.getElementById('loading');
+            const contentEl = document.getElementById('content');
+            const errorEl = document.getElementById('error-display');
+
+            try {
+                const results = await Promise.all(TEAMS.map(t => fetchTeamSchedule(t)));
+                TEAMS.forEach((t, i) => { CACHED_SCHEDULES[t.key] = results[i] || {}; });
+
+                loadingEl.classList.add('hidden');
+                contentEl.classList.remove('hidden');
+                renderTable();
+                // Size scroll container so sticky headers work
+                sizeScrollContainer();
+
+            } catch (err) {
+                loadingEl.classList.add('hidden');
+                errorEl.classList.remove('hidden');
+            }
+        }
+        window.onload = init;
+        window.addEventListener('resize', sizeScrollContainer);
+    </script>
+</body>
+</html>
