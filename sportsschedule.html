@@ -2,513 +2,503 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Master Sports Schedule</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .nuggets-bg { background-color: #0E2240; }
-        .avs-bg { background-color: #6F263D; }
-        .duke-bg { background-color: #003087; }
-        .broncos-bg { background-color: #FB4F14; }
-        .csu-bg { background-color: #1E4D2B; }
-        .rockies-bg { background-color: #330066; }
-
-        /* ===== LAYOUT: fixed top bar + scroll container below ===== */
-        /* Top bar is position:fixed so it never moves */
-        .site-header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            background: white;
-            backdrop-filter: blur(4px);
-            box-shadow: 0 2px 8px rgba(2,6,23,.06);
+        body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        /* HEADER */
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #e2e8f0;
+            z-index: 60;
+            flex-shrink: 0;
         }
 
-        /* The scroll container fills the remaining viewport below the top bar.
-           BOTH horizontal & vertical overflow happen here.
-           This is the same pattern as html.html's working sticky table. */
-        #table-scroll {
+        /* MAIN LAYOUT */
+        #content-area {
+            flex: 1;
+            overflow: hidden; 
+            position: relative;
+            background: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- TABLE STYLING --- */
+        .table-view {
             overflow: auto;
-            /* height is set dynamically by JS after top bar renders */
+            background: white;
+            flex: 1;
+            border: 1px solid #cbd5e1;
+            -webkit-overflow-scrolling: touch; 
+            scroll-behavior: smooth;
+        }
+        
+        table {
+            border-collapse: separate; 
+            border-spacing: 0;
+            min-width: 100%;
         }
 
-        /* ===== STICKY HEADERS (just like html.html) ===== */
-        /* Each th sticks to the TOP of #table-scroll — works because
-           #table-scroll is the scroll container (overflow:auto). */
-        thead.sticky-header th {
+        th, td {
+            padding: 0;
+            text-align: center;
+            vertical-align: middle;
+            background: #fff;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            box-sizing: border-box;
+        }
+
+        /* --- STICKY LOGIC --- */
+        thead th {
             position: sticky;
             top: 0;
-            z-index: 10;
-            background: white;
-            vertical-align: middle;
+            z-index: 30;
+            background: #f8fafc;
+            border-bottom: 2px solid #cbd5e1;
         }
 
-        /* Left-sticky date column (horizontal scroll) */
-        thead.sticky-header th:first-child,
-        tbody td:first-child {
+        tbody td:first-child, thead th:first-child {
             position: sticky;
             left: 0;
-            z-index: 11;
-            background: white;
+            z-index: 40;
+            background: #f8fafc;
+            border-right: 2px solid #cbd5e1;
         }
 
-        /* Top-left corner cell sits above both sticky axes */
-        thead.sticky-header th:first-child {
-            z-index: 12;
+        thead th:first-child {
+            z-index: 50; 
+            background: #f1f5f9;
         }
 
-        /* Visual hint when dragging over a header */
-        th.drag-over { outline: 2px dashed #3b82f6; }
+        /* Sizing - Standard Mode */
+        .mode-standard th { height: 60px; }
+        .mode-standard td { height: 70px; }
+        .mode-standard td:first-child, .mode-standard th:first-child { min-width: 70px; max-width: 70px; }
+        .mode-standard td:not(:first-child) { min-width: 100px; }
 
-        .sticky-header { background: white; }
+        /* Sizing - Flipped Mode */
+        .mode-flipped th { height: 50px; }
+        .mode-flipped td { height: 60px; }
+        /* Clean Left Column: Just Logo */
+        .mode-flipped td:first-child, .mode-flipped th:first-child { min-width: 60px; max-width: 60px; padding: 0; } 
+        .mode-flipped td:not(:first-child), .mode-flipped th:not(:first-child) { min-width: 100px; }
 
-        tr:nth-child(even) { background-color: #f9fafb; }
-        .logo-img { width: 42px; height: 42px; object-fit: contain; }
-        .header-logo { width: 28px; height: 28px; object-fit: contain; margin: 0 auto; }
-        .date-cell { min-width: 64px; }
-        .today-row { border-left: 4px solid #3b82f6; background-color: #eff6ff !important; }
-        html { scroll-behavior: smooth; }
-
-        /* Draggable Styles */
-        .dragging { opacity: 0.5; border: 2px dashed #3b82f6; }
-    </style>
-    <style>
-        /* Compact / responsive tweaks for narrow viewports (phones) */
-        @media (max-width: 640px) {
-            /* Reduce overall table typography so everything fits */
-            #table-scroll { font-size: 13px; }
-
-            /* Less padding inside header and cells */
-            thead.sticky-header th,
-            tbody td { padding: 6px 6px !important; }
-
-            /* Smaller logos */
-            .logo-img { width: 28px !important; height: 28px !important; }
-            .header-logo { width: 18px !important; height: 18px !important; }
-
-            /* Narrow the date column */
-            .date-cell { min-width: 64px !important; }
-
-            /* Tighter header spacing */
-            .site-header { padding: 8px 12px !important; }
-            .site-header h1 { font-size: 1rem !important; }
-
-            /* Reduce gaps inside cells */
-            td .flex { gap: 6px !important; }
-
-            /* Allow table to compress more on small screens */
-            #table-scroll table { min-width: 600px !important; }
+        /* Game Card Styling */
+        .game-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            font-size: 11px;
+            padding: 2px;
         }
 
-        /* Also add a medium-width compacting breakpoint */
-        @media (max-width: 920px) {
-            #table-scroll { font-size: 14px; }
-            thead.sticky-header th, tbody td { padding: 8px 8px !important; }
-            .logo-img { width: 34px !important; height: 34px !important; }
-            .header-logo { width: 22px !important; height: 22px !important; }
-            #table-scroll table { min-width: 800px !important; }
+        .status-scheduled { color: #64748b; font-weight: 600; font-size: 10px; }
+        .status-live { color: #ea580c; font-weight: 800; animation: pulse 1.5s infinite; font-size: 11px; }
+        .status-win { color: #15803d; font-weight: 800; background: #dcfce7; width: 100%; height: 100%; font-size: 12px; }
+        .status-loss { color: #b91c1c; font-weight: 800; background: #fee2e2; width: 100%; height: 100%; font-size: 12px; }
+        
+        .today-highlight { background-color: #eff6ff !important; }
+        .today-highlight-border { border-left: 4px solid #3b82f6 !important; background-color: #eff6ff !important; }
+        
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-900" style="margin:0;overflow:hidden;height:100vh">
-        <header id="topBar" class="site-header flex flex-col md:flex-row items-center justify-between gap-4 px-4 py-2">
-            <div class="text-center md:text-left">
-                <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight uppercase italic text-gray-800 leading-none">Master Sports Schedule</h1>
+<body>
+
+    <!-- HEADER -->
+    <header class="h-14 md:h-16 flex items-center justify-between px-3 md:px-6">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-lg shadow-sm">S</div>
+            <h1 class="text-sm md:text-lg font-bold tracking-tight text-slate-800 uppercase hidden sm:block">Master Schedule</h1>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="toggleFlip()" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-all shadow-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span id="flip-btn-text" class="hidden sm:inline">AXIS</span>
+            </button>
+            <button onclick="openModal()" class="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-all shadow-sm">
+                TEAMS
+            </button>
+            <button id="today-btn" onclick="scrollToToday()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-all shadow-sm">
+                TODAY
+            </button>
+        </div>
+    </header>
+
+    <div id="content-area">
+        <div id="loading" class="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center">
+            <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Syncing Intelligence...</span>
+        </div>
+
+        <div id="table-container" class="table-view hidden">
+            <table id="main-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="manage-modal" class="hidden modal-overlay">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col m-4 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800">Manage Teams</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
             </div>
-            <div class="flex gap-2">
-                <button onclick="toggleOrderModal()" class="px-4 py-2 bg-gray-800 text-white text-xs font-bold rounded-full shadow hover:bg-gray-700 transition-all active:scale-95 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5"/><path d="M7 9l5-5 5 5"/></svg>
-                    ORDER TEAMS
-                </button>
-                <button onclick="scrollToToday()" class="px-6 py-2 bg-blue-600 text-white text-xs font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all active:scale-95">
-                    JUMP TO TODAY
-                </button>
-            </div>
-        </header>
-
-    <!-- Spacer so content starts below the fixed header -->
-    <div id="header-spacer"></div>
-
-    <div class="max-w-7xl mx-auto px-2 md:px-8">
-
-        <!-- Team Ordering Modal -->
-        <div id="order-modal" class="fixed inset-0 bg-black/50 z-[100] hidden flex items-center justify-center p-4">
-            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 overflow-hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold uppercase tracking-tight">Set Column Order</h2>
-                    <button onclick="toggleOrderModal()" class="text-gray-400 hover:text-gray-600">✕</button>
+            
+            <div class="p-4 border-b border-slate-100 bg-white">
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="search-input" placeholder="Search (e.g. 'Alabama' or 'Duke')" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    <button onclick="searchTeams()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm">Search</button>
                 </div>
-                <p class="text-xs text-gray-500 mb-4">Drag and drop teams to reorder columns.</p>
-                <ul id="draggable-list" class="space-y-2">
-                    <!-- Teams injected here -->
-                </ul>
-                <div class="mt-6 flex gap-2">
-                    <button onclick="saveAndReorder()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors">SAVE ORDER</button>
-                </div>
+                <div id="search-results" class="max-h-40 overflow-y-auto space-y-1"></div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 bg-slate-50">
+                <p class="text-xs font-bold text-slate-400 uppercase mb-2">Tracked Teams (Drag to Reorder)</p>
+                <ul id="team-list" class="space-y-2"></ul>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 flex justify-end gap-2 bg-white">
+                <button onclick="closeModal()" class="px-4 py-2 text-slate-500 text-sm font-bold hover:bg-slate-50 rounded-lg">Cancel</button>
+                <button onclick="saveAndReload()" class="px-6 py-2 bg-slate-900 text-white text-sm font-bold rounded-lg hover:bg-slate-800 shadow-sm">Save Changes</button>
             </div>
         </div>
-
-        <div id="loading" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
-            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <p class="mt-4 font-bold text-gray-600 animate-pulse uppercase tracking-widest text-sm">Syncing All Teams...</p>
-        </div>
-
-        <div id="content" class="hidden">
-            <div class="bg-white rounded-xl shadow-xl border border-gray-200">
-                <!-- #table-scroll is the SOLE scroll container (like html.html's div with max-height + overflow:auto).
-                     Its height is set by JS to fill the viewport below the fixed top bar. -->
-                <div id="table-scroll">
-                    <table class="w-full text-center border-collapse table-fixed min-w-[1000px]">
-                        <thead id="table-head" class="sticky-header shadow-md">
-                            <!-- Headers injected dynamically -->
-                        </thead>
-                        <tbody id="master-list" class="divide-y divide-gray-100">
-                            <!-- Data injected here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="error-display" class="hidden mt-4 p-6 bg-white border border-red-200 rounded-xl shadow-lg text-center">
-            <h3 class="font-bold text-red-600">Sync Error</h3>
-            <p class="text-sm text-gray-600">Unable to reach sports data feeds.</p>
-            <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded">RETRY</button>
-        </div>
-    </div><!-- end max-w-7xl -->
+    </div>
 
     <script>
-        let TEAMS = [
-            { key: "nba", id: "7", sport: "basketball", league: "nba", accent: "text-blue-700 bg-blue-700", bgClass: "nuggets-bg", img: "https://a.espncdn.com/i/teamlogos/nba/500/den.png", name: "Nuggets" },
-            { key: "nhl", id: "21", sport: "hockey", league: "nhl", accent: "text-red-800 bg-red-800", bgClass: "avs-bg", img: "https://a.espncdn.com/i/teamlogos/nhl/500/col.png", name: "Avalanche" },
-            { key: "nfl", id: "7", sport: "football", league: "nfl", accent: "text-orange-700 bg-orange-700", bgClass: "broncos-bg", img: "https://a.espncdn.com/i/teamlogos/nfl/500/den.png", name: "Broncos" },
-            { key: "duke", id: "150", sport: "basketball", league: "mens-college-basketball", accent: "text-blue-900 bg-blue-900", bgClass: "duke-bg", img: "https://a.espncdn.com/i/teamlogos/ncaa/500/150.png", name: "Duke" },
-            { key: "csu", id: "36", sport: "basketball", league: "mens-college-basketball", accent: "text-green-800 bg-green-800", bgClass: "csu-bg", img: "https://a.espncdn.com/i/teamlogos/ncaa/500/36.png", name: "CSU" },
-            { key: "mlb", id: "27", sport: "baseball", league: "mlb", accent: "text-purple-900 bg-purple-900", bgClass: "rockies-bg", img: "https://a.espncdn.com/i/teamlogos/mlb/500/col.png", name: "Rockies" }
+        const DEFAULT_TEAMS = [
+            { id: "7", sport: "football", league: "nfl", name: "Broncos", logo: "https://a.espncdn.com/i/teamlogos/nfl/500/den.png" },
+            { id: "7", sport: "basketball", league: "nba", name: "Nuggets", logo: "https://a.espncdn.com/i/teamlogos/nba/500/den.png" },
+            { id: "21", sport: "hockey", league: "nhl", name: "Avalanche", logo: "https://a.espncdn.com/i/teamlogos/nhl/500/col.png" },
+            { id: "27", sport: "baseball", league: "mlb", name: "Rockies", logo: "https://a.espncdn.com/i/teamlogos/mlb/500/col.png" }
         ];
 
-        let CACHED_SCHEDULES = {};
+        let TEAMS = JSON.parse(localStorage.getItem('my_sports_teams')) || DEFAULT_TEAMS;
+        TEAMS = TEAMS.map(t => { if(t.img && !t.logo) t.logo = t.img; return t; });
 
-        function toggleOrderModal() {
-            const modal = document.getElementById('order-modal');
-            modal.classList.toggle('hidden');
-            if (!modal.classList.contains('hidden')) {
-                renderDraggableList();
+        let SCHEDULES = {};
+        let IS_FLIPPED = false;
+        let SORTED_DATES = [];
+
+        async function init() {
+            document.getElementById('loading').classList.remove('hidden');
+            const promises = TEAMS.map(fetchSchedule);
+            const results = await Promise.all(promises);
+            
+            SCHEDULES = {};
+            TEAMS.forEach((team, index) => {
+                SCHEDULES[`${team.id}-${team.league}`] = results[index];
+            });
+
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('table-container').classList.remove('hidden');
+            
+            render();
+            // Force scroll to today on load
+            setTimeout(scrollToToday, 300);
+            setTimeout(scrollToToday, 800);
+        }
+
+        async function fetchSchedule(team) {
+            try {
+                let leaguePath = team.league;
+                const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${leaguePath}/teams/${team.id}/schedule`;
+                const res = await fetch(url);
+                const data = await res.json();
+                const map = {};
+                
+                if (data.events) {
+                    data.events.forEach(ev => {
+                        const d = new Date(ev.date);
+                        const k = d.toLocaleDateString('en-CA');
+                        const comp = ev.competitions?.[0];
+                        const us = comp?.competitors?.find(c => c.id === team.id);
+                        const them = comp?.competitors?.find(c => c.id !== team.id);
+                        const state = ev.status?.type?.state || 'pre';
+                        const scoreStr = (us && them) ? `${us.score?.value || 0}-${them.score?.value || 0}` : null;
+                        
+                        let result = null;
+                        if (state === 'post') {
+                            const uScore = parseInt(us?.score?.value || 0);
+                            const tScore = parseInt(them?.score?.value || 0);
+                            if (uScore > tScore) result = 'W';
+                            else if (uScore < tScore) result = 'L';
+                            else result = 'T';
+                        }
+
+                        map[k] = {
+                            time: d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}),
+                            oppLogo: them?.team?.logos?.[0]?.href,
+                            isAway: them?.homeAway === 'home',
+                            state: state,
+                            score: scoreStr,
+                            result: result,
+                            network: comp?.broadcasts?.[0]?.media?.shortName
+                        };
+                    });
+                }
+                return map;
+            } catch (e) { return {}; }
+        }
+
+        function render() {
+            const allDates = new Set();
+            Object.values(SCHEDULES).forEach(s => Object.keys(s).forEach(d => allDates.add(d)));
+            SORTED_DATES = Array.from(allDates).sort();
+            
+            const today = new Date().toLocaleDateString('en-CA');
+            const table = document.getElementById('main-table');
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+            
+            table.className = IS_FLIPPED ? 'mode-flipped' : 'mode-standard';
+
+            if (!IS_FLIPPED) {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="min-width:70px">DATE</th>
+                        ${TEAMS.map(t => `
+                            <th>
+                                <div class="flex flex-col items-center justify-center">
+                                    <img src="${t.logo}" class="w-8 h-8 object-contain">
+                                </div>
+                            </th>
+                        `).join('')}
+                    </tr>`;
+
+                tbody.innerHTML = SORTED_DATES.map(date => {
+                    const isToday = date === today;
+                    const isPast = date < today;
+                    const dObj = new Date(date + 'T12:00:00');
+                    
+                    let html = `<tr class="${isToday ? 'today-highlight' : ''}" id="row-${date}">
+                        <td class="${isToday ? 'today-highlight-border' : ''} bg-slate-50">
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-[8px] font-black text-blue-500 uppercase">${dObj.toLocaleDateString('en-US',{weekday:'short'})}</span>
+                                <span class="text-xs font-bold text-slate-800">${dObj.getDate()}</span>
+                                <span class="text-[8px] font-bold text-slate-400 uppercase">${dObj.toLocaleDateString('en-US',{month:'short'})}</span>
+                            </div>
+                        </td>`;
+                    
+                    TEAMS.forEach(team => {
+                        const game = SCHEDULES[`${team.id}-${team.league}`]?.[date];
+                        html += renderCell(game, isPast);
+                    });
+                    return html + '</tr>';
+                }).join('');
+
+            } else {
+                let headHtml = `<tr><th class="bg-slate-50">TEAM</th>`;
+                SORTED_DATES.forEach(date => {
+                    const isToday = date === today;
+                    const dObj = new Date(date + 'T12:00:00');
+                    headHtml += `
+                        <th class="${isToday ? 'today-highlight' : ''}" id="col-${date}">
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-[9px] font-black text-blue-500 uppercase">${dObj.toLocaleDateString('en-US',{weekday:'short'})}</span>
+                                <span class="text-xs font-bold text-slate-700">${dObj.getDate()} ${dObj.toLocaleDateString('en-US',{month:'short'})}</span>
+                            </div>
+                        </th>`;
+                });
+                thead.innerHTML = headHtml + '</tr>';
+
+                tbody.innerHTML = TEAMS.map(team => {
+                    let rowHtml = `<tr>
+                        <td class="bg-slate-50">
+                            <div class="flex justify-center items-center h-full w-full">
+                                <img src="${team.logo}" class="w-8 h-8 object-contain">
+                            </div>
+                        </td>`;
+                    
+                    SORTED_DATES.forEach(date => {
+                        const game = SCHEDULES[`${team.id}-${team.league}`]?.[date];
+                        const isToday = date === today;
+                        const isPast = date < today;
+                        let cell = renderCell(game, isPast);
+                        if(isToday) cell = cell.replace('<td>', '<td class="today-highlight">');
+                        rowHtml += cell;
+                    });
+                    return rowHtml + '</tr>';
+                }).join('');
             }
         }
 
-        function renderDraggableList() {
-            const list = document.getElementById('draggable-list');
-            list.innerHTML = TEAMS.map(team => `
-                <li draggable="true" data-key="${team.key}" class="flex items-center gap-3 p-2 bg-gray-50 border border-gray-200 rounded-xl cursor-move active:scale-[0.98] transition-all">
-                    <div class="w-8 h-8 rounded-full ${team.bgClass} flex items-center justify-center p-1 overflow-hidden">
-                        <img src="${team.img}" class="w-full h-full object-contain" alt="${team.name}">
-                    </div>
-                    <span class="font-bold text-sm uppercase tracking-tight truncate max-w-[120px]">${team.name}</span>
-                    <div class="ml-auto text-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                    </div>
-                </li>
-            `).join('');
+        function renderCell(game, isPast) {
+            if (!game) return `<td><span class="text-slate-200 text-lg">-</span></td>`;
+            const showScore = game.state === 'in' || game.state === 'post' || isPast;
+            const displayValue = showScore ? (game.score || game.time) : game.time;
 
-            // Add Drag and Drop Events
-            const items = list.querySelectorAll('li');
-            items.forEach(item => {
-                item.addEventListener('dragstart', () => item.classList.add('dragging'));
-                item.addEventListener('dragend', () => item.classList.remove('dragging'));
-            });
+            let cardClass = '';
+            if(game.state === 'in') cardClass = 'status-live';
+            else if(game.result === 'W') cardClass = 'status-win';
+            else if(game.result === 'L') cardClass = 'status-loss';
+            else if(isPast && !game.result) cardClass = 'status-scheduled text-slate-500'; 
 
-            list.addEventListener('dragover', e => {
-                e.preventDefault();
-                const afterElement = getDragAfterElement(list, e.clientY);
-                const draggable = document.querySelector('.dragging');
-                if (afterElement == null) {
-                    list.appendChild(draggable);
-                } else {
-                    list.insertBefore(draggable, afterElement);
-                }
-            });
+            return `<td>
+                <div class="game-content ${cardClass}">
+                    <div class="flex items-center gap-1 mb-0.5">
+                        <span style="font-size:8px;font-weight:700;opacity:0.5">${game.isAway ? '@' : 'vs'}</span>
+                        <img src="${game.oppLogo}" class="w-8 h-8 object-contain">
+                    </div>
+                    <div class="font-black text-xs leading-tight">
+                        ${displayValue}
+                    </div>
+                    ${(game.network && !showScore) ? `<div style="font-size:8px;opacity:0.6;margin-top:1px">${game.network}</div>` : ''}
+                </div>
+            </td>`;
         }
 
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('li:not(.dragging)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        function saveAndReorder() {
-            const listItems = [...document.querySelectorAll('#draggable-list li')];
-            const newKeys = listItems.map(li => li.dataset.key);
-            
-            // Reorder the TEAMS array based on new keys
-            TEAMS = newKeys.map(key => TEAMS.find(t => t.key === key));
-            
-            toggleOrderModal();
-            renderTable();
+        function toggleFlip() {
+            IS_FLIPPED = !IS_FLIPPED;
+            render();
+            scrollToToday();
         }
 
         function scrollToToday() {
-            const todayEl = document.querySelector('.today-row');
-            const scrollEl = document.getElementById('table-scroll');
-            if (todayEl && scrollEl) {
-                // Scroll within the table scroll container, not the page
-                const rowTop = todayEl.offsetTop;
-                const headerRow = document.querySelector('thead.sticky-header');
-                const headerH = headerRow ? headerRow.offsetHeight : 60;
-                scrollEl.scrollTo({ top: rowTop - headerH - 8, behavior: 'smooth' });
-            }
-        }
-
-        function getScore(competitor) {
-            if (!competitor || !competitor.score) return 0;
-            if (typeof competitor.score === 'object') {
-                return parseInt(competitor.score.value || competitor.score.displayValue || 0);
-            }
-            return parseInt(competitor.score || 0);
-        }
-
-        async function fetchTeamSchedule(team) {
-            const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/schedule`;
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                const schedule = {};
-                if (!data || !data.events) return {};
-
-                data.events.forEach(event => {
-                    if (!event.date) return;
-                    const dateObj = new Date(event.date);
-                    // Use local date components to avoid UTC date-shift issues
-                    const dateKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth()+1).padStart(2,'0')}-${String(dateObj.getDate()).padStart(2,'0')}`;
-                    const competition = event.competitions?.[0];
-                    if (!competition) return;
-
-                    const opponent = competition.competitors?.find(c => String(c.id) !== String(team.id));
-                    const teamData = competition.competitors?.find(c => String(c.id) === String(team.id));
-                    
-                    if (opponent && opponent.team) {
-                        const state = event.status?.type?.state;
-                        // Determine whether this date is before today (local)
-                        const now = new Date();
-                        const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-                        const isPastDate = dateKey < todayKey && state !== 'in';
-                        const isFinishedOrLive = state === 'post' || state === 'in' || isPastDate;
-
-                        let displayStatus = event.status?.type?.shortDetail || "Scheduled";
-
-                        if (isFinishedOrLive) {
-                            const teamScore = getScore(teamData);
-                            const oppScore = getScore(opponent);
-                            const resultChar = state === 'in' ? 'LIVE' : (teamScore > oppScore ? 'W' : (teamScore < oppScore ? 'L' : 'T'));
-                            displayStatus = `${resultChar} ${teamScore}-${oppScore}`;
-                        }
-
-                        schedule[dateKey] = {
-                            logo: opponent.team.logos?.[0]?.href || `https://a.espncdn.com/i/teamlogos/${team.league}/500/${opponent.team.abbreviation?.toLowerCase()}.png`,
-                            isAway: opponent.homeAway === 'home',
-                            time: (isFinishedOrLive && state !== 'in') ? 'Final' : dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
-                            status: displayStatus,
-                            isPost: state === 'post' || isPastDate,
-                            isLive: state === 'in',
-                            accent: team.accent
-                        };
-                    }
-                });
-                return schedule;
-            } catch (err) {
-                return null;
-            }
-        }
-
-        /* Size the scroll container so it fills the viewport below the fixed top bar.
-           This is the KEY to making sticky headers work — the scroll container must
-           have a defined height and overflow:auto, exactly like html.html. */
-        function sizeScrollContainer(){
-            const topBar = document.getElementById('topBar');
-            const spacer = document.getElementById('header-spacer');
-            const scrollEl = document.getElementById('table-scroll');
-            if (!topBar) return;
-            const barH = topBar.offsetHeight;
-            // Push content below fixed header
-            if (spacer) spacer.style.height = barH + 'px';
-            // Fill remaining viewport height
-            if (scrollEl) scrollEl.style.height = (window.innerHeight - barH - 24) + 'px';
-        }
-
-        function renderTable() {
-            const listEl = document.getElementById('master-list');
-            const headEl = document.getElementById('table-head');
-            const now = new Date();
-            const todayKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-
-            // Render Header
-            headEl.innerHTML = `
-                <tr class="bg-white border-b-2 border-gray-200">
-                    <th class="w-16 p-2 border-r border-gray-200 text-[10px] uppercase tracking-widest text-left font-bold text-gray-800">Date</th>
-                    ${TEAMS.map(team => `
-                        <th data-key="${team.key}" class="p-2 border-r border-gray-200 draggable-col" draggable="true">
-                            <div class="flex flex-col items-center justify-center gap-1">
-                                <div class="w-8 h-8 rounded-full ${team.bgClass} flex items-center justify-center p-1.5 overflow-hidden">
-                                    <img src="${team.img}" class="w-full h-full object-contain" alt="${team.name}">
-                                </div>
-                                <span class="text-xs font-bold uppercase tracking-tight text-gray-800">${team.name}</span>
-                            </div>
-                        </th>
-                    `).join('')}
-                </tr>
-            `;
-
-            // Attach drag handlers to header columns so users can drag to reorder columns
-            (function attachHeaderDrag() {
-                const headers = headEl.querySelectorAll('th.draggable-col');
-                let dragKey = null;
-
-                headers.forEach(h => {
-                    h.addEventListener('dragstart', (e) => {
-                        dragKey = h.dataset.key;
-                        e.dataTransfer.effectAllowed = 'move';
-                        try { e.dataTransfer.setData('text/plain', dragKey); } catch (_) {}
-                        h.classList.add('dragging');
-                    });
-
-                    h.addEventListener('dragend', () => {
-                        dragKey = null;
-                        headers.forEach(x => x.classList.remove('dragging','drag-over'));
-                    });
-
-                    h.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                        headers.forEach(x => x.classList.remove('drag-over'));
-                        h.classList.add('drag-over');
-                    });
-
-                    h.addEventListener('dragleave', () => {
-                        h.classList.remove('drag-over');
-                    });
-
-                    h.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        const sourceKey = e.dataTransfer.getData('text/plain') || dragKey;
-                        const targetKey = h.dataset.key;
-                        if (!sourceKey || !targetKey || sourceKey === targetKey) return;
-
-                        // Reorder TEAMS: move source to position of target
-                        const srcIndex = TEAMS.findIndex(t => t.key === sourceKey);
-                        const tgtIndex = TEAMS.findIndex(t => t.key === targetKey);
-                        if (srcIndex === -1 || tgtIndex === -1) return;
-
-                        const [moved] = TEAMS.splice(srcIndex, 1);
-                        TEAMS.splice(tgtIndex, 0, moved);
-
-                        // Re-render table with new order
-                        renderTable();
-                    });
-                });
-            })();
-
-            // Collect all unique dates
-            const allDates = [...new Set(TEAMS.flatMap(t => Object.keys(CACHED_SCHEDULES[t.key] || {})))].sort();
-
-            if (allDates.length === 0) return;
-
-            listEl.innerHTML = allDates.map(dateKey => {
-                const [y, m, d] = dateKey.split('-');
-                const dObj = new Date(y, m - 1, d);
-                const isToday = dateKey === todayKey;
-                const weekday = dObj.toLocaleDateString('en-US', { weekday: 'short' });
-                const monthDay = dObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-                return `
-                    <tr class="${isToday ? 'today-row' : ''} transition-colors" data-date="${dateKey}">
-                        <td class="p-2 border-r border-gray-100 bg-gray-50/30 date-cell text-left">
-                            <div class="flex flex-col leading-none">
-                                <span class="text-[8px] font-black text-blue-600 uppercase mb-0.5">${weekday}</span>
-                                <span class="text-xs font-bold text-gray-800">${monthDay}</span>
-                            </div>
-                        </td>
-                        ${TEAMS.map(team => {
-                            const game = CACHED_SCHEDULES[team.key][dateKey];
-                            if (!game) return `<td class="p-1 border-r border-gray-100"><div class="py-6 opacity-5 grayscale">—</div></td>`;
-                            
-                            let statusClass = 'text-gray-400 font-bold';
-                            if (game.isLive) statusClass = 'text-orange-600 font-black animate-pulse';
-                            else if (game.isPost) {
-                                if (game.status.startsWith('W')) statusClass = 'text-green-600 font-bold';
-                                else if (game.status.startsWith('L')) statusClass = 'text-red-600 font-bold';
-                                else statusClass = 'text-gray-700 font-bold';
-                            }
-
-                            // Determine cell background based on win/loss for finished games
-                            const isWin = game.status && game.status.startsWith && game.status.startsWith('W');
-                            const isLoss = game.status && game.status.startsWith && game.status.startsWith('L');
-                            const cellBg = isWin ? 'bg-green-50 rounded-lg' : (isLoss ? 'bg-red-50 rounded-lg' : '');
-
-                            // Use emoji for location: plane for away, house for home
-                            const locationEmoji = game.isAway ? '✈️' : '🏠';
-
-                            return `
-                                <td class="p-1 border-r border-gray-100">
-                                    <div class="flex flex-col items-center justify-center py-2 px-1 ${cellBg}">
-                                        <div class="flex items-center gap-2 mb-1">
-                                            <span class="text-[12px] font-black px-1 py-0.5 rounded ${game.accent} bg-opacity-10" title="${game.isAway ? 'Away' : 'Home'}">${locationEmoji}</span>
-                                            <span class="text-[7px] text-gray-400 font-bold">${game.time}</span>
-                                        </div>
-                                        <img src="${game.logo}" class="logo-img" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
-                                        <div class="text-[8px] uppercase tracking-tighter mt-1 ${statusClass}">${game.status}</div>
-                                    </div>
-                                </td>
-                            `;
-                        }).join('')}
-                    </tr>
-                `;
-            }).join('');
-
-            // Scroll Logic
-            if (!document.querySelector('.today-row')) {
-                const rows = document.querySelectorAll('#master-list tr');
-                for (let row of rows) {
-                    if (row.dataset.date >= todayKey) {
-                        row.classList.add('today-row');
-                        break;
-                    }
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const container = document.getElementById('table-container');
+            
+            // Priority 1: Target row/col for TODAY
+            let targetId = !IS_FLIPPED ? `row-${todayStr}` : `col-${todayStr}`;
+            let target = document.getElementById(targetId);
+            
+            // Priority 2: Closest future game
+            if (!target) {
+                const futureDate = SORTED_DATES.find(d => d >= todayStr);
+                if (futureDate) {
+                    target = document.getElementById(!IS_FLIPPED ? `row-${futureDate}` : `col-${futureDate}`);
                 }
             }
-            // Size scroll container so sticky headers work
-            sizeScrollContainer();
-            setTimeout(scrollToToday, 300);
-        }
 
-        async function init() {
-            const loadingEl = document.getElementById('loading');
-            const contentEl = document.getElementById('content');
-            const errorEl = document.getElementById('error-display');
-
-            try {
-                const results = await Promise.all(TEAMS.map(t => fetchTeamSchedule(t)));
-                TEAMS.forEach((t, i) => { CACHED_SCHEDULES[t.key] = results[i] || {}; });
-
-                loadingEl.classList.add('hidden');
-                contentEl.classList.remove('hidden');
-                renderTable();
-                // Size scroll container so sticky headers work
-                sizeScrollContainer();
-
-            } catch (err) {
-                loadingEl.classList.add('hidden');
-                errorEl.classList.remove('hidden');
+            if (target && container) {
+                const offset = 80; // Buffer for headers
+                if (!IS_FLIPPED) {
+                    container.scrollTop = target.offsetTop - offset;
+                } else {
+                    container.scrollLeft = target.offsetLeft - offset;
+                }
             }
         }
+
+        // --- MANAGEMENT ---
+        function openModal() { document.getElementById('manage-modal').classList.remove('hidden'); renderTeamList(); }
+        function closeModal() { document.getElementById('manage-modal').classList.add('hidden'); }
+        
+        async function searchTeams() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const resBox = document.getElementById('search-results');
+            resBox.innerHTML = '<div class="text-xs text-slate-400 text-center p-2">Searching all leagues...</div>';
+            
+            const sports = [
+                'basketball/nba', 'football/nfl', 'baseball/mlb', 'hockey/nhl', 
+                'football/college-football', 'basketball/mens-college-basketball'
+            ];
+            const hits = [];
+
+            try {
+                // Use limit=1000 for college sports to ensure Alabama/Duke are found
+                const promises = sports.map(s => {
+                    const limit = s.includes('college') ? '?limit=1000' : '';
+                    return fetch(`https://site.api.espn.com/apis/site/v2/sports/${s}/teams${limit}`).then(r => r.json());
+                });
+                
+                const results = await Promise.all(promises);
+
+                results.forEach((d, idx) => {
+                    const group = d.sports?.[0]?.leagues?.[0]?.teams || [];
+                    const sPath = sports[idx];
+                    group.forEach(t => {
+                        if (t.team.displayName.toLowerCase().includes(q) || t.team.name.toLowerCase().includes(q)) {
+                            hits.push({ 
+                                id: t.team.id, 
+                                name: t.team.shortDisplayName, 
+                                league: sPath.split('/')[1], 
+                                sport: sPath.split('/')[0], 
+                                logo: t.team.logos[0].href 
+                            });
+                        }
+                    });
+                });
+                
+                resBox.innerHTML = hits.map(t => 
+                    `<div class="flex justify-between items-center p-2 border-b hover:bg-slate-50 cursor-pointer" onclick='addTeam(${JSON.stringify(t)})'>
+                        <div class="flex items-center gap-2">
+                            <img src="${t.logo}" class="w-6 h-6 object-contain">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-800">${t.name}</span>
+                                <span class="text-[10px] text-slate-400 uppercase">${t.league}</span>
+                            </div>
+                        </div>
+                        <span class="text-blue-600 font-bold text-xs">+ ADD</span>
+                    </div>`
+                ).join('') || '<div class="text-xs text-slate-400 text-center p-2">No teams found</div>';
+            } catch(e) { resBox.innerHTML = 'Search error'; }
+        }
+
+        function addTeam(t) {
+            if(!TEAMS.find(x => x.id === t.id && x.league === t.league)) TEAMS.push(t);
+            renderTeamList();
+        }
+        function removeTeam(i) {
+            TEAMS.splice(i, 1);
+            renderTeamList();
+        }
+        function renderTeamList() {
+            const list = document.getElementById('team-list');
+            list.innerHTML = TEAMS.map((t, i) => `
+                <li class="flex justify-between items-center bg-white p-2 border rounded shadow-sm" draggable="true" data-index="${i}">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-300 cursor-grab">≡</span>
+                        <img src="${t.logo}" class="w-6 h-6 object-contain">
+                        <span class="text-sm font-bold text-slate-700">${t.name}</span>
+                    </div>
+                    <button onclick="removeTeam(${i})" class="text-red-500 text-xs font-bold">REMOVE</button>
+                </li>
+            `).join('');
+            
+            let dragged = null;
+            list.querySelectorAll('li').forEach(li => {
+                li.addEventListener('dragstart', () => { dragged = li; li.classList.add('opacity-50'); });
+                li.addEventListener('dragend', () => { 
+                    dragged.classList.remove('opacity-50'); dragged = null; 
+                    TEAMS = [...list.querySelectorAll('li')].map(item => TEAMS[item.dataset.index]);
+                    renderTeamList();
+                });
+                li.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterElement = [...list.querySelectorAll('li:not(.opacity-50)')].reduce((closest, child) => {
+                        const box = child.getBoundingClientRect();
+                        const offset = e.clientY - box.top - box.height / 2;
+                        return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
+                    }, { offset: Number.NEGATIVE_INFINITY }).element;
+                    if (afterElement == null) list.appendChild(dragged);
+                    else list.insertBefore(dragged, afterElement);
+                });
+            });
+        }
+
+        function saveAndReload() {
+            localStorage.setItem('my_sports_teams', JSON.stringify(TEAMS));
+            location.reload();
+        }
+
         window.onload = init;
-        window.addEventListener('resize', sizeScrollContainer);
     </script>
 </body>
 </html>
