@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Gameday — HTML-only</title>
+  <style>
+    :root{--bg:#050505;--panel:#0d0d0d;--muted:#94a3b8}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg)}
+    .container{max-width:720px;margin:0 auto;padding:16px}
+    header{position:sticky;top:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);padding:12px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;z-index:20}
+    .title{font-weight:800;letter-spacing:.06em;font-size:14px}
+    .sub{font-size:11px;color:var(--muted);font-weight:700}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);color:#fff;padding:6px 10px;border-radius:999px;cursor:pointer}
+    .sports{display:flex;gap:8px;overflow-x:auto;padding:8px;margin-top:12px}
+    .sport{min-width:64px;padding:8px;border-radius:12px;text-align:center;font-weight:800;font-size:11px;background:rgba(255,255,255,.03);cursor:pointer}
+    .sport.active{background:rgba(255,255,255,.08)}
+    nav{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .datebox{flex:1;background:rgba(255,255,255,.03);padding:10px;border-radius:12px;text-align:center}
+    main{margin-top:12px}
+    .card{background:var(--panel);border:1px solid rgba(255,255,255,.04);padding:12px;border-radius:12px;margin-bottom:12px}
+    .teams{display:flex;align-items:center;gap:12px}
+    .team{display:flex;flex-direction:column;align-items:center;flex:1}
+    .abbr{font-weight:800}
+    .score{font-weight:900;font-size:20px}
+    .meta{display:flex;gap:8px;align-items:center}
+    .tag{font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.03)}
+    img.logo{width:40px;height:40px;object-fit:contain}
+    .bar{height:6px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden;margin-bottom:8px}
+    .bar > div{height:100%;transition:width .8s}
+    .muted{color:var(--muted);font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <div class="title">ProScore</div>
+      <div class="sub" id="activeSportLabel">Pulse</div>
+    </div>
+    <div class="controls">
+      <button id="todayBtn">Today</button>
+      <button id="refreshBtn">⟳</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="sports" id="sportsList"></div>
+
+    <nav>
+      <button id="prevDate">◀</button>
+      <div class="datebox">
+        <div id="weekday" class="muted">Weekday</div>
+        <div id="dateDisplay">Date</div>
+        <input id="dateInput" type="date" style="opacity:0;position:relative;top:-36px;left:0;width:100%;height:100%;cursor:pointer">
+      </div>
+      <button id="nextDate">▶</button>
+    </nav>
+
+    <main id="gamesContainer"></main>
+  </div>
+
+  <script>
+    // Config
+    const SPORTS_CONFIG = [
+      { id: 'pulse', name: 'Pulse', color: 'purple' },
+      { id: 'nba', name: 'NBA', league: 'basketball/nba', color: 'orange' },
+      { id: 'nfl', name: 'NFL', league: 'football/nfl', color: 'green' },
+      { id: 'ncaaf', name: 'CFB', league: 'football/college-football', color: 'emerald', groups: '80' },
+      { id: 'ncaam', name: 'CBB', league: 'basketball/mens-college-basketball', color: 'indigo', groups: '50' },
+      { id: 'nhl', name: 'NHL', league: 'hockey/nhl', color: 'blue' },
+      { id: 'mlb', name: 'MLB', league: 'baseball/mlb', color: 'red' },
+    ];
+
+    const colorMap = { purple:'#a855f7', orange:'#f97316', green:'#22c55e', emerald:'#10b981', indigo:'#6366f1', blue:'#3b82f6', red:'#ef4444' };
+
+    let activeSport = SPORTS_CONFIG[0];
+    let selectedDate = new Date();
+    let allGames = {};
+    let refreshTimer = null;
+
+    function formatDateForApi(d){
+      const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}${m}${day}`;
+    }
+    function formatMT(date, opts){ return new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',...opts}).format(date); }
+
+    async function fetchSportScores(sport, date){
+      if(sport.id==='pulse') return [];
+      try{
+        let url = `https://site.api.espn.com/apis/site/v2/sports/${sport.league}/scoreboard`;
+        const dateStr = formatDateForApi(date);
+        const params = [`dates=${dateStr}`]; if(sport.groups) params.push(`groups=${sport.groups}`);
+        const res = await fetch(`${url}?${params.join('&')}`);
+        const data = await res.json();
+        return (data.events||[]).filter(ev=> formatDateForApi(new Date(ev.date))===dateStr).map(ev=> ({...ev, sportId: sport.id, sportColor: sport.color}));
+      }catch(e){ return []; }
+    }
+
+    async function refreshAll(){
+      setLoading(true);
+      const results={};
+      const toFetch = SPORTS_CONFIG.filter(s=>s.id!=='pulse');
+      await Promise.all(toFetch.map(async s=> results[s.id]=await fetchSportScores(s, selectedDate)));
+      allGames = results;
+      setLoading(false);
+      renderGames();
+    }
+
+    function setLoading(v){ document.getElementById('refreshBtn').textContent = v ? '⟳' : '⟳'; }
+
+    function changeDate(delta){ selectedDate.setDate(selectedDate.getDate()+delta); updateDateUI(); refreshAll(); }
+    function handleCustomDate(e){ if(!e.target.value) return; const [y,m,d]=e.target.value.split('-').map(Number); selectedDate=new Date(y,m-1,d,12,0,0); updateDateUI(); refreshAll(); }
+
+    function processGames(list){ if(!list||!list.length) return [];
+      const processed = list.map(game=>{
+        const comp=game.competitions&&game.competitions[0];
+        const home=comp&&comp.competitors&&comp.competitors.find(c=>c.homeAway==='home');
+        const away=comp&&comp.competitors&&comp.competitors.find(c=>c.homeAway==='away');
+        if(!home||!away) return null;
+        const getWinPct=c=>{ const rec=(c.records||[]).find(r=>r.type==='total')?.summary?.split('-').map(Number)||[0,0,0]; const total=rec[0]+rec[1]+(rec[2]||0); return total===0?0.5:rec[0]/total; };
+        const homePct=getWinPct(home), awayPct=getWinPct(away), combinedPct=(homePct+awayPct)/2, pctGap=Math.abs(homePct-awayPct), scoreDiff=Math.abs(parseInt(home.score||0)-parseInt(away.score||0));
+        return {...game, homeTeam:home, awayTeam:away, homeRank: home.curatedRank&&home.curatedRank.current<26?home.curatedRank.current:null, awayRank: away.curatedRank&&away.curatedRank.current<26?away.curatedRank.current:null, homeRecord: home.records&&home.records.find(r=>r.type==='total')?.summary||'0-0', awayRecord: away.records&&away.records.find(r=>r.type==='total')?.summary||'0-0', combinedPct, pctGap, scoreDiff, isRanked:(home.curatedRank&&home.curatedRank.current<26)||(away.curatedRank&&away.curatedRank.current<26)};
+      }).filter(Boolean);
+      // group tags
+      const bySport = {};
+      processed.forEach(g=>{ bySport[g.sportId]=bySport[g.sportId]||[]; bySport[g.sportId].push(g); });
+      Object.values(bySport).forEach(group=>{ if(group.length===0) return; const sorted=[...group].sort((a,b)=>b.combinedPct-a.combinedPct); sorted[0].isBestInLeague=true; if(group.length>1){ sorted[sorted.length-1].isWorstInLeague=true; const gap=[...group].sort((a,b)=>b.pctGap-a.pctGap); gap[0].isLargestGap=true; } });
+      return processed.sort((a,b)=>{ if(Math.abs(b.combinedPct-a.combinedPct)>1e-4) return b.combinedPct-a.combinedPct; const aRank=(a.homeRank||99)+(a.awayRank||99); const bRank=(b.homeRank||99)+(b.awayRank||99); if(aRank!==bRank) return aRank-bRank; const stateOrder={in:0,pre:1,post:2}; return (stateOrder[a.status&&a.status.type&&a.status.type.state]||3)-(stateOrder[b.status&&b.status.type&&b.status.type.state]||3); });
+    }
+
+    function renderSports(){ const container=document.getElementById('sportsList'); container.innerHTML=''; SPORTS_CONFIG.forEach(s=>{ const btn=document.createElement('div'); btn.className='sport'+(s.id===activeSport.id?' active':''); btn.textContent=s.name; btn.onclick=()=>{ activeSport=s; document.getElementById('activeSportLabel').textContent=s.name+' (MT)'; renderSports(); renderGames(); }; container.appendChild(btn); }); }
+
+    function updateDateUI(){ document.getElementById('weekday').textContent = formatMT(selectedDate,{weekday:'long'}); document.getElementById('dateDisplay').textContent = formatMT(selectedDate,{month:'short',day:'numeric',year:'numeric'}); const v=`${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`; document.getElementById('dateInput').value=v; }
+
+    function renderGames(){ const main=document.getElementById('gamesContainer'); main.innerHTML=''; const list = activeSport.id==='pulse'? Object.values(allGames).flat() : (allGames[activeSport.id]||[]); const games=processGames(list);
+      if(!games.length){ main.innerHTML='<div class="muted">No games found for this date.</div>'; return; }
+      games.forEach(game=>{ const hex=colorMap[game.sportColor]||colorMap[activeSport.color]; const isLive=(game.status&&game.status.type&&game.status.type.state==='in'); const isFinal=(game.status&&game.status.type&&game.status.type.state==='post'); const card=document.createElement('div'); card.className='card';
+        const bar=document.createElement('div'); bar.className='bar'; const fill=document.createElement('div'); fill.style.width=(game.combinedPct*100)+'%'; fill.style.background=hex; bar.appendChild(fill); card.appendChild(bar);
+        const tags=document.createElement('div'); tags.style.display='flex'; tags.style.justifyContent='center'; tags.style.gap='6px'; tags.style.marginBottom='8px'; if(game.isBestInLeague){ const t=document.createElement('div'); t.className='tag'; t.textContent='Showcase'; tags.appendChild(t); } if(game.isLargestGap){ const t=document.createElement('div'); t.className='tag'; t.textContent='Mismatch'; tags.appendChild(t); } if(game.isWorstInLeague){ const t=document.createElement('div'); t.className='tag'; t.textContent='Low Quality'; tags.appendChild(t); } if(isFinal && game.scoreDiff>=20){ const t=document.createElement('div'); t.className='tag'; t.textContent='Blowout'; tags.appendChild(t); } if((isLive||isFinal) && game.scoreDiff<=3){ const t=document.createElement('div'); t.className='tag'; t.textContent='Nailbiter'; tags.appendChild(t); } card.appendChild(tags);
+
+        const row=document.createElement('div'); row.className='teams';
+        const away=document.createElement('div'); away.className='team'; away.innerHTML = `<div class="abbr">${game.awayTeam.team.abbreviation}${game.awayRank?(' #'+game.awayRank):''}</div><div class="muted">${game.awayRecord}</div>`; const awayImg=document.createElement('img'); awayImg.className='logo'; awayImg.src=game.awayTeam.team.logo||''; away.prepend(awayImg);
+        const mid=document.createElement('div'); mid.style.minWidth='90px'; mid.style.textAlign='center'; if(game.status&&game.status.type&&game.status.type.state==='pre'){ mid.innerHTML=`<div class="muted">${formatMT(new Date(game.date),{hour:'numeric',minute:'2-digit',hour12:true})}</div><div class="muted" style="font-size:10px">MT</div>`; } else { mid.innerHTML=`<div class="score">${game.awayTeam.score||0} - ${game.homeTeam.score||0}</div>`; if(isLive){ const live=document.createElement('div'); live.className='muted'; live.textContent = game.status&&game.status.type&&game.status.type.detail?game.status.type.detail:'Live'; mid.appendChild(live); } }
+        const home=document.createElement('div'); home.className='team'; home.innerHTML = `<div class="abbr">${game.homeTeam.team.abbreviation}${game.homeRank?(' #'+game.homeRank):''}</div><div class="muted">${game.homeRecord}</div>`; const homeImg=document.createElement('img'); homeImg.className='logo'; homeImg.src=game.homeTeam.team.logo||''; home.appendChild(homeImg);
+        row.appendChild(away); row.appendChild(mid); row.appendChild(home); card.appendChild(row);
+
+        const foot=document.createElement('div'); foot.style.display='flex'; foot.style.justifyContent='space-between'; foot.style.alignItems='center'; foot.style.marginTop='10px'; const left=document.createElement('div'); left.innerHTML=`<span class="tag" style="background:rgba(255,255,255,.02);color:${hex}">${game.sportId}</span> ${game.isRanked?'<span class="muted">RANKED</span>':''}`; const right=document.createElement('div'); right.innerHTML=`<span class="muted">${(game.competitions&&game.competitions[0]&&game.competitions[0].broadcasts&&game.competitions[0].broadcasts[0]&&game.competitions[0].broadcasts[0].names&&game.competitions[0].broadcasts[0].names[0])||'TV'}</span>`; foot.appendChild(left); foot.appendChild(right); card.appendChild(foot);
+
+        main.appendChild(card);
+      });
+    }
+
+    // wire up UI
+    document.getElementById('todayBtn').addEventListener('click', ()=>{ selectedDate=new Date(); updateDateUI(); refreshAll(); });
+    document.getElementById('refreshBtn').addEventListener('click', ()=>refreshAll());
+    document.getElementById('prevDate').addEventListener('click', ()=>changeDate(-1));
+    document.getElementById('nextDate').addEventListener('click', ()=>changeDate(1));
+    document.getElementById('dateInput').addEventListener('change', handleCustomDate);
+
+    // init
+    function init(){ renderSports(); updateDateUI(); refreshAll(); if(refreshTimer) clearInterval(refreshTimer); refreshTimer=setInterval(refreshAll,60000); }
+    init();
+  </script>
+</body>
+</html>
