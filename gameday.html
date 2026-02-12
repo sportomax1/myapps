@@ -2,164 +2,639 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Gameday — HTML-only</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
+  <title>Gameday Lanes | Pro Sports Dashboard</title>
   <style>
-    :root{--bg:#050505;--panel:#0d0d0d;--muted:#94a3b8}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:#fff;background:var(--bg)}
-    .container{max-width:720px;margin:0 auto;padding:16px}
-    header{position:sticky;top:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);padding:12px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:center;z-index:20}
-    .title{font-weight:800;letter-spacing:.06em;font-size:14px}
-    .sub{font-size:11px;color:var(--muted);font-weight:700}
-    .controls{display:flex;gap:8px;align-items:center}
-    button{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);color:#fff;padding:6px 10px;border-radius:999px;cursor:pointer}
-    .sports{display:flex;gap:8px;overflow-x:auto;padding:8px;margin-top:12px}
-    .sport{min-width:64px;padding:8px;border-radius:12px;text-align:center;font-weight:800;font-size:11px;background:rgba(255,255,255,.03);cursor:pointer}
-    .sport.active{background:rgba(255,255,255,.08)}
-    nav{display:flex;gap:8px;align-items:center;margin-top:12px}
-    .datebox{flex:1;background:rgba(255,255,255,.03);padding:10px;border-radius:12px;text-align:center}
-    main{margin-top:12px}
-    .card{background:var(--panel);border:1px solid rgba(255,255,255,.04);padding:12px;border-radius:12px;margin-bottom:12px}
-    .teams{display:flex;align-items:center;gap:12px}
-    .team{display:flex;flex-direction:column;align-items:center;flex:1}
-    .abbr{font-weight:800}
-    .score{font-weight:900;font-size:20px}
-    .meta{display:flex;gap:8px;align-items:center}
-    .tag{font-size:10px;padding:4px 8px;border-radius:999px;background:rgba(255,255,255,.03)}
-    img.logo{width:40px;height:40px;object-fit:contain}
-    .bar{height:6px;background:rgba(255,255,255,.05);border-radius:6px;overflow:hidden;margin-bottom:8px}
-    .bar > div{height:100%;transition:width .8s}
-    .muted{color:var(--muted);font-size:12px}
+    :root {
+      --bg: #0f172a;
+      --surface: #1e293b;
+      --card: #334155;
+      --accent: #3b82f6;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: #475569;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 12px 0;
+    }
+
+    .header-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .header-top { display: flex; align-items: center; justify-content: space-between; }
+    .brand {
+      font-size: 22px;
+      font-weight: 900;
+      background: linear-gradient(to right, #60a5fa, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.03em;
+    }
+
+    .nav-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .date-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .date-nav-btn {
+      background: transparent; border: none; color: var(--text); padding: 8px 12px;
+      cursor: pointer; border-radius: 8px; transition: all 0.2s; font-weight: 700; font-size: 14px;
+    }
+    .date-nav-btn:hover { background: var(--card); }
+
+    .date-picker-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .date-picker-container:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--accent);
+    }
+    
+    #dateDisplay { 
+      font-size: 14px; font-weight: 800; color: var(--accent); 
+      min-width: 120px; text-align: center;
+    }
+    
+    #calendarInput {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;
+    }
+
+    .jump-today {
+      font-size: 11px; font-weight: 800;
+      background: var(--accent);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+    .jump-today:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    .header-actions { display: flex; gap: 8px; }
+    .action-btn {
+      background: var(--surface); border: 1px solid var(--border); color: var(--text);
+      padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all 0.2s;
+    }
+    .action-btn:hover { border-color: var(--accent); background: var(--card); transform: translateY(-1px); }
+
+    .sport-tabs {
+      display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; scrollbar-width: none;
+      justify-content: center;
+    }
+    .sport-tabs::-webkit-scrollbar { display: none; }
+
+    .sport-tab {
+      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+      padding: 8px 18px; border-radius: 99px; cursor: pointer; white-space: nowrap;
+      font-size: 13px; font-weight: 700; transition: all 0.2s;
+    }
+    .sport-tab.active {
+      background: var(--accent); color: white; border-color: var(--accent);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+    }
+
+    .main-content { max-width: 1600px; margin: 0 auto; padding: 20px; }
+    .lanes { display: grid; grid-template-columns: 1fr; gap: 24px; }
+    @media (min-width: 768px) { .lanes { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1200px) { .lanes { grid-template-columns: repeat(3, 1fr); } }
+    @media (min-width: 1600px) { .lanes { grid-template-columns: repeat(4, 1fr); } }
+
+    .lane { display: flex; flex-direction: column; gap: 16px; }
+    .lane-header {
+      display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 2px solid var(--surface);
+    }
+    .lane-header h3 { margin: 0; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+    .game-card {
+      background: var(--surface); border-radius: 20px; padding: 18px;
+      border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.2s;
+      position: relative; cursor: pointer;
+    }
+    .game-card:hover { border-color: var(--accent); transform: scale(1.01); }
+    
+    .game-card.close-game { border-color: var(--warning); box-shadow: 0 0 15px rgba(245, 158, 11, 0.15); }
+
+    .game-header {
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
+    }
+
+    .badge-container { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+    
+    .badge {
+      font-size: 10px; font-weight: 900; padding: 2px 8px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+    }
+    .badge-nailbiter { background: var(--warning); color: #000; }
+    .badge-odds { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+
+    .game-status {
+      font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--muted);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .status-live { color: var(--danger); font-weight: 900; display: flex; align-items: center; gap: 5px; }
+    .status-live::before { content: ''; width: 8px; height: 8px; background: var(--danger); border-radius: 50%; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    .team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .team-info { display: flex; align-items: center; gap: 12px; }
+    
+    .team-logo-wrapper {
+      width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+      background: #ffffff; border-radius: 10px; padding: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .team-logo { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1)); }
+
+    .team-name-wrap { display: flex; flex-direction: column; }
+    .team-name { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .team-meta { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 1px; }
+
+    .rank-badge {
+      font-size: 10px; background: #fbbf24; color: #000; padding: 1px 6px;
+      border-radius: 5px; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .league-rank {
+      font-size: 10px; background: var(--accent); color: #fff; padding: 1px 6px;
+      border-radius: 5px; font-weight: 900; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .team-score { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; }
+
+    .win-bar-container { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+    .win-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .win-bar-label { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.02em; }
+    .win-bar { height: 8px; background: var(--card); border-radius: 99px; overflow: hidden; display: flex; border: 1px solid rgba(255,255,255,0.05); }
+    .win-bar-fill { 
+      height: 100%; background: linear-gradient(90deg, #3b82f6, #a855f7); 
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1); 
+    }
+
+    .broadcast { font-size: 11px; font-weight: 800; color: var(--accent); }
+
+    /* Modal System */
+    .modal {
+      display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px); z-index: 200; padding: 20px; align-items: center; justify-content: center;
+    }
+    .modal.active { display: flex; }
+    .modal-content {
+      background: var(--surface); border-radius: 24px; width: 100%; max-width: 450px;
+      padding: 30px; border: 1px solid var(--border); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .close-modal { background: none; border: none; color: var(--text); font-size: 28px; cursor: pointer; line-height: 1; }
+
+    /* Matchup Modal Specifics */
+    #matchupModal .modal-content { max-width: 600px; }
+    .matchup-header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .matchup-teams { display: flex; justify-content: space-around; align-items: center; margin-bottom: 24px; }
+    .matchup-team { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+    .matchup-team img { width: 80px; height: 80px; background: white; border-radius: 16px; padding: 8px; }
+    .matchup-vs { font-weight: 900; font-size: 24px; color: var(--muted); }
+    .matchup-details { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .detail-item { background: var(--card); padding: 12px; border-radius: 12px; text-align: center; }
+    .detail-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 4px; }
+    .detail-value { font-size: 16px; font-weight: 800; color: var(--text); }
+
+    .setting-item {
+      display: flex; align-items: center; justify-content: space-between; padding: 14px;
+      background: var(--card); border-radius: 14px; cursor: pointer; margin-bottom: 10px;
+      font-weight: 600; transition: background 0.2s;
+    }
+    .setting-item:hover { background: var(--border); }
+    .setting-item input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+    @media (max-width: 767px) {
+      .header-container { padding: 0 12px; gap: 12px; }
+      .brand { font-size: 18px; }
+      .main-content { padding: 16px; }
+      .game-card { border-radius: 18px; padding: 16px; }
+      .sport-tabs { padding: 8px 0; }
+      
+      /* Mobile Modal adjustments */
+      .modal-content {
+        position: absolute; bottom: 0; border-radius: 24px 24px 0 0; width: 100%; max-width: 100%; padding: 24px;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <div>
-      <div class="title">ProScore</div>
-      <div class="sub" id="activeSportLabel">Pulse</div>
-    </div>
-    <div class="controls">
-      <button id="todayBtn">Today</button>
-      <button id="refreshBtn">⟳</button>
+    <div class="header-container">
+      <div class="header-top">
+        <div class="brand">GAMEDAY LANES</div>
+        <div class="header-actions">
+          <button class="action-btn" id="refreshBtn" title="Refresh Page">⟳</button>
+          <button class="action-btn" id="settingsBtn">⚙️</button>
+        </div>
+      </div>
+      
+      <div class="nav-row">
+        <div class="date-wrapper">
+          <button class="date-nav-btn" id="prevDate">←</button>
+          <div class="date-picker-container" title="Open Calendar">
+            <input type="date" id="calendarInput">
+            <div id="dateDisplay"></div>
+            <span style="font-size:14px; margin-left:6px;">📅</span>
+          </div>
+          <button class="date-nav-btn" id="nextDate">→</button>
+        </div>
+        <button class="jump-today" id="jumpToday">TODAY</button>
+      </div>
+
+      <div class="sport-tabs" id="sportTabs">
+        <div class="sport-tab active" data-sport="all">All Sports</div>
+        <div class="sport-tab" data-sport="nfl">🏈 NFL</div>
+        <div class="sport-tab" data-sport="nba">🏀 NBA</div>
+        <div class="sport-tab" data-sport="mlb">⚾ MLB</div>
+        <div class="sport-tab" data-sport="nhl">🏒 NHL</div>
+        <div class="sport-tab" data-sport="ncaaf">🎓 CFB</div>
+        <div class="sport-tab" data-sport="ncaam">🎓 CBB</div>
+      </div>
     </div>
   </header>
 
-  <div class="container">
-    <div class="sports" id="sportsList"></div>
+  <main class="main-content">
+    <div class="lanes" id="lanesContainer"></div>
+  </main>
 
-    <nav>
-      <button id="prevDate">◀</button>
-      <div class="datebox">
-        <div id="weekday" class="muted">Weekday</div>
-        <div id="dateDisplay">Date</div>
-        <input id="dateInput" type="date" style="opacity:0;position:relative;top:-36px;left:0;width:100%;height:100%;cursor:pointer">
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <div class="modal-header" style="display:flex; justify-content: space-between; align-items:center; margin-bottom:24px;">
+        <span style="font-size:20px; font-weight:900">Dashboard Config</span>
+        <button class="close-modal" onclick="closeModal('settingsModal')">×</button>
       </div>
-      <button id="nextDate">▶</button>
-    </nav>
+      <label class="setting-item"><span>Display Team Records</span><input type="checkbox" id="chkRecord" checked></label>
+      <label class="setting-item"><span>Display League Ranks</span><input type="checkbox" id="chkRanks" checked></label>
+      <label class="setting-item"><span>Display Quality Bar</span><input type="checkbox" id="chkPct" checked></label>
+      <label class="setting-item"><span>Display Network/TV</span><input type="checkbox" id="chkTV" checked></label>
+      <label class="setting-item"><span>Display Betting Odds</span><input type="checkbox" id="chkOdds" checked></label>
+      
+      <div style="margin-top: 16px;">
+        <label style="font-size: 12px; font-weight: 800; display: block; margin-bottom: 8px; text-transform: uppercase; color: var(--muted)">Timezone</label>
+        <select id="tzSelect" style="width: 100%; padding: 12px; border-radius: 12px; background: var(--card); color: white; border: 1px solid var(--border); font-weight: 700; outline: none;">
+          <option value="America/Denver">Mountain Time (MT)</option>
+          <option value="America/Chicago">Central Time (CT)</option>
+          <option value="America/New_York">Eastern Time (ET)</option>
+          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+        </select>
+      </div>
+      
+      <button class="action-btn" style="width: 100%; margin-top: 24px; background: var(--accent); border: none; padding: 14px; font-weight: 900; color: white;" onclick="saveSettings()">Save Preferences</button>
+    </div>
+  </div>
 
-    <main id="gamesContainer"></main>
+  <!-- Matchup Details Modal -->
+  <div class="modal" id="matchupModal">
+    <div class="modal-content">
+      <div class="modal-header" style="display:flex; justify-content: flex-end; margin-bottom:12px;">
+        <button class="close-modal" onclick="closeModal('matchupModal')">×</button>
+      </div>
+      <div id="matchupContent"></div>
+    </div>
   </div>
 
   <script>
-    // Config
-    const SPORTS_CONFIG = [
-      { id: 'pulse', name: 'Pulse', color: 'purple' },
-      { id: 'nba', name: 'NBA', league: 'basketball/nba', color: 'orange' },
-      { id: 'nfl', name: 'NFL', league: 'football/nfl', color: 'green' },
-      { id: 'ncaaf', name: 'CFB', league: 'football/college-football', color: 'emerald', groups: '80' },
-      { id: 'ncaam', name: 'CBB', league: 'basketball/mens-college-basketball', color: 'indigo', groups: '50' },
-      { id: 'nhl', name: 'NHL', league: 'hockey/nhl', color: 'blue' },
-      { id: 'mlb', name: 'MLB', league: 'baseball/mlb', color: 'red' },
+    const LANES = [
+      {id:'nfl', label:'NFL', league:'football/nfl', core:'nfl', sport:'football'},
+      {id:'nba', label:'NBA', league:'basketball/nba', core:'nba', sport:'basketball'},
+      {id:'mlb', label:'MLB', league:'baseball/mlb', core:'mlb', sport:'baseball'},
+      {id:'nhl', label:'NHL', league:'hockey/nhl', core:'nhl', sport:'hockey'},
+      {id:'ncaaf', label:'CFB', league:'football/college-football', core:null, sport:null},
+      {id:'ncaam', label:'CBB', league:'basketball/mens-college-basketball', core:null, sport:null}
     ];
 
-    const colorMap = { purple:'#a855f7', orange:'#f97316', green:'#22c55e', emerald:'#10b981', indigo:'#6366f1', blue:'#3b82f6', red:'#ef4444' };
-
-    let activeSport = SPORTS_CONFIG[0];
     let selectedDate = new Date();
-    let allGames = {};
-    let refreshTimer = null;
+    let tz = localStorage.getItem('gd_tz') || 'America/Denver';
+    let activeSport = 'all';
+    const standingsCache = {};
 
-    function formatDateForApi(d){
-      const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}${m}${day}`;
+    function getFormattedApiDate(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}${m}${d}`;
     }
-    function formatMT(date, opts){ return new Intl.DateTimeFormat('en-US',{timeZone:'America/Denver',...opts}).format(date); }
 
-    async function fetchSportScores(sport, date){
-      if(sport.id==='pulse') return [];
-      try{
-        let url = `https://site.api.espn.com/apis/site/v2/sports/${sport.league}/scoreboard`;
-        const dateStr = formatDateForApi(date);
-        const params = [`dates=${dateStr}`]; if(sport.groups) params.push(`groups=${sport.groups}`);
-        const res = await fetch(`${url}?${params.join('&')}`);
+    async function fetchGlobalStandings(lane) {
+      if (!lane.core || standingsCache[lane.id]) return;
+      try {
+        const url = `https://site.api.espn.com/apis/v2/sports/${lane.sport}/${lane.core}/standings`;
+        const res = await fetch(url);
         const data = await res.json();
-        return (data.events||[]).filter(ev=> formatDateForApi(new Date(ev.date))===dateStr).map(ev=> ({...ev, sportId: sport.id, sportColor: sport.color}));
-      }catch(e){ return []; }
+        
+        let entries = [];
+        const findEntries = (obj) => {
+          if (obj.standings && obj.standings.entries) entries.push(...obj.standings.entries);
+          if (obj.children) obj.children.forEach(findEntries);
+        };
+        findEntries(data);
+
+        const teams = entries.map(item => {
+          const s = item.stats;
+          const wins = s.find(x => x.name === 'wins')?.value || 0;
+          const losses = s.find(x => x.name === 'losses')?.value || 0;
+          const ties = s.find(x => x.name === 'ties')?.value || 0;
+          const total = wins + losses + ties;
+          return { id: item.team.id, pct: total > 0 ? wins/total : 0 };
+        });
+
+        teams.sort((a,b) => b.pct - a.pct);
+        const map = {};
+        teams.forEach((t, i) => map[t.id] = { rank: i + 1, pct: t.pct });
+        standingsCache[lane.id] = map;
+      } catch (e) { console.error(`Rank fetch failed for ${lane.id}`, e); }
     }
 
-    async function refreshAll(){
-      setLoading(true);
-      const results={};
-      const toFetch = SPORTS_CONFIG.filter(s=>s.id!=='pulse');
-      await Promise.all(toFetch.map(async s=> results[s.id]=await fetchSportScores(s, selectedDate)));
-      allGames = results;
-      setLoading(false);
-      renderGames();
+    function getTeamData(comp, type, laneId) {
+      const team = comp.competitors.find(c => c.homeAway === type);
+      const record = team.records?.find(r => r.type === 'total')?.summary || '0-0';
+      const curatedRank = team.curatedRank?.current < 99 ? team.curatedRank.current : null;
+      
+      let winPct = 0.5;
+      if (standingsCache[laneId]?.[team.id]) {
+        winPct = standingsCache[laneId][team.id].pct;
+      } else {
+        const rec = record.split('-').map(Number);
+        const total = (rec[0]||0) + (rec[1]||0);
+        if (total > 0) winPct = rec[0] / total;
+      }
+
+      return {
+        id: team.id,
+        name: team.team.shortDisplayName || team.team.abbreviation,
+        logo: team.team.logo,
+        score: team.score || '0',
+        record: record,
+        curatedRank: curatedRank,
+        winPct: winPct,
+        fullTeam: team.team
+      };
     }
 
-    function setLoading(v){ document.getElementById('refreshBtn').textContent = v ? '⟳' : '⟳'; }
+    function openMatchupModal(game, home, away, leagueName) {
+      const modal = document.getElementById('matchupModal');
+      const content = document.getElementById('matchupContent');
+      const comp = game.competitions[0];
+      const venue = comp.venue?.fullName || 'TBD';
+      const network = comp.broadcasts?.[0]?.names?.[0] || 'N/A';
+      
+      let oddsStr = 'N/A';
+      if (comp.odds && comp.odds[0]) {
+        oddsStr = comp.odds[0].details || '';
+        if (comp.odds[0].overUnder) oddsStr += ` • O/U ${comp.odds[0].overUnder}`;
+      }
 
-    function changeDate(delta){ selectedDate.setDate(selectedDate.getDate()+delta); updateDateUI(); refreshAll(); }
-    function handleCustomDate(e){ if(!e.target.value) return; const [y,m,d]=e.target.value.split('-').map(Number); selectedDate=new Date(y,m-1,d,12,0,0); updateDateUI(); refreshAll(); }
-
-    function processGames(list){ if(!list||!list.length) return [];
-      const processed = list.map(game=>{
-        const comp=game.competitions&&game.competitions[0];
-        const home=comp&&comp.competitors&&comp.competitors.find(c=>c.homeAway==='home');
-        const away=comp&&comp.competitors&&comp.competitors.find(c=>c.homeAway==='away');
-        if(!home||!away) return null;
-        const getWinPct=c=>{ const rec=(c.records||[]).find(r=>r.type==='total')?.summary?.split('-').map(Number)||[0,0,0]; const total=rec[0]+rec[1]+(rec[2]||0); return total===0?0.5:rec[0]/total; };
-        const homePct=getWinPct(home), awayPct=getWinPct(away), combinedPct=(homePct+awayPct)/2, pctGap=Math.abs(homePct-awayPct), scoreDiff=Math.abs(parseInt(home.score||0)-parseInt(away.score||0));
-        return {...game, homeTeam:home, awayTeam:away, homeRank: home.curatedRank&&home.curatedRank.current<26?home.curatedRank.current:null, awayRank: away.curatedRank&&away.curatedRank.current<26?away.curatedRank.current:null, homeRecord: home.records&&home.records.find(r=>r.type==='total')?.summary||'0-0', awayRecord: away.records&&away.records.find(r=>r.type==='total')?.summary||'0-0', combinedPct, pctGap, scoreDiff, isRanked:(home.curatedRank&&home.curatedRank.current<26)||(away.curatedRank&&away.curatedRank.current<26)};
-      }).filter(Boolean);
-      // group tags
-      const bySport = {};
-      processed.forEach(g=>{ bySport[g.sportId]=bySport[g.sportId]||[]; bySport[g.sportId].push(g); });
-      Object.values(bySport).forEach(group=>{ if(group.length===0) return; const sorted=[...group].sort((a,b)=>b.combinedPct-a.combinedPct); sorted[0].isBestInLeague=true; if(group.length>1){ sorted[sorted.length-1].isWorstInLeague=true; const gap=[...group].sort((a,b)=>b.pctGap-a.pctGap); gap[0].isLargestGap=true; } });
-      return processed.sort((a,b)=>{ if(Math.abs(b.combinedPct-a.combinedPct)>1e-4) return b.combinedPct-a.combinedPct; const aRank=(a.homeRank||99)+(a.awayRank||99); const bRank=(b.homeRank||99)+(b.awayRank||99); if(aRank!==bRank) return aRank-bRank; const stateOrder={in:0,pre:1,post:2}; return (stateOrder[a.status&&a.status.type&&a.status.type.state]||3)-(stateOrder[b.status&&b.status.type&&b.status.type.state]||3); });
+      content.innerHTML = `
+        <div class="matchup-header">
+          <h3 style="margin:0; font-size:14px; color:var(--accent); text-transform:uppercase; font-weight:800;">${leagueName} Gameday</h3>
+          <div style="font-size:12px; color:var(--muted); margin-top:4px;">${new Date(game.date).toLocaleString()}</div>
+        </div>
+        <div class="matchup-teams">
+          <div class="matchup-team">
+            <img src="${away.logo}" alt="${away.name}">
+            <div style="font-weight:800; font-size:18px;">${away.name}</div>
+            <div style="color:var(--muted); font-size:14px;">${away.record}</div>
+          </div>
+          <div class="matchup-vs">VS</div>
+          <div class="matchup-team">
+            <img src="${home.logo}" alt="${home.name}">
+            <div style="font-weight:800; font-size:18px;">${home.name}</div>
+            <div style="color:var(--muted); font-size:14px;">${home.record}</div>
+          </div>
+        </div>
+        <div class="matchup-details">
+          <div class="detail-item">
+            <span class="detail-label">Odds</span>
+            <span class="detail-value">${oddsStr}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">TV / Stream</span>
+            <span class="detail-value">${network}</span>
+          </div>
+          <div class="detail-item" style="grid-column: 1/-1;">
+            <span class="detail-label">Venue</span>
+            <span class="detail-value">${venue} - ${comp.venue?.address?.city || ''}</span>
+          </div>
+        </div>
+        <a href="${game.links && game.links[0] ? game.links[0].href : '#'}" target="_blank" class="action-btn" style="width:100%; justify-content:center; text-decoration:none; font-weight:700;">View Full Gamecast on ESPN</a>
+      `;
+      modal.classList.add('active');
     }
 
-    function renderSports(){ const container=document.getElementById('sportsList'); container.innerHTML=''; SPORTS_CONFIG.forEach(s=>{ const btn=document.createElement('div'); btn.className='sport'+(s.id===activeSport.id?' active':''); btn.textContent=s.name; btn.onclick=()=>{ activeSport=s; document.getElementById('activeSportLabel').textContent=s.name+' (MT)'; renderSports(); renderGames(); }; container.appendChild(btn); }); }
+    async function renderDashboard() {
+      const container = document.getElementById('lanesContainer');
+      const dateDisplay = document.getElementById('dateDisplay');
+      dateDisplay.textContent = selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      
+      const isoDate = selectedDate.toLocaleDateString('en-CA');
+      document.getElementById('calendarInput').value = isoDate;
 
-    function updateDateUI(){ document.getElementById('weekday').textContent = formatMT(selectedDate,{weekday:'long'}); document.getElementById('dateDisplay').textContent = formatMT(selectedDate,{month:'short',day:'numeric',year:'numeric'}); const v=`${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`; document.getElementById('dateInput').value=v; }
+      container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--muted); font-weight: 700;">Syncing Gameday Intelligence...</div>';
 
-    function renderGames(){ const main=document.getElementById('gamesContainer'); main.innerHTML=''; const list = activeSport.id==='pulse'? Object.values(allGames).flat() : (allGames[activeSport.id]||[]); const games=processGames(list);
-      if(!games.length){ main.innerHTML='<div class="muted">No games found for this date.</div>'; return; }
-      games.forEach(game=>{ const hex=colorMap[game.sportColor]||colorMap[activeSport.color]; const isLive=(game.status&&game.status.type&&game.status.type.state==='in'); const isFinal=(game.status&&game.status.type&&game.status.type.state==='post'); const card=document.createElement('div'); card.className='card';
-        const bar=document.createElement('div'); bar.className='bar'; const fill=document.createElement('div'); fill.style.width=(game.combinedPct*100)+'%'; fill.style.background=hex; bar.appendChild(fill); card.appendChild(bar);
-        const tags=document.createElement('div'); tags.style.display='flex'; tags.style.justifyContent='center'; tags.style.gap='6px'; tags.style.marginBottom='8px'; if(game.isBestInLeague){ const t=document.createElement('div'); t.className='tag'; t.textContent='Showcase'; tags.appendChild(t); } if(game.isLargestGap){ const t=document.createElement('div'); t.className='tag'; t.textContent='Mismatch'; tags.appendChild(t); } if(game.isWorstInLeague){ const t=document.createElement('div'); t.className='tag'; t.textContent='Low Quality'; tags.appendChild(t); } if(isFinal && game.scoreDiff>=20){ const t=document.createElement('div'); t.className='tag'; t.textContent='Blowout'; tags.appendChild(t); } if((isLive||isFinal) && game.scoreDiff<=3){ const t=document.createElement('div'); t.className='tag'; t.textContent='Nailbiter'; tags.appendChild(t); } card.appendChild(tags);
+      await Promise.all(LANES.map(l => fetchGlobalStandings(l)));
+      const dateStr = getFormattedApiDate(selectedDate);
+      
+      const laneResults = await Promise.all(LANES.map(async (lane) => {
+        try {
+          const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${lane.league}/scoreboard?dates=${dateStr}`);
+          const data = await res.json();
+          return { lane, games: data.events || [] };
+        } catch (e) { return { lane, games: [] }; }
+      }));
 
-        const row=document.createElement('div'); row.className='teams';
-        const away=document.createElement('div'); away.className='team'; away.innerHTML = `<div class="abbr">${game.awayTeam.team.abbreviation}${game.awayRank?(' #'+game.awayRank):''}</div><div class="muted">${game.awayRecord}</div>`; const awayImg=document.createElement('img'); awayImg.className='logo'; awayImg.src=game.awayTeam.team.logo||''; away.prepend(awayImg);
-        const mid=document.createElement('div'); mid.style.minWidth='90px'; mid.style.textAlign='center'; if(game.status&&game.status.type&&game.status.type.state==='pre'){ mid.innerHTML=`<div class="muted">${formatMT(new Date(game.date),{hour:'numeric',minute:'2-digit',hour12:true})}</div><div class="muted" style="font-size:10px">MT</div>`; } else { mid.innerHTML=`<div class="score">${game.awayTeam.score||0} - ${game.homeTeam.score||0}</div>`; if(isLive){ const live=document.createElement('div'); live.className='muted'; live.textContent = game.status&&game.status.type&&game.status.type.detail?game.status.type.detail:'Live'; mid.appendChild(live); } }
-        const home=document.createElement('div'); home.className='team'; home.innerHTML = `<div class="abbr">${game.homeTeam.team.abbreviation}${game.homeRank?(' #'+game.homeRank):''}</div><div class="muted">${game.homeRecord}</div>`; const homeImg=document.createElement('img'); homeImg.className='logo'; homeImg.src=game.homeTeam.team.logo||''; home.appendChild(homeImg);
-        row.appendChild(away); row.appendChild(mid); row.appendChild(home); card.appendChild(row);
+      container.innerHTML = '';
+      laneResults.forEach(({ lane, games }) => {
+        if ((activeSport !== 'all' && activeSport !== lane.id) || games.length === 0) return;
 
-        const foot=document.createElement('div'); foot.style.display='flex'; foot.style.justifyContent='space-between'; foot.style.alignItems='center'; foot.style.marginTop='10px'; const left=document.createElement('div'); left.innerHTML=`<span class="tag" style="background:rgba(255,255,255,.02);color:${hex}">${game.sportId}</span> ${game.isRanked?'<span class="muted">RANKED</span>':''}`; const right=document.createElement('div'); right.innerHTML=`<span class="muted">${(game.competitions&&game.competitions[0]&&game.competitions[0].broadcasts&&game.competitions[0].broadcasts[0]&&game.competitions[0].broadcasts[0].names&&game.competitions[0].broadcasts[0].names[0])||'TV'}</span>`; foot.appendChild(left); foot.appendChild(right); card.appendChild(foot);
+        const processedGames = games.map(game => {
+          const comp = game.competitions[0];
+          const home = getTeamData(comp, 'home', lane.id);
+          const away = getTeamData(comp, 'away', lane.id);
+          const combinedPct = (home.winPct + away.winPct) / 2;
+          return { game, home, away, combinedPct };
+        });
 
-        main.appendChild(card);
+        processedGames.sort((a, b) => b.combinedPct - a.combinedPct);
+
+        const laneEl = document.createElement('div');
+        laneEl.className = 'lane';
+        laneEl.innerHTML = `<div class="lane-header"><h3>${lane.label}</h3><span style="font-size:12px; font-weight:800; color:var(--accent)">${games.length} GAMES</span></div>`;
+
+        processedGames.forEach(({ game, home, away, combinedPct }) => {
+          const comp = game.competitions[0];
+          const state = game.status.type.state;
+          const qualityScore = Math.round(combinedPct * 100);
+          const scoreDiff = Math.abs(parseInt(home.score) - parseInt(away.score));
+          const isCloseGame = (state === 'in' || state === 'post') && scoreDiff <= 3 && scoreDiff >= 0;
+          
+          const homeRank = lane.core ? standingsCache[lane.id]?.[home.id]?.rank : home.curatedRank;
+          const awayRank = lane.core ? standingsCache[lane.id]?.[away.id]?.rank : away.curatedRank;
+
+          const gameCard = document.createElement('div');
+          gameCard.className = `game-card ${isCloseGame ? 'close-game' : ''}`;
+          gameCard.onclick = () => openMatchupModal(game, home, away, lane.label);
+          
+          const network = comp.broadcasts?.[0]?.names?.[0] || '';
+          
+          let oddsStr = '';
+          if (comp.odds && comp.odds[0]) {
+            const odds = comp.odds[0];
+            if (odds.details) oddsStr = odds.details;
+            if (odds.overUnder) oddsStr += ` • O/U ${odds.overUnder}`;
+          }
+
+          gameCard.innerHTML = `
+            <div class="game-header">
+              <div class="game-status">
+                ${state === 'in' ? `<span class="status-live">LIVE • ${game.status.type.detail}</span>` : `<span>${state === 'pre' ? new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit'}).format(new Date(game.date)) : 'FINAL'}</span>`}
+                ${settings.tv && network ? `<div class="broadcast">${network}</div>` : ''}
+              </div>
+              <div class="badge-container">
+                ${isCloseGame ? `<div class="badge badge-nailbiter">NAILBITER</div>` : ''}
+                ${settings.odds && oddsStr ? `<div class="badge badge-odds">${oddsStr}</div>` : ''}
+              </div>
+            </div>
+            
+            <div class="team-row">
+              <div class="team-info">
+                <div class="team-logo-wrapper"><img src="${away.logo}" class="team-logo"></div>
+                <div class="team-name-wrap">
+                  <div class="team-name">
+                    ${settings.ranks && awayRank ? `<span class="${lane.core ? 'league-rank' : 'rank-badge'}">#${awayRank}</span>` : ''}
+                    ${away.name}
+                  </div>
+                  ${settings.record ? `<div class="team-meta">${away.record}</div>` : ''}
+                </div>
+              </div>
+              <div class="team-score" style="${state === 'post' && parseInt(away.score) < parseInt(home.score) ? 'opacity:0.4' : ''}">${away.score}</div>
+            </div>
+            <div class="team-row">
+              <div class="team-info">
+                <div class="team-logo-wrapper"><img src="${home.logo}" class="team-logo"></div>
+                <div class="team-name-wrap">
+                  <div class="team-name">
+                    ${settings.ranks && homeRank ? `<span class="${lane.core ? 'league-rank' : 'rank-badge'}">#${homeRank}</span>` : ''}
+                    ${home.name}
+                  </div>
+                  ${settings.record ? `<div class="team-meta">${home.record}</div>` : ''}
+                </div>
+              </div>
+              <div class="team-score" style="${state === 'post' && parseInt(home.score) < parseInt(away.score) ? 'opacity:0.4' : ''}">${home.score}</div>
+            </div>
+            ${settings.pct ? `
+              <div class="win-bar-container">
+                <div class="win-bar-header"><span class="win-bar-label">Matchup Quality</span><span class="win-bar-label" style="color:var(--accent)">${qualityScore}%</span></div>
+                <div class="win-bar"><div class="win-bar-fill" style="width:${qualityScore}%"></div></div>
+              </div>` : ''}
+          `;
+          laneEl.appendChild(gameCard);
+        });
+        container.appendChild(laneEl);
       });
     }
 
-    // wire up UI
-    document.getElementById('todayBtn').addEventListener('click', ()=>{ selectedDate=new Date(); updateDateUI(); refreshAll(); });
-    document.getElementById('refreshBtn').addEventListener('click', ()=>refreshAll());
-    document.getElementById('prevDate').addEventListener('click', ()=>changeDate(-1));
-    document.getElementById('nextDate').addEventListener('click', ()=>changeDate(1));
-    document.getElementById('dateInput').addEventListener('change', handleCustomDate);
+    document.getElementById('prevDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()-1); renderDashboard(); };
+    document.getElementById('nextDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()+1); renderDashboard(); };
+    document.getElementById('jumpToday').onclick = () => { selectedDate = new Date(); renderDashboard(); };
+    
+    document.getElementById('calendarInput').onchange = (e) => { 
+        selectedDate = new Date(e.target.value + 'T12:00:00'); 
+        renderDashboard(); 
+    };
+    
+    document.getElementById('refreshBtn').onclick = () => location.reload();
+    document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('active');
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-    // init
-    function init(){ renderSports(); updateDateUI(); refreshAll(); if(refreshTimer) clearInterval(refreshTimer); refreshTimer=setInterval(refreshAll,60000); }
-    init();
+    document.getElementById('sportTabs').onclick = (e) => {
+      const tab = e.target.closest('.sport-tab');
+      if (!tab) return;
+      document.querySelectorAll('.sport-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      activeSport = tab.dataset.sport;
+      renderDashboard();
+    };
+
+    let settings = JSON.parse(localStorage.getItem('gd_settings')) || { record:true, ranks:true, pct:true, tv:true, odds:true };
+    function saveSettings() {
+      settings = { 
+        record: document.getElementById('chkRecord').checked, 
+        ranks: document.getElementById('chkRanks').checked, 
+        pct: document.getElementById('chkPct').checked, 
+        tv: document.getElementById('chkTV').checked,
+        odds: document.getElementById('chkOdds').checked
+      };
+      tz = document.getElementById('tzSelect').value;
+      localStorage.setItem('gd_settings', JSON.stringify(settings));
+      localStorage.setItem('gd_tz', tz);
+      closeModal('settingsModal');
+      renderDashboard();
+    }
+
+    // Init checkboxes
+    document.getElementById('chkRecord').checked = settings.record;
+    document.getElementById('chkRanks').checked = settings.ranks;
+    document.getElementById('chkPct').checked = settings.pct;
+    document.getElementById('chkTV').checked = settings.tv;
+    document.getElementById('chkOdds').checked = settings.odds;
+    document.getElementById('tzSelect').value = tz;
+
+    renderDashboard();
+    setInterval(renderDashboard, 60000);
   </script>
 </body>
 </html>
