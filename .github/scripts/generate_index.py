@@ -2,7 +2,7 @@ import os
 import sys
 import json
 
-def generate_index_html(target_directory="localonly"):
+def generate_index_html(target_directory="pi"):
     """
     Scans the target_directory and its subfolders for HTML files and generates a dynamic index.html
     with a modern, professional, and responsive app choosing screen.
