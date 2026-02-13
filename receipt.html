@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Raider | Smart Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src='https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; min-height: 100vh; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        .scanning-line {
+            height: 2px;
+            background: #3b82f6;
+            box-shadow: 0 0 15px #3b82f6;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            animation: scan 2s linear infinite;
+            display: none;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        #receipt-canvas { max-width: 100%; height: auto; border-radius: 8px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="flex items-center justify-between mb-8 max-w-6xl mx-auto">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-slate-900 font-black text-2xl shadow-xl shadow-amber-500/20">R</div>
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic">Receipt Raider</h1>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Autonomous Scan Engine</p>
+            </div>
+        </div>
+        
+        <div class="flex gap-2">
+            <label class="cursor-pointer px-6 py-2.5 bg-white text-slate-900 font-black rounded-xl hover:bg-slate-200 transition-all active:scale-95 text-xs uppercase shadow-lg">
+                Upload Loot
+                <input type="file" id="file-input" accept="image/*" class="hidden">
+            </label>
+            <label class="cursor-pointer px-6 py-2.5 bg-amber-500 text-slate-900 font-black rounded-xl hover:bg-amber-400 transition-all active:scale-95 text-xs uppercase shadow-lg">
+                Snap Photo
+                <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Left: Image Preview -->
+        <div class="glass-panel p-4 rounded-3xl relative overflow-hidden flex flex-col items-center justify-center min-h-[400px]">
+            <div id="scan-line" class="scanning-line"></div>
+            <img id="image-preview" src="" class="hidden shadow-2xl">
+            <div id="drop-zone" class="text-center p-10 border-2 border-dashed border-slate-700 rounded-2xl w-full h-full flex flex-col items-center justify-center">
+                <svg class="w-12 h-12 text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <p class="text-slate-500 font-medium">Ready yer scroll or snap a photo to begin</p>
+            </div>
+        </div>
+
+        <!-- Right: Results -->
+        <div class="space-y-6">
+            <!-- Summary Card -->
+            <div class="glass-panel p-6 rounded-3xl">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 mb-6">Extracted Treasure</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Store</p>
+                        <p id="res-store" class="text-lg font-black text-white">---</p>
+                    </div>
+                    <div class="p-4 bg-slate-800/50 rounded-2xl border border-slate-700">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Date</p>
+                        <p id="res-date" class="text-lg font-black text-white">---</p>
+                    </div>
+                    <div class="p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20 col-span-2">
+                        <p class="text-[10px] font-bold text-amber-500 uppercase mb-1">Total Gold</p>
+                        <p id="res-total" class="text-3xl font-black text-amber-500 leading-none">$0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Text Log -->
+            <div class="glass-panel p-6 rounded-3xl flex-1">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xs font-black uppercase tracking-widest text-slate-500">Raw Scroll Data</h2>
+                    <div id="progress-bar" class="hidden items-center gap-2">
+                        <div class="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                            <div id="progress-inner" class="h-full bg-blue-500 w-0 transition-all"></div>
+                        </div>
+                        <span id="progress-text" class="text-[9px] font-black text-blue-400 uppercase">Scanning</span>
+                    </div>
+                </div>
+                <div id="raw-text" class="text-[10px] font-mono text-slate-400 h-48 overflow-y-auto space-y-1 p-2 bg-black/20 rounded-xl leading-relaxed italic">
+                    Scan a receipt to view the raw text...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const cameraInput = document.getElementById('camera-input');
+        const imgPreview = document.getElementById('image-preview');
+        const dropZone = document.getElementById('drop-zone');
+        const scanLine = document.getElementById('scan-line');
+        
+        const resStore = document.getElementById('res-store');
+        const resDate = document.getElementById('res-date');
+        const resTotal = document.getElementById('res-total');
+        const rawTextContainer = document.getElementById('raw-text');
+
+        [fileInput, cameraInput].forEach(input => {
+            input.addEventListener('change', handleFile);
+        });
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                imgPreview.src = event.target.result;
+                imgPreview.classList.remove('hidden');
+                dropZone.classList.add('hidden');
+                performOCR(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function performOCR(image) {
+            scanLine.style.display = 'block';
+            rawTextContainer.textContent = "Summoning Tesseract...";
+            document.getElementById('progress-bar').classList.remove('hidden');
+
+            const worker = await Tesseract.createWorker({
+                logger: m => {
+                    if(m.status === 'recognizing text') {
+                        const prog = Math.round(m.progress * 100);
+                        document.getElementById('progress-inner').style.width = prog + '%';
+                        document.getElementById('progress-text').textContent = `Scanning: ${prog}%`;
+                    }
+                }
+            });
+
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            const { data: { text } } = await worker.recognize(image);
+            
+            scanLine.style.display = 'none';
+            document.getElementById('progress-bar').classList.add('hidden');
+            
+            displayResults(text);
+            await worker.terminate();
+        }
+
+        function displayResults(text) {
+            rawTextContainer.innerHTML = text.split('
+').map(line => `<div>${line}</div>`).join('');
+            
+            const lines = text.split('
+').map(l => l.trim()).filter(l => l.length > 0);
+            
+            // SMART PARSING
+            // 1. Store Name (usually first line with words)
+            resStore.textContent = lines[0] || "Unknown Merchant";
+
+            // 2. Date Hunter
+            const dateRegex = /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})|(\w{3} \d{1,2},? \d{4})/;
+            const foundDate = text.match(dateRegex);
+            resDate.textContent = foundDate ? foundDate[0] : "Not Found";
+
+            // 3. Total Hunter
+            // Look for lines containing "TOTAL", "AMOUNT", "DUE" and then a currency-looking number
+            let total = 0;
+            const currencyRegex = /[+-]?\$?\s*\d+\.\d{2}/g;
+            
+            const totalLines = lines.filter(l => 
+                l.toUpperCase().includes('TOTAL') || 
+                l.toUpperCase().includes('AMOUNT') || 
+                l.toUpperCase().includes('BALANCE') ||
+                l.toUpperCase().includes('NET')
+            );
+
+            if (totalLines.length > 0) {
+                // Take the last "Total" line found, often there's a subtotal first
+                const targetLine = totalLines[totalLines.length - 1];
+                const matches = targetLine.match(currencyRegex);
+                if (matches) {
+                    resTotal.textContent = matches[matches.length - 1].trim();
+                }
+            } else {
+                // Fallback: search whole text for largest currency-looking number
+                const allNumbers = text.match(currencyRegex);
+                if (allNumbers) {
+                    const cleanNums = allNumbers.map(n => parseFloat(n.replace('$', '').trim()));
+                    resTotal.textContent = '$' + Math.max(...cleanNums).toFixed(2);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
