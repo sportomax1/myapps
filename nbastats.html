@@ -6,6 +6,8 @@
     <title>NBA Stat Vault | Pro Matrix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Simple Base64 Favicon to prevent 404 -->
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGDYDRiDAiMGDGAoAKGDBhjBjw0GjIwMIMYBAkYgYQeGCAAYGABrWf3hDfojJgAAAABJRU5ErkJggg==">
     <style>
         body { 
             font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; 
@@ -145,11 +147,13 @@
         let ACTIVE_STAT_MOBILE = localStorage.getItem('exp_mobile_stat') || 'customImpact';
 
         async function fetchJSON(url) {
-            if (HYDRATION_CACHE[url]) return HYDRATION_CACHE[url];
-            const res = await fetch(url);
+            // Force HTTPS for all internal API calls
+            const secureUrl = url.replace('http://', 'https://');
+            if (HYDRATION_CACHE[secureUrl]) return HYDRATION_CACHE[secureUrl];
+            const res = await fetch(secureUrl);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            HYDRATION_CACHE[url] = data;
+            HYDRATION_CACHE[secureUrl] = data;
             return data;
         }
 
