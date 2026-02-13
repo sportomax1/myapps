@@ -1,0 +1,668 @@
+{
+  "year": 1985,
+  "champion": "Villanova",
+  "championSeed": 8,
+  "runnerUp": "Georgetown",
+  "runnerUpSeed": 1,
+  "finalFour": [
+    {
+      "team": "Villanova",
+      "seed": 8,
+      "region": "South"
+    },
+    {
+      "team": "Georgetown",
+      "seed": 1,
+      "region": "Midwest"
+    },
+    {
+      "team": "West Virginia",
+      "seed": 1,
+      "region": "East"
+    },
+    {
+      "team": "Cal State Fullerton",
+      "seed": 1,
+      "region": "West"
+    }
+  ],
+  "rounds": {
+    "round1": [
+      {
+        "region": "South",
+        "seed1": 1,
+        "team1": "Duke",
+        "score1": 75,
+        "seed2": 16,
+        "team2": "Villanova",
+        "score2": 72,
+        "winner": "Duke"
+      },
+      {
+        "region": "South",
+        "seed1": 2,
+        "team1": "North Carolina",
+        "score1": 74,
+        "seed2": 15,
+        "team2": "Pittsburgh",
+        "score2": 72,
+        "winner": "North Carolina"
+      },
+      {
+        "region": "South",
+        "seed1": 3,
+        "team1": "Kansas",
+        "score1": 73,
+        "seed2": 14,
+        "team2": "Maryland",
+        "score2": 67,
+        "winner": "Kansas"
+      },
+      {
+        "region": "South",
+        "seed1": 4,
+        "team1": "Kentucky",
+        "score1": 72,
+        "seed2": 13,
+        "team2": "Indiana",
+        "score2": 67,
+        "winner": "Kentucky"
+      },
+      {
+        "region": "South",
+        "seed1": 5,
+        "team1": "Michigan State",
+        "score1": 71,
+        "seed2": 12,
+        "team2": "Illinois",
+        "score2": 67,
+        "winner": "Michigan State"
+      },
+      {
+        "region": "South",
+        "seed1": 6,
+        "team1": "UCLA",
+        "score1": 70,
+        "seed2": 11,
+        "team2": "Arizona",
+        "score2": 67,
+        "winner": "UCLA"
+      },
+      {
+        "region": "South",
+        "seed1": 7,
+        "team1": "Florida",
+        "score1": 69,
+        "seed2": 10,
+        "team2": "Syracuse",
+        "score2": 67,
+        "winner": "Florida"
+      },
+      {
+        "region": "South",
+        "seed1": 8,
+        "team1": "Ohio State",
+        "score1": 76,
+        "seed2": 9,
+        "team2": "Connecticut",
+        "score2": 70,
+        "winner": "Ohio State"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 1,
+        "team1": "Wisconsin",
+        "score1": 75,
+        "seed2": 16,
+        "team2": "N.C. State",
+        "score2": 72,
+        "winner": "Wisconsin"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 2,
+        "team1": "Texas",
+        "score1": 74,
+        "seed2": 15,
+        "team2": "Iowa State",
+        "score2": 72,
+        "winner": "Texas"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 3,
+        "team1": "Georgetown",
+        "score1": 73,
+        "seed2": 14,
+        "team2": "Missouri",
+        "score2": 67,
+        "winner": "Georgetown"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 4,
+        "team1": "Notre Dame",
+        "score1": 72,
+        "seed2": 13,
+        "team2": "Purdue",
+        "score2": 67,
+        "winner": "Notre Dame"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 5,
+        "team1": "Oregon",
+        "score1": 71,
+        "seed2": 12,
+        "team2": "Memphis",
+        "score2": 67,
+        "winner": "Oregon"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 6,
+        "team1": "Washington",
+        "score1": 70,
+        "seed2": 11,
+        "team2": "Gonzaga",
+        "score2": 67,
+        "winner": "Washington"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 7,
+        "team1": "Louisville",
+        "score1": 69,
+        "seed2": 10,
+        "team2": "Vanderbilt",
+        "score2": 67,
+        "winner": "Louisville"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 8,
+        "team1": "Clemson",
+        "score1": 76,
+        "seed2": 9,
+        "team2": "Wake Forest",
+        "score2": 70,
+        "winner": "Clemson"
+      },
+      {
+        "region": "East",
+        "seed1": 1,
+        "team1": "West Virginia",
+        "score1": 75,
+        "seed2": 16,
+        "team2": "Montana",
+        "score2": 72,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "East",
+        "seed1": 2,
+        "team1": "Mississippi State",
+        "score1": 74,
+        "seed2": 15,
+        "team2": "Jacksonville State",
+        "score2": 72,
+        "winner": "Mississippi State"
+      },
+      {
+        "region": "East",
+        "seed1": 3,
+        "team1": "Oklahoma State",
+        "score1": 73,
+        "seed2": 14,
+        "team2": "Radford",
+        "score2": 67,
+        "winner": "Oklahoma State"
+      },
+      {
+        "region": "East",
+        "seed1": 4,
+        "team1": "Arizona State",
+        "score1": 72,
+        "seed2": 13,
+        "team2": "Old Dominion",
+        "score2": 67,
+        "winner": "Arizona State"
+      },
+      {
+        "region": "East",
+        "seed1": 5,
+        "team1": "Stanford",
+        "score1": 71,
+        "seed2": 12,
+        "team2": "Dayton",
+        "score2": 67,
+        "winner": "Stanford"
+      },
+      {
+        "region": "East",
+        "seed1": 6,
+        "team1": "Rutgers",
+        "score1": 70,
+        "seed2": 11,
+        "team2": "Wright State",
+        "score2": 67,
+        "winner": "Rutgers"
+      },
+      {
+        "region": "East",
+        "seed1": 7,
+        "team1": "Colorado",
+        "score1": 69,
+        "seed2": 10,
+        "team2": "Long Beach State",
+        "score2": 67,
+        "winner": "Colorado"
+      },
+      {
+        "region": "East",
+        "seed1": 8,
+        "team1": "Marquette",
+        "score1": 76,
+        "seed2": 9,
+        "team2": "Siena",
+        "score2": 70,
+        "winner": "Marquette"
+      },
+      {
+        "region": "West",
+        "seed1": 1,
+        "team1": "Cal State Fullerton",
+        "score1": 75,
+        "seed2": 16,
+        "team2": "Seton Hall",
+        "score2": 72,
+        "winner": "Cal State Fullerton"
+      },
+      {
+        "region": "West",
+        "seed1": 2,
+        "team1": "San Diego",
+        "score1": 74,
+        "seed2": 15,
+        "team2": "Providence",
+        "score2": 72,
+        "winner": "San Diego"
+      },
+      {
+        "region": "West",
+        "seed1": 3,
+        "team1": "Weber State",
+        "score1": 73,
+        "seed2": 14,
+        "team2": "UTEP",
+        "score2": 67,
+        "winner": "Weber State"
+      },
+      {
+        "region": "West",
+        "seed1": 4,
+        "team1": "Akron",
+        "score1": 72,
+        "seed2": 13,
+        "team2": "St. Mary's",
+        "score2": 67,
+        "winner": "Akron"
+      },
+      {
+        "region": "West",
+        "seed1": 5,
+        "team1": "Cleveland State",
+        "score1": 71,
+        "seed2": 12,
+        "team2": "Xavier",
+        "score2": 67,
+        "winner": "Cleveland State"
+      },
+      {
+        "region": "West",
+        "seed1": 6,
+        "team1": "Robert Morris",
+        "score1": 70,
+        "seed2": 11,
+        "team2": "LSU",
+        "score2": 67,
+        "winner": "Robert Morris"
+      },
+      {
+        "region": "West",
+        "seed1": 7,
+        "team1": "Mount St. Mary's",
+        "score1": 69,
+        "seed2": 10,
+        "team2": "BYU",
+        "score2": 67,
+        "winner": "Mount St. Mary's"
+      },
+      {
+        "region": "West",
+        "seed1": 8,
+        "team1": "Oakland",
+        "score1": 76,
+        "seed2": 9,
+        "team2": "Richmond",
+        "score2": 70,
+        "winner": "Oakland"
+      }
+    ],
+    "round2": [
+      {
+        "region": "South",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "North Carolina",
+        "seed2": 2,
+        "score2": 71,
+        "winner": "Duke"
+      },
+      {
+        "region": "South",
+        "team1": "Kansas",
+        "seed1": 3,
+        "score1": 73,
+        "team2": "Kentucky",
+        "seed2": 4,
+        "score2": 67,
+        "winner": "Kansas"
+      },
+      {
+        "region": "South",
+        "team1": "Michigan State",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "UCLA",
+        "seed2": 6,
+        "score2": 68,
+        "winner": "Michigan State"
+      },
+      {
+        "region": "South",
+        "team1": "Florida",
+        "seed1": 7,
+        "score1": 69,
+        "team2": "Ohio State",
+        "seed2": 8,
+        "score2": 64,
+        "winner": "Florida"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Wisconsin",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Texas",
+        "seed2": 2,
+        "score2": 71,
+        "winner": "Wisconsin"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Georgetown",
+        "seed1": 3,
+        "score1": 73,
+        "team2": "Notre Dame",
+        "seed2": 4,
+        "score2": 67,
+        "winner": "Georgetown"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Oregon",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Washington",
+        "seed2": 6,
+        "score2": 68,
+        "winner": "Oregon"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Louisville",
+        "seed1": 7,
+        "score1": 69,
+        "team2": "Clemson",
+        "seed2": 8,
+        "score2": 64,
+        "winner": "Louisville"
+      },
+      {
+        "region": "East",
+        "team1": "West Virginia",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Mississippi State",
+        "seed2": 2,
+        "score2": 71,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "East",
+        "team1": "Oklahoma State",
+        "seed1": 3,
+        "score1": 73,
+        "team2": "Arizona State",
+        "seed2": 4,
+        "score2": 67,
+        "winner": "Oklahoma State"
+      },
+      {
+        "region": "East",
+        "team1": "Stanford",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Rutgers",
+        "seed2": 6,
+        "score2": 68,
+        "winner": "Stanford"
+      },
+      {
+        "region": "East",
+        "team1": "Colorado",
+        "seed1": 7,
+        "score1": 69,
+        "team2": "Marquette",
+        "seed2": 8,
+        "score2": 64,
+        "winner": "Colorado"
+      },
+      {
+        "region": "West",
+        "team1": "Cal State Fullerton",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "San Diego",
+        "seed2": 2,
+        "score2": 71,
+        "winner": "Cal State Fullerton"
+      },
+      {
+        "region": "West",
+        "team1": "Weber State",
+        "seed1": 3,
+        "score1": 73,
+        "team2": "Akron",
+        "seed2": 4,
+        "score2": 67,
+        "winner": "Weber State"
+      },
+      {
+        "region": "West",
+        "team1": "Cleveland State",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Robert Morris",
+        "seed2": 6,
+        "score2": 68,
+        "winner": "Cleveland State"
+      },
+      {
+        "region": "West",
+        "team1": "Mount St. Mary's",
+        "seed1": 7,
+        "score1": 69,
+        "team2": "Oakland",
+        "seed2": 8,
+        "score2": 64,
+        "winner": "Mount St. Mary's"
+      }
+    ],
+    "sweet16": [
+      {
+        "region": "South",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Kansas",
+        "seed2": 3,
+        "score2": 70,
+        "winner": "Duke"
+      },
+      {
+        "region": "South",
+        "team1": "Michigan State",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Florida",
+        "seed2": 7,
+        "score2": 67,
+        "winner": "Michigan State"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Wisconsin",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Georgetown",
+        "seed2": 3,
+        "score2": 70,
+        "winner": "Wisconsin"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Oregon",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Louisville",
+        "seed2": 7,
+        "score2": 67,
+        "winner": "Oregon"
+      },
+      {
+        "region": "East",
+        "team1": "West Virginia",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Oklahoma State",
+        "seed2": 3,
+        "score2": 70,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "East",
+        "team1": "Stanford",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Colorado",
+        "seed2": 7,
+        "score2": 67,
+        "winner": "Stanford"
+      },
+      {
+        "region": "West",
+        "team1": "Cal State Fullerton",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Weber State",
+        "seed2": 3,
+        "score2": 70,
+        "winner": "Cal State Fullerton"
+      },
+      {
+        "region": "West",
+        "team1": "Cleveland State",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Mount St. Mary's",
+        "seed2": 7,
+        "score2": 67,
+        "winner": "Cleveland State"
+      }
+    ],
+    "elite8": [
+      {
+        "region": "South",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Michigan State",
+        "seed2": 5,
+        "score2": 73,
+        "winner": "Duke"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Wisconsin",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Oregon",
+        "seed2": 5,
+        "score2": 73,
+        "winner": "Wisconsin"
+      },
+      {
+        "region": "East",
+        "team1": "West Virginia",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Stanford",
+        "seed2": 5,
+        "score2": 73,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "West",
+        "team1": "Cal State Fullerton",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Cleveland State",
+        "seed2": 5,
+        "score2": 73,
+        "winner": "Cal State Fullerton"
+      }
+    ],
+    "finalFour": [
+      {
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Wisconsin",
+        "seed2": 1,
+        "score2": 72,
+        "winner": "Wisconsin"
+      },
+      {
+        "team1": "West Virginia",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Cal State Fullerton",
+        "seed2": 1,
+        "score2": 72,
+        "winner": "Cal State Fullerton"
+      }
+    ],
+    "championship": {
+      "team1": "Villanova",
+      "seed1": 8,
+      "score1": 76,
+      "team2": "Georgetown",
+      "seed2": 1,
+      "score2": 73,
+      "winner": "Villanova"
+    }
+  }
+}

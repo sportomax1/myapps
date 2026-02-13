@@ -1,0 +1,96 @@
+{
+  "year": 2024,
+  "champion": "UConn",
+  "championSeed": 1,
+  "runnerUp": "Purdue",
+  "runnerUpSeed": 1,
+  "finalFour": [
+    {"team": "UConn", "seed": 1, "region": "East"},
+    {"team": "Purdue", "seed": 1, "region": "Midwest"},
+    {"team": "Alabama", "seed": 4, "region": "West"},
+    {"team": "NC State", "seed": 11, "region": "South"}
+  ],
+  "rounds": {
+    "round1": [
+      {"region": "East", "seed1": 1, "team1": "UConn", "score1": 91, "seed2": 16, "team2": "Stetson", "score2": 52, "winner": "UConn"},
+      {"region": "East", "seed1": 8, "team1": "Florida Atlantic", "score1": 78, "seed2": 9, "team2": "Northwestern", "score2": 77, "winner": "Florida Atlantic"},
+      {"region": "East", "seed1": 5, "team1": "San Diego State", "score1": 69, "seed2": 12, "team2": "UAB", "score2": 65, "winner": "San Diego State"},
+      {"region": "East", "seed1": 4, "team1": "Auburn", "score1": 80, "seed2": 13, "team2": "Yale", "score2": 76, "winner": "Auburn"},
+      {"region": "East", "seed1": 6, "team1": "BYU", "score1": 86, "seed2": 11, "team2": "Duquesne", "score2": 57, "winner": "BYU"},
+      {"region": "East", "seed1": 3, "team1": "Illinois", "score1": 77, "seed2": 14, "team2": "Morehead State", "score2": 53, "winner": "Illinois"},
+      {"region": "East", "seed1": 7, "team1": "Washington State", "score1": 56, "seed2": 10, "team2": "Drake", "score2": 64, "winner": "Drake"},
+      {"region": "East", "seed1": 2, "team1": "Iowa State", "score1": 67, "seed2": 15, "team2": "South Dakota State", "score2": 56, "winner": "Iowa State"},
+      {"region": "South", "seed1": 1, "team1": "North Carolina", "score1": 90, "seed2": 16, "team2": "Wagner", "score2": 62, "winner": "North Carolina"},
+      {"region": "South", "seed1": 8, "team1": "Mississippi State", "score1": 63, "seed2": 9, "team2": "Michigan State", "score2": 69, "winner": "Michigan State"},
+      {"region": "South", "seed1": 5, "team1": "Saint Mary's", "score1": 63, "seed2": 12, "team2": "Grand Canyon", "score2": 75, "winner": "Grand Canyon"},
+      {"region": "South", "seed1": 4, "team1": "Alabama", "score1": 100, "seed2": 13, "team2": "Charleston", "score2": 71, "winner": "Alabama"},
+      {"region": "South", "seed1": 6, "team1": "Clemson", "score1": 60, "seed2": 11, "team2": "New Mexico", "score2": 56, "winner": "Clemson"},
+      {"region": "South", "seed1": 3, "team1": "Baylor", "score1": 93, "seed2": 14, "team2": "Colgate", "score2": 66, "winner": "Baylor"},
+      {"region": "South", "seed1": 7, "team1": "Dayton", "score1": 63, "seed2": 10, "team2": "Nevada", "score2": 60, "winner": "Dayton"},
+      {"region": "South", "seed1": 2, "team1": "Arizona", "score1": 85, "seed2": 15, "team2": "Long Beach State", "score2": 65, "winner": "Arizona"},
+      {"region": "Midwest", "seed1": 1, "team1": "Purdue", "score1": 78, "seed2": 16, "team2": "Grambling State", "score2": 50, "winner": "Purdue"},
+      {"region": "Midwest", "seed1": 8, "team1": "Utah State", "score1": 80, "seed2": 9, "team2": "TCU", "score2": 87, "winner": "TCU"},
+      {"region": "Midwest", "seed1": 5, "team1": "Gonzaga", "score1": 77, "seed2": 12, "team2": "McNeese", "score2": 63, "winner": "Gonzaga"},
+      {"region": "Midwest", "seed1": 4, "team1": "Kansas", "score1": 86, "seed2": 13, "team2": "Samford", "score2": 62, "winner": "Kansas"},
+      {"region": "Midwest", "seed1": 6, "team1": "South Carolina", "score1": 63, "seed2": 11, "team2": "Oregon", "score2": 68, "winner": "Oregon"},
+      {"region": "Midwest", "seed1": 3, "team1": "Creighton", "score1": 77, "seed2": 14, "team2": "Akron", "score2": 60, "winner": "Creighton"},
+      {"region": "Midwest", "seed1": 7, "team1": "Texas", "score1": 73, "seed2": 10, "team2": "Colorado State", "score2": 56, "winner": "Texas"},
+      {"region": "Midwest", "seed1": 2, "team1": "Tennessee", "score1": 83, "seed2": 15, "team2": "Saint Peter's", "score2": 49, "winner": "Tennessee"},
+      {"region": "West", "seed1": 1, "team1": "Arizona", "score1": 85, "seed2": 16, "team2": "Long Beach State", "score2": 65, "winner": "Arizona"},
+      {"region": "West", "seed1": 8, "team1": "Nebraska", "score1": 77, "seed2": 9, "team2": "Texas A&M", "score2": 66, "winner": "Nebraska"},
+      {"region": "West", "seed1": 5, "team1": "Duke", "score1": 93, "seed2": 12, "team2": "Vermont", "score2": 55, "winner": "Duke"},
+      {"region": "West", "seed1": 4, "team1": "Auburn", "score1": 76, "seed2": 13, "team2": "Yale", "score2": 78, "winner": "Yale"},
+      {"region": "West", "seed1": 6, "team1": "BYU", "score1": 72, "seed2": 11, "team2": "NC State", "score2": 63, "winner": "NC State"},
+      {"region": "West", "seed1": 3, "team1": "Baylor", "score1": 85, "seed2": 14, "team2": "Colgate", "score2": 55, "winner": "Baylor"},
+      {"region": "West", "seed1": 7, "team1": "Dayton", "score1": 56, "seed2": 10, "team2": "Nevada", "score2": 60, "winner": "Nevada"},
+      {"region": "West", "seed1": 2, "team1": "Arizona", "score1": 78, "seed2": 15, "team2": "Long Beach State", "score2": 59, "winner": "Arizona"}
+    ],
+    "round2": [
+      {"region": "East", "team1": "UConn", "seed1": 1, "score1": 75, "team2": "Florida Atlantic", "seed2": 8, "score2": 60, "winner": "UConn"},
+      {"region": "East", "team1": "San Diego State", "seed1": 5, "score1": 85, "team2": "Auburn", "seed2": 4, "score2": 82, "winner": "San Diego State"},
+      {"region": "East", "team1": "Illinois", "seed1": 3, "score1": 77, "team2": "BYU", "seed2": 6, "score2": 73, "winner": "Illinois"},
+      {"region": "East", "team1": "Iowa State", "seed1": 2, "score1": 72, "team2": "Drake", "seed2": 10, "score2": 54, "winner": "Iowa State"},
+      {"region": "South", "team1": "North Carolina", "seed1": 1, "score1": 73, "team2": "Michigan State", "seed2": 9, "score2": 85, "winner": "Michigan State"},
+      {"region": "South", "team1": "Alabama", "seed1": 4, "score1": 72, "team2": "Grand Canyon", "seed2": 12, "score2": 61, "winner": "Alabama"},
+      {"region": "South", "team1": "Baylor", "seed1": 3, "score1": 85, "team2": "Clemson", "seed2": 6, "score2": 71, "winner": "Baylor"},
+      {"region": "South", "team1": "Arizona", "seed1": 2, "score1": 78, "team2": "Dayton", "seed2": 7, "score2": 68, "winner": "Arizona"},
+      {"region": "Midwest", "team1": "Purdue", "seed1": 1, "score1": 106, "team2": "TCU", "seed2": 9, "score2": 67, "winner": "Purdue"},
+      {"region": "Midwest", "team1": "Gonzaga", "seed1": 5, "score1": 89, "team2": "Kansas", "seed2": 4, "score2": 68, "winner": "Gonzaga"},
+      {"region": "Midwest", "team1": "Creighton", "seed1": 3, "score1": 86, "team2": "Oregon", "seed2": 11, "score2": 73, "winner": "Creighton"},
+      {"region": "Midwest", "team1": "Tennessee", "seed1": 2, "score1": 62, "team2": "Texas", "seed2": 7, "score2": 56, "winner": "Tennessee"},
+      {"region": "West", "team1": "Arizona", "seed1": 1, "score1": 85, "team2": "Nebraska", "seed2": 8, "score2": 66, "winner": "Arizona"},
+      {"region": "West", "team1": "Duke", "seed1": 5, "score1": 85, "team2": "Yale", "seed2": 13, "score2": 64, "winner": "Duke"},
+      {"region": "West", "team1": "NC State", "seed1": 11, "score1": 67, "team2": "Baylor", "seed2": 3, "score2": 58, "winner": "NC State"},
+      {"region": "West", "team1": "Arizona", "seed1": 2, "score1": 88, "team2": "Nevada", "seed2": 10, "score2": 72, "winner": "Arizona"}
+    ],
+    "sweet16": [
+      {"region": "East", "team1": "UConn", "seed1": 1, "score1": 82, "team2": "San Diego State", "seed2": 5, "score2": 52, "winner": "UConn"},
+      {"region": "East", "team1": "Illinois", "seed1": 3, "score1": 69, "team2": "Iowa State", "seed2": 2, "score2": 72, "winner": "Iowa State"},
+      {"region": "South", "team1": "Alabama", "seed1": 4, "score1": 85, "team2": "Michigan State", "seed2": 9, "score2": 69, "winner": "Alabama"},
+      {"region": "South", "team1": "Arizona", "seed1": 2, "score1": 78, "team2": "Baylor", "seed2": 3, "score2": 69, "winner": "Clemson"},
+      {"region": "Midwest", "team1": "Purdue", "seed1": 1, "score1": 80, "team2": "Gonzaga", "seed2": 5, "score2": 68, "winner": "Purdue"},
+      {"region": "Midwest", "team1": "Tennessee", "seed1": 2, "score1": 82, "team2": "Creighton", "seed2": 3, "score2": 75, "winner": "Tennessee"},
+      {"region": "West", "team1": "Arizona", "seed1": 1, "score1": 78, "team2": "Duke", "seed2": 5, "score2": 73, "winner": "Arizona"},
+      {"region": "West", "team1": "NC State", "seed1": 11, "score1": 76, "team2": "Duke", "seed2": 5, "score2": 64, "winner": "NC State"}
+    ],
+    "elite8": [
+      {"region": "East", "team1": "UConn", "seed1": 1, "score1": 77, "team2": "Iowa State", "seed2": 2, "score2": 70, "winner": "UConn"},
+      {"region": "South", "team1": "Alabama", "seed1": 4, "score1": 89, "team2": "Clemson", "seed2": 6, "score2": 82, "winner": "Alabama"},
+      {"region": "Midwest", "team1": "Purdue", "seed1": 1, "score1": 72, "team2": "Tennessee", "seed2": 2, "score2": 66, "winner": "Purdue"},
+      {"region": "West", "team1": "NC State", "seed1": 11, "score1": 76, "team2": "Duke", "seed2": 5, "score2": 64, "winner": "NC State"}
+    ],
+    "finalFour": [
+      {"team1": "UConn", "seed1": 1, "score1": 86, "team2": "Alabama", "seed2": 4, "score2": 72, "winner": "UConn"},
+      {"team1": "Purdue", "seed1": 1, "score1": 63, "team2": "NC State", "seed2": 11, "score2": 50, "winner": "Purdue"}
+    ],
+    "championship": {
+      "team1": "UConn",
+      "seed1": 1,
+      "score1": 75,
+      "team2": "Purdue",
+      "seed2": 1,
+      "score1": 60,
+      "winner": "UConn"
+    }
+  }
+}

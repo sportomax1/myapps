@@ -1,0 +1,668 @@
+{
+  "year": 2010,
+  "champion": "Duke",
+  "championSeed": 1,
+  "runnerUp": "Butler",
+  "runnerUpSeed": 5,
+  "finalFour": [
+    {
+      "team": "Duke",
+      "seed": 1,
+      "region": "East"
+    },
+    {
+      "team": "Butler",
+      "seed": 5,
+      "region": "Midwest"
+    },
+    {
+      "team": "West Virginia",
+      "seed": 2,
+      "region": "South"
+    },
+    {
+      "team": "Michigan State",
+      "seed": 5,
+      "region": "West"
+    }
+  ],
+  "rounds": {
+    "round1": [
+      {
+        "region": "East",
+        "seed1": 1,
+        "team1": "Duke",
+        "score1": 71,
+        "seed2": 16,
+        "team2": "Arkansas-Pine Bluff",
+        "score2": 57,
+        "winner": "Duke"
+      },
+      {
+        "region": "East",
+        "seed1": 8,
+        "team1": "San Diego State",
+        "score1": 67,
+        "seed2": 9,
+        "team2": "Temple",
+        "score2": 63,
+        "winner": "San Diego State"
+      },
+      {
+        "region": "East",
+        "seed1": 5,
+        "team1": "Ohio State",
+        "score1": 75,
+        "seed2": 12,
+        "team2": "George Mason",
+        "score2": 61,
+        "winner": "Ohio State"
+      },
+      {
+        "region": "East",
+        "seed1": 4,
+        "team1": "Maryland",
+        "score1": 77,
+        "seed2": 13,
+        "team2": "Houston",
+        "score2": 58,
+        "winner": "Maryland"
+      },
+      {
+        "region": "East",
+        "seed1": 6,
+        "team1": "Xavier",
+        "score1": 69,
+        "seed2": 11,
+        "team2": "Minnesota",
+        "score2": 62,
+        "winner": "Xavier"
+      },
+      {
+        "region": "East",
+        "seed1": 3,
+        "team1": "BYU",
+        "score1": 80,
+        "seed2": 14,
+        "team2": "Northeastern",
+        "score2": 68,
+        "winner": "BYU"
+      },
+      {
+        "region": "East",
+        "seed1": 7,
+        "team1": "Gonzaga",
+        "score1": 71,
+        "seed2": 10,
+        "team2": "Florida State",
+        "score2": 66,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "East",
+        "seed1": 2,
+        "team1": "Kansas State",
+        "score1": 79,
+        "seed2": 15,
+        "team2": "UC Santa Barbara",
+        "score2": 54,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "South",
+        "seed1": 1,
+        "team1": "Kansas",
+        "score1": 72,
+        "seed2": 16,
+        "team2": "Lehigh",
+        "score2": 60,
+        "winner": "Kansas"
+      },
+      {
+        "region": "South",
+        "seed1": 8,
+        "team1": "UNLV",
+        "score1": 68,
+        "seed2": 9,
+        "team2": "Northern Iowa",
+        "score2": 66,
+        "winner": "UNLV"
+      },
+      {
+        "region": "South",
+        "seed1": 5,
+        "team1": "Baylor",
+        "score1": 76,
+        "seed2": 12,
+        "team2": "Sam Houston State",
+        "score2": 61,
+        "winner": "Baylor"
+      },
+      {
+        "region": "South",
+        "seed1": 4,
+        "team1": "Purdue",
+        "score1": 64,
+        "seed2": 13,
+        "team2": "Vanderbilt",
+        "score2": 62,
+        "winner": "Purdue"
+      },
+      {
+        "region": "South",
+        "seed1": 6,
+        "team1": "Temple",
+        "score1": 70,
+        "seed2": 11,
+        "team2": "Cornell",
+        "score2": 68,
+        "winner": "Temple"
+      },
+      {
+        "region": "South",
+        "seed1": 3,
+        "team1": "Villanova",
+        "score1": 73,
+        "seed2": 14,
+        "team2": "Saint Mary's",
+        "score2": 58,
+        "winner": "Villanova"
+      },
+      {
+        "region": "South",
+        "seed1": 7,
+        "team1": "Florida",
+        "score1": 71,
+        "seed2": 10,
+        "team2": "Wake Forest",
+        "score2": 67,
+        "winner": "Florida"
+      },
+      {
+        "region": "South",
+        "seed1": 2,
+        "team1": "Notre Dame",
+        "score1": 76,
+        "seed2": 15,
+        "team2": "Ohio",
+        "score2": 54,
+        "winner": "Notre Dame"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 1,
+        "team1": "Syracuse",
+        "score1": 78,
+        "seed2": 16,
+        "team2": "Vermont",
+        "score2": 59,
+        "winner": "Syracuse"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 8,
+        "team1": "Washington State",
+        "score1": 69,
+        "seed2": 9,
+        "team2": "Purdue",
+        "score2": 67,
+        "winner": "Washington State"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 5,
+        "team1": "Gonzaga",
+        "score1": 74,
+        "seed2": 12,
+        "team2": "UNLV",
+        "score2": 63,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 4,
+        "team1": "Florida State",
+        "score1": 66,
+        "seed2": 13,
+        "team2": "Texas A&M",
+        "score2": 58,
+        "winner": "Florida State"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 6,
+        "team1": "Kansas State",
+        "score1": 80,
+        "seed2": 11,
+        "team2": "USC",
+        "score2": 68,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 3,
+        "team1": "Michigan State",
+        "score1": 69,
+        "seed2": 14,
+        "team2": "New Mexico State",
+        "score2": 58,
+        "winner": "Michigan State"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 7,
+        "team1": "Louisville",
+        "score1": 67,
+        "seed2": 10,
+        "team2": "Morehead State",
+        "score2": 60,
+        "winner": "Louisville"
+      },
+      {
+        "region": "Midwest",
+        "seed1": 2,
+        "team1": "West Virginia",
+        "score1": 77,
+        "seed2": 15,
+        "team2": "Morgan State",
+        "score2": 55,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "West",
+        "seed1": 1,
+        "team1": "Gonzaga",
+        "score1": 85,
+        "seed2": 16,
+        "team2": "Mississippi Valley State",
+        "score2": 54,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "West",
+        "seed1": 8,
+        "team1": "Michigan",
+        "score1": 73,
+        "seed2": 9,
+        "team2": "Temple",
+        "score2": 68,
+        "winner": "Michigan"
+      },
+      {
+        "region": "West",
+        "seed1": 5,
+        "team1": "Xavier",
+        "score1": 68,
+        "seed2": 12,
+        "team2": "Minnesota",
+        "score2": 60,
+        "winner": "Xavier"
+      },
+      {
+        "region": "West",
+        "seed1": 4,
+        "team1": "Tennessee",
+        "score1": 71,
+        "seed2": 13,
+        "team2": "Oakland",
+        "score2": 62,
+        "winner": "Tennessee"
+      },
+      {
+        "region": "West",
+        "seed1": 6,
+        "team1": "Kansas State",
+        "score1": 72,
+        "seed2": 11,
+        "team2": "San Diego State",
+        "score2": 66,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "West",
+        "seed1": 3,
+        "team1": "West Virginia",
+        "score1": 74,
+        "seed2": 14,
+        "team2": "Morehead State",
+        "score2": 58,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "West",
+        "seed1": 7,
+        "team1": "St. Mary's",
+        "score1": 69,
+        "seed2": 10,
+        "team2": "Richmond",
+        "score2": 65,
+        "winner": "St. Mary's"
+      },
+      {
+        "region": "West",
+        "seed1": 2,
+        "team1": "Kansas",
+        "score1": 82,
+        "seed2": 15,
+        "team2": "Lehigh",
+        "score2": 67,
+        "winner": "Kansas"
+      }
+    ],
+    "round2": [
+      {
+        "region": "East",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 78,
+        "team2": "San Diego State",
+        "seed2": 8,
+        "score2": 64,
+        "winner": "Duke"
+      },
+      {
+        "region": "East",
+        "team1": "Ohio State",
+        "seed1": 5,
+        "score1": 72,
+        "team2": "Maryland",
+        "seed2": 4,
+        "score2": 68,
+        "winner": "Ohio State"
+      },
+      {
+        "region": "East",
+        "team1": "Xavier",
+        "seed1": 6,
+        "score1": 66,
+        "team2": "BYU",
+        "seed2": 3,
+        "score2": 72,
+        "winner": "BYU"
+      },
+      {
+        "region": "East",
+        "team1": "Gonzaga",
+        "seed1": 7,
+        "score1": 69,
+        "team2": "Kansas State",
+        "seed2": 2,
+        "score2": 75,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "South",
+        "team1": "Kansas",
+        "seed1": 1,
+        "score1": 74,
+        "team2": "UNLV",
+        "seed2": 8,
+        "score2": 66,
+        "winner": "Kansas"
+      },
+      {
+        "region": "South",
+        "team1": "Baylor",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Purdue",
+        "seed2": 4,
+        "score2": 69,
+        "winner": "Baylor"
+      },
+      {
+        "region": "South",
+        "team1": "Temple",
+        "seed1": 6,
+        "score1": 68,
+        "team2": "Villanova",
+        "seed2": 3,
+        "score2": 70,
+        "winner": "Villanova"
+      },
+      {
+        "region": "South",
+        "team1": "Florida",
+        "seed1": 7,
+        "score1": 63,
+        "team2": "Notre Dame",
+        "seed2": 2,
+        "score2": 78,
+        "winner": "Notre Dame"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Syracuse",
+        "seed1": 1,
+        "score1": 76,
+        "team2": "Washington State",
+        "seed2": 8,
+        "score2": 69,
+        "winner": "Syracuse"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Gonzaga",
+        "seed1": 5,
+        "score1": 71,
+        "team2": "Florida State",
+        "seed2": 4,
+        "score2": 68,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Kansas State",
+        "seed1": 6,
+        "score1": 77,
+        "team2": "Michigan State",
+        "seed2": 3,
+        "score2": 74,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Louisville",
+        "seed1": 7,
+        "score1": 65,
+        "team2": "West Virginia",
+        "seed2": 2,
+        "score2": 73,
+        "winner": "West Virginia"
+      },
+      {
+        "region": "West",
+        "team1": "Gonzaga",
+        "seed1": 1,
+        "score1": 82,
+        "team2": "Michigan",
+        "seed2": 9,
+        "score2": 63,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "West",
+        "team1": "Xavier",
+        "seed1": 5,
+        "score1": 69,
+        "team2": "Tennessee",
+        "seed2": 4,
+        "score2": 66,
+        "winner": "Xavier"
+      },
+      {
+        "region": "West",
+        "team1": "Kansas State",
+        "seed1": 6,
+        "score1": 75,
+        "team2": "West Virginia",
+        "seed2": 3,
+        "score2": 72,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "West",
+        "team1": "St. Mary's",
+        "seed1": 7,
+        "score1": 68,
+        "team2": "Kansas",
+        "seed2": 2,
+        "score2": 76,
+        "winner": "Kansas"
+      }
+    ],
+    "sweet16": [
+      {
+        "region": "East",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 78,
+        "team2": "Ohio State",
+        "seed2": 5,
+        "score2": 72,
+        "winner": "Duke"
+      },
+      {
+        "region": "East",
+        "team1": "BYU",
+        "seed1": 3,
+        "score1": 74,
+        "team2": "Kansas State",
+        "seed2": 2,
+        "score2": 71,
+        "winner": "BYU"
+      },
+      {
+        "region": "South",
+        "team1": "Kansas",
+        "seed1": 1,
+        "score1": 70,
+        "team2": "Baylor",
+        "seed2": 5,
+        "score2": 67,
+        "winner": "Kansas"
+      },
+      {
+        "region": "South",
+        "team1": "Villanova",
+        "seed1": 3,
+        "score1": 69,
+        "team2": "Notre Dame",
+        "seed2": 2,
+        "score2": 64,
+        "winner": "Villanova"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Syracuse",
+        "seed1": 1,
+        "score1": 75,
+        "team2": "Gonzaga",
+        "seed2": 5,
+        "score2": 71,
+        "winner": "Syracuse"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Kansas State",
+        "seed1": 6,
+        "score1": 78,
+        "team2": "West Virginia",
+        "seed2": 2,
+        "score2": 74,
+        "winner": "Kansas State"
+      },
+      {
+        "region": "West",
+        "team1": "Gonzaga",
+        "seed1": 1,
+        "score1": 79,
+        "team2": "Xavier",
+        "seed2": 5,
+        "score2": 70,
+        "winner": "Gonzaga"
+      },
+      {
+        "region": "West",
+        "team1": "Kansas",
+        "seed1": 2,
+        "score1": 76,
+        "team2": "Kansas State",
+        "seed2": 6,
+        "score2": 68,
+        "winner": "Kansas"
+      }
+    ],
+    "elite8": [
+      {
+        "region": "East",
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 77,
+        "team2": "BYU",
+        "seed2": 3,
+        "score2": 69,
+        "winner": "Duke"
+      },
+      {
+        "region": "South",
+        "team1": "Kansas",
+        "seed1": 1,
+        "score1": 72,
+        "team2": "Villanova",
+        "seed2": 3,
+        "score2": 68,
+        "winner": "Kansas"
+      },
+      {
+        "region": "Midwest",
+        "team1": "Syracuse",
+        "seed1": 1,
+        "score1": 74,
+        "team2": "Kansas State",
+        "seed2": 6,
+        "score2": 71,
+        "winner": "Syracuse"
+      },
+      {
+        "region": "West",
+        "team1": "Gonzaga",
+        "seed1": 1,
+        "score1": 80,
+        "team2": "Kansas",
+        "seed2": 2,
+        "score2": 76,
+        "winner": "Gonzaga"
+      }
+    ],
+    "finalFour": [
+      {
+        "team1": "Duke",
+        "seed1": 1,
+        "score1": 81,
+        "team2": "Kansas",
+        "seed2": 1,
+        "score2": 67,
+        "winner": "Duke"
+      },
+      {
+        "team1": "Syracuse",
+        "seed1": 1,
+        "score1": 68,
+        "team2": "Gonzaga",
+        "seed2": 1,
+        "score2": 66,
+        "winner": "Syracuse"
+      }
+    ],
+    "championship": {
+      "team1": "Duke",
+      "seed1": 1,
+      "score1": 61,
+      "team2": "Butler",
+      "seed2": 5,
+      "score2": 59,
+      "winner": "Duke"
+    }
+  }
+}
