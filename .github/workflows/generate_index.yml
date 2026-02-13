@@ -22,13 +22,13 @@ jobs:
         python-version: '3.x' # Use the latest Python 3 version
 
     - name: Generate index.html
-      run: python .github/scripts/generate_index.py localonly # Pass your target directory here
+      run: python .github/scripts/generate_index.py pi # Pass your target directory here
 
     - name: Commit generated index.html
       # This step will commit the new/updated index.html back to the repository
       run: |
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git add localonly/index.html
+        git add pi/index.html
         git commit -m "Auto-generate index.html for app launcher" || echo "No changes to commit"
         git push
