@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keegan's Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; }
+        
+        .glass-tile {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .progress-bar { transition: width 0.1s linear; }
+        .grid-rows-layout { grid-template-rows: repeat(2, minmax(0, 1fr)); }
+        .clock-text { font-size: clamp(3rem, 8vw, 6rem); }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col p-2 md:p-4 gap-4 overflow-hidden">
+
+    <!-- Global Timer -->
+    <div class="fixed top-0 left-0 w-full h-1 bg-slate-900 z-50">
+        <div id="globalTimerFill" class="h-full bg-blue-500 w-0 progress-bar"></div>
+    </div>
+
+    <!-- Main Grid -->
+    <main id="mainGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 grid-rows-layout gap-4 flex-grow h-full">
+
+        <!-- 1. CLOCK -->
+        <div id="tileClock" class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
+            <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
+            <div id="militaryTime" class="text-sm font-bold text-slate-500 mt-1 z-10">--:--</div>
+            <div class="mt-4 w-full grid grid-cols-2 gap-2 z-10">
+                <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
+                    <div id="sunTimes" class="text-[10px] font-bold text-orange-300 whitespace-pre-line leading-tight">--</div>
+                </div>
+                <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
+                    <div id="moonPhase" class="text-xs font-bold text-purple-300">--</div>
+                    <div id="moonDates" class="text-[8px] text-slate-500 leading-tight mt-1">--</div>
+                </div>
+            </div>
+            <div id="currentWeather" class="mt-3 text-xs font-semibold text-blue-200 z-10">Loading...</div>
+        </div>
+
+        <!-- 2. SPEED/STOCKS/GAS -->
+        <div id="tileSpeed" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="speed" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4">Loading data...</div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="speedSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
+        </div>
+
+        <!-- 3. WEATHER -->
+        <div id="tileWeather" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="weather" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4 text-center">Loading weather...</div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="weatherSlider" class="h-full bg-blue-500 w-0 progress-bar"></div></div>
+        </div>
+
+        <!-- 4. FORECAST -->
+        <div id="tileForecast" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="forecast" class="flex-grow flex flex-col w-full h-full p-4 overflow-hidden">Loading forecast...</div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="forecastSlider" class="h-full bg-indigo-500 w-0 progress-bar"></div></div>
+        </div>
+
+        <!-- 5. CALENDAR (Full Info Restored) -->
+        <div id="tileCalendar" class="glass-tile rounded-3xl p-4 flex flex-col gap-2 relative">
+            <div id="holidayCountdown" class="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed"></div>
+            <div id="calendar" class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-300 mt-1 flex-grow content-center"></div>
+            <div class="mt-auto pt-2 border-t border-slate-700/50">
+                <div id="upcomingHolidays" class="text-[9px] font-semibold text-slate-400 space-y-1"></div>
+            </div>
+        </div>
+
+        <!-- 6. BGG -->
+        <div id="tileBGG" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div class="p-2 text-[10px] font-black uppercase text-slate-500 text-center bg-slate-900/30">BGG Top 25</div>
+            <div id="bggGrid" class="grid grid-cols-5 gap-1 p-2 overflow-y-auto no-scrollbar flex-grow content-start">Loading...</div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="bggSlider" class="h-full bg-orange-500 w-0 progress-bar"></div></div>
+        </div>
+
+        <!-- 7. LEAGUE RANKINGS (Top 25) -->
+        <div id="tileFun" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="funTitle" class="p-2 text-[10px] font-black uppercase text-slate-500 text-center bg-slate-900/30">Rankings</div>
+            <div id="funGrid" class="grid grid-cols-5 gap-1 p-2 overflow-y-auto no-scrollbar flex-grow content-start">Loading...</div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="funSlider" class="h-full bg-purple-500 w-0 progress-bar"></div></div>
+        </div>
+
+        <!-- 8. SPORTS SCHEDULE (5 Games + Skip Logic) -->
+        <div id="tileSports" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="sportsContent" class="flex-grow flex flex-col w-full h-full p-0 overflow-hidden relative">
+                <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-500">Loading teams...</div>
+            </div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="sportsSlider" class="h-full bg-red-500 w-0 progress-bar"></div></div>
+        </div>
+
+    </main>
+
+<script>
+const CONFIG={rotateIntervalMs:10000};
+const pauseStates={speed:false,weather:false,forecast:false,bgg:false,fun:false,sports:false};
+
+function setupPauseHandlers(){
+  ['speed','weather','forecast','BGG','Fun','Sports'].forEach(id=>{
+      const el = document.getElementById('tile'+id);
+      if(el) {
+          el.addEventListener('click', () => {
+              const key = id.toLowerCase();
+              pauseStates[key] = !pauseStates[key];
+              if(pauseStates[key]) el.classList.add('border-white/40', 'bg-slate-800');
+              else el.classList.remove('border-white/40', 'bg-slate-800');
+          });
+      }
+  });
+}
+setTimeout(setupPauseHandlers,100);
+
+function startTileSlider(id, interval) {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.style.transition = 'none';
+    el.style.width = '0%';
+    void el.offsetWidth;
+    el.style.transition = `width ${interval}ms linear`;
+    el.style.width = '100%';
+}
+
+/* ========== CLOCK ========== */
+let sunriseTime="--:--", sunsetTime="--:--";
+function updateClock(){
+  const now=new Date();
+  document.getElementById("clock").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  document.getElementById("militaryTime").textContent=now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'}) + ' • ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById("sunTimes").innerHTML=`🌅${sunriseTime}<br>🌇${sunsetTime}`;
+  
+  const moon = calculateMoonPhase(now);
+  const dates = findFullMoonDates();
+  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-[9px] text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
+  document.getElementById("moonDates").innerHTML = `Last: ${dates.lastFull}<br>Next: ${dates.nextFull}`;
+}
+function calculateMoonPhase(date){
+  let year=date.getFullYear(), month=date.getMonth()+1, day=date.getDate();
+  if(month<3){ year--; month+=12; } ++month;
+  let c=365.25*year, e=30.6*month, jd=c+e+day-694039.09; jd/=29.5305882;
+  let b=parseInt(jd); jd-=b; b=Math.round(jd*8);
+  const phases=[{name:"New Moon",emoji:"🌑"},{name:"Waxing Crescent",emoji:"🌒"},{name:"First Quarter",emoji:"🌓"},{name:"Waxing Gibbous",emoji:"🌔"},{name:"Full Moon",emoji:"🌕"},{name:"Waning Gibbous",emoji:"🌖"},{name:"Last Quarter",emoji:"🌗"},{name:"Waning Crescent",emoji:"🌘"}];
+  return {phase:phases[b%8], illumination:(jd*100).toFixed(1), phaseIndex:b%8};
+}
+function findFullMoonDates(){
+  const now=new Date(); const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let lastFull="--", nextFull="--";
+  for(let i=0;i<=30;i++){ const d=new Date(today); d.setDate(d.getDate()-i); if(calculateMoonPhase(d).phaseIndex===4){ lastFull=d.toLocaleDateString([],{month:'short',day:'numeric'}); break; } }
+  for(let i=1;i<=30;i++){ const d=new Date(today); d.setDate(d.getDate()+i); if(calculateMoonPhase(d).phaseIndex===4){ nextFull=d.toLocaleDateString([],{month:'short',day:'numeric'}); break; } }
+  return {lastFull, nextFull};
+}
+setInterval(updateClock,1000);
+
+/* ========== SPEED/STOCKS ========== */
+let speedData={download:0,upload:0,lastChecked:null}, speedIndex=0, speedViews=["speed","stocks","gas","mortgage"];
+async function testSpeed(){
+  try{ const dlStart=performance.now(); await fetch("https://speed.hetzner.de/1MB.bin",{method:'GET',cache:'no-cache'}).then(r=>r.blob()); const dlDuration=(performance.now()-dlStart)/1000; speedData.download=((8/dlDuration)).toFixed(1); speedData.lastChecked=new Date(); }catch{}
+}
+async function rotateSpeedTile(){
+  if(pauseStates.speed) return;
+  const el=document.getElementById("speed"); const view=speedViews[speedIndex];
+  if(view==="speed"){
+    el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-3">Network Status</div><div class="flex gap-6 mb-2"><div class="text-center"><div class="text-2xl font-black text-emerald-400">${speedData.download}</div><div class="text-[8px] font-bold text-slate-500 uppercase">Down</div></div><div class="text-center"><div class="text-2xl font-black text-blue-400">12.5</div><div class="text-[8px] font-bold text-slate-500 uppercase">Up</div></div></div><div class="text-[9px] text-slate-600 font-mono">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
+  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Market Indices</div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="font-black text-white">6,920.93</div><div class="text-[10px] font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="font-black text-white">23,584.27</div><div class="text-[10px] font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
+  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-3 mt-2"><div class="bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-lg text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase">Costco</div><div class="text-xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-2 rounded-lg text-center"><div class="text-[9px] text-slate-400 font-bold uppercase">Avg</div><div class="text-xl font-black text-white">$2.41</div></div></div></div>`;
+  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Mortgage Rates</div><div class="space-y-3 mt-1"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400">30-Yr Fixed</span><span class="text-sm font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400">15-Yr Fixed</span><span class="text-sm font-black text-blue-300">6.25%</span></div></div></div>`;
+  speedIndex=(speedIndex+1)%speedViews.length; startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
+}
+testSpeed(); rotateSpeedTile(); setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs); setInterval(testSpeed,300000);
+
+/* ========== WEATHER ========== */
+let forecastData=[]; let weatherViews=[]; let weatherIndex=0;
+async function loadWeather(){
+  try{
+    const lat=39.5186, lon=-104.7614;
+    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
+    const d=await res.json();
+    sunriseTime=new Date(d.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    sunsetTime=new Date(d.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const cw=d.current_weather;
+    document.getElementById("currentWeather").innerHTML=`🌡️ ${Math.round(d.daily.temperature_2m_max[0])}/${Math.round(d.daily.temperature_2m_min[0])}° &bull; UV ${Math.round(d.daily.uv_index_max[0])}`;
+    updateClock();
+    weatherViews=[
+      `<div class="flex flex-col items-center justify-center h-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-2">Current Conditions</div><div class="text-4xl font-black text-white mb-1">${Math.round(cw.windspeed)} <span class="text-lg text-slate-500">mph</span></div><div class="text-xs font-bold text-blue-300">Wind Speed</div></div>`,
+      `<div class="flex flex-col items-center justify-center h-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-2">Today's Forecast</div><div class="text-4xl font-black text-white mb-1">${Math.round(d.daily.temperature_2m_max[0])}°</div><div class="text-xs font-bold text-orange-300">High Temp</div></div>`
+    ];
+    forecastData=d.daily; renderForecast(); rotateWeatherTile();
+  }catch(e){}
+}
+function rotateWeatherTile(){ if(!pauseStates.weather && weatherViews.length){ document.getElementById("weather").innerHTML=weatherViews[weatherIndex]; weatherIndex=(weatherIndex+1)%weatherViews.length; startTileSlider("weatherSlider",CONFIG.rotateIntervalMs); }}
+loadWeather(); setInterval(rotateWeatherTile,CONFIG.rotateIntervalMs); setInterval(loadWeather,1800000);
+
+function getWeatherIcon(c){if(c===0)return"☀️";else if(c<=3)return"⛅";else if(c>=61&&c<=63)return"🌧️";else if(c>=71)return"❄️";else return"☁️";}
+let fViewIdx=0;
+function renderForecast(){
+  if(!forecastData.time) return;
+  const c=document.getElementById("forecast"); c.innerHTML="";
+  const days=fViewIdx===0?3:5;
+  c.appendChild(Object.assign(document.createElement("div"),{className:"text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full",innerText:`${days}-Day Outlook`}));
+  const l=document.createElement("div"); l.className="flex flex-col gap-1.5 w-full";
+  for(let i=0; i<days; i++){
+      const d=new Date(forecastData.time[i]);
+      const row=document.createElement("div"); row.className="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold";
+      row.innerHTML=`<span class="w-10 text-slate-400">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span><span class="text-base">${getWeatherIcon(forecastData.weathercode[i])}</span><span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[10px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>`;
+      l.appendChild(row);
+  }
+  c.appendChild(l); startTileSlider("forecastSlider", CONFIG.rotateIntervalMs);
+}
+function rotateForecastView(){ if(!pauseStates.forecast){ fViewIdx=(fViewIdx+1)%2; renderForecast(); }}
+setInterval(rotateForecastView,CONFIG.rotateIntervalMs);
+
+/* ========== CALENDAR (Restored Info) ========== */
+function renderCalendar(){
+  const now=new Date();
+  const year=now.getFullYear(), month=now.getMonth(), today=now.getDate();
+  const start=new Date(year,0,1);
+  const dayOfYear=Math.floor((now-start)/(1000*60*60*24))+1;
+  const daysLeft=Math.ceil((new Date(year,11,31)-now)/(1000*60*60*24));
+  
+  // Year Info
+  document.getElementById("holidayCountdown").innerHTML = `Year ${year} • Day ${dayOfYear} • ${daysLeft} Left`;
+
+  // Grid
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  let html="";
+  ["S","M","T","W","T","F","S"].forEach(d=>html+=`<div class="text-slate-500 text-[10px]">${d}</div>`);
+  for(let i=0;i<firstDay;i++) html+="<div></div>";
+  for(let d=1;d<=daysInMonth;d++){
+    const cls=d===today?"bg-blue-600 text-white rounded-full shadow shadow-blue-500/50":"text-slate-400";
+    html+=`<div class="${cls} flex items-center justify-center h-5 w-5 mx-auto text-[10px]">${d}</div>`;
+  }
+  document.getElementById("calendar").innerHTML=html;
+
+  // Holidays
+  const holidays=[
+    {name:"New Year's",date:new Date(year+1,0,1)},{name:"Valentine's",date:new Date(year,1,14)},{name:"St. Patrick's",date:new Date(year,2,17)},
+    {name:"Easter",date:new Date(year,3,20)},{name:"July 4th",date:new Date(year,6,4)},{name:"Halloween",date:new Date(year,9,31)},
+    {name:"Thanksgiving",date:new Date(year,10,26)},{name:"Christmas",date:new Date(year,11,25)}
+  ];
+  const upcoming = holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date).slice(0,3);
+  
+  document.getElementById("upcomingHolidays").innerHTML = upcoming.map(h => {
+      const dLeft = Math.ceil((h.date-now)/(1000*60*60*24));
+      return `<div class="flex justify-between"><span>${h.name}</span><span class="text-white">${dLeft}d</span></div>`;
+  }).join('');
+}
+renderCalendar();
+
+/* ========== BGG ========== */
+const BGG_TOP_25=[{rank:1,name:'Brass: Birmingham',img:'https://cf.geekdo-images.com/ssLVxklP7smcAuch5NbZFQ__imagepage/img/WNrXV5hXiLz1M6dEPHw-Bwc3Y4E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3505132.jpg'},{rank:2,name:'Ark Nova',img:'https://cf.geekdo-images.com/zxeRjiKuU_0BY-gKQFjZIQ__imagepage/img/lHl-vDRPyALGK5mzjEyVkp-_S3I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6294115.jpg'},{rank:3,name:'Pandemic Legacy',img:'https://cf.geekdo-images.com/wndsKfZQcVIbKZ03nVbUJg__imagepage/img/XhpXHj0yKYXx3KeQ_63gMqLVBo8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2452841.jpg'},{rank:4,name:'Gloomhaven',img:'https://cf.geekdo-images.com/PrgvAVnDHJbHvFEaV1q1Iw__imagepage/img/tL-F1WhWaBUUK4DDFSX6CaL9EYk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2437871.jpg'},{rank:5,name:'Dune: Imperium',img:'https://cf.geekdo-images.com/TnUvRVDusVcROeDP73UC_A__imagepage/img/KHc8BHdXVfaYwVWUEPPNtqO6-Eg=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5666597.jpg'},{rank:6,name:'Twilight Imperium',img:'https://cf.geekdo-images.com/4h1QyC-jYMQzh0uaqy3a_w__imagepage/img/1z96cObVEsAfJ4A_VrAy7XBBwWw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3727516.jpg'},{rank:7,name:'Dune: Uprising',img:'https://cf.geekdo-images.com/Aj_D-5KzYgTMXn0TwOc7qA__imagepage/img/NMcNT9phwrCH3SDcQYJEPF5A63w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6718999.jpg'},{rank:8,name:'War of the Ring',img:'https://cf.geekdo-images.com/JMHcnvAjLHNdNxK7W7hJ1A__imagepage/img/5lVqB7xn3DG2rHj6M8lAqWzJqH8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5160037.jpg'},{rank:9,name:'Terraforming Mars',img:'https://cf.geekdo-images.com/oMtSjfzUlYYCnhk_OZr0dA__imagepage/img/Sm_FzQhKoX4-Trc5k7cbVuPhxhA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3398571.jpg'},{rank:10,name:'Star Wars: Rebellion',img:'https://cf.geekdo-images.com/_nHjbpKlGjCqEgbJtBzHsw__imagepage/img/EVKEeI5F2bBELq0-OFG7LE7Bvkk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2396598.jpg'},{rank:11,name:'Agricola',img:'https://cf.geekdo-images.com/F0hlyKnx5s0humaQysM9zA__imagepage/img/Oy3ggbXWdUnlHxV-5X0vWxZg-_E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5123242.jpg'},{rank:12,name:'Dominion',img:'https://cf.geekdo-images.com/iw7jLOq07Yd5Gte1d3VQOA__imagepage/img/hBNqiCQXYTGNNgV_8s-HCfJSKTw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic4697900.jpg'},{rank:13,name:'7 Wonders',img:'https://cf.geekdo-images.com/B0F4snJHZHhg8uHVknDViA__imagepage/img/0tPOvlqNH-jyb8qqxT5sKLm9yEA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic860217.jpg'},{rank:14,name:'Carcassonne',img:'https://cf.geekdo-images.com/rax5TCu77xiclqzqeHHfhw__imagepage/img/cZJbMB7pAg3kKDDEKuJ8nWGJ3J0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3122885.jpg'},{rank:15,name:'Power Grid',img:'https://cf.geekdo-images.com/B0i2eV3lzDSIJcYLtKjTeA__imagepage/img/nCSrGmZEAx9-L8E2HVGmJSN9JQE=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5155124.jpg'},{rank:16,name:'Innovation',img:'https://cf.geekdo-images.com/Vz4aXNyf3mXR9qATMx0J0A__imagepage/img/AkzrVCSp0uXmXt2hG4BxQaZmQ8w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1532154.jpg'},{rank:17,name:'Ticket to Ride',img:'https://cf.geekdo-images.com/A5rMG_yM_b-OMkM1tnnYbA__imagepage/img/9wQxBQaHp9IZGNBxiUzLeELt-T4=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5900549.jpg'},{rank:18,name:'Codenames',img:'https://cf.geekdo-images.com/D5VgarmHCd0SS03x4SHBYg__imagepage/img/w4VZQ4rKwP8CVJ3XnP08ZPwqg8Y=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2582706.jpg'},{rank:19,name:'Puerto Rico',img:'https://cf.geekdo-images.com/i3tB6KREKSmCGJEWyaVHJA__imagepage/img/EH3JiCqWWJL6pNQdGkQFCwfm-3o=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1407726.jpg'},{rank:20,name:'Food Chain Magnate',img:'https://cf.geekdo-images.com/EYdCLvH0mD_N7-g5OLqELg__imagepage/img/Q0-5C6QLs4xXqwLGhgxVt71nfLc=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5316558.jpg'},{rank:21,name:'Splendor',img:'https://cf.geekdo-images.com/w6yKE37jZN7UjDHrDGr8Sw__imagepage/img/9H2_Yk6vX8Y3x3rJHYPQZz5h34g=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2449179.jpg'},{rank:22,name:'Imperial 2030',img:'https://cf.geekdo-images.com/UgGWzVBGP8N6JV3SUdDL0Q__imagepage/img/XJk1G0qTDGJcM2GCo-EE8fKIzG8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic414216.jpg'},{rank:23,name:'Castles of Burgundy',img:'https://cf.geekdo-images.com/RTx1E6BvzTEf8umdBUjXiA__imagepage/img/vFSg3lcMqHwNh9xpPHM5IYqjPt0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3785264.jpg'},{rank:24,name:'Twilight Struggle',img:'https://cf.geekdo-images.com/I0-SEWmakM-8SmT0ZrDnzQ__imagepage/img/RIqqGnvA3I7xKf1J8mfWEz-_B0I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic486635.jpg'},{rank:25,name:'Azul',img:'https://cf.geekdo-images.com/aPjyaLg_CiHfQEwlqXJ4nA__imagepage/img/p_RgRZJHNcSDh7cYMm1a9j-sZ6w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3718275.jpg'}];
+
+function renderBGGGrid(){
+  const grid=document.getElementById('bggGrid'); grid.innerHTML='';
+  BGG_TOP_25.forEach(g=>{
+      const div=document.createElement('div'); div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700";
+      div.innerHTML=`<img src="${g.img}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500"><div class="absolute bottom-0 left-0 w-full bg-black/80 p-0.5"><div class="text-[7px] font-bold text-white truncate text-center leading-tight">${g.name}</div></div><div class="absolute top-0.5 left-0.5 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow">#${g.rank}</div>`;
+      grid.appendChild(div);
+  });
+}
+function rotateBGG(){ if(!pauseStates.bgg) startTileSlider("bggSlider", CONFIG.rotateIntervalMs); }
+renderBGGGrid(); setInterval(rotateBGG, CONFIG.rotateIntervalMs);
+
+/* ========== LEAGUE RANKINGS (Top 25) ========== */
+const LEAGUES={
+  nba:{name:'NBA',url:"https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings"},
+  nfl:{name:'NFL',url:"https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings"},
+  nhl:{name:'NHL',url:"https://site.web.api.espn.com/apis/v2/sports/hockey/nhl/standings"},
+  mlb:{name:'MLB',url:"https://site.web.api.espn.com/apis/v2/sports/baseball/mlb/standings"},
+  ncaaf:{name:'NCAAF',url:"https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings"},
+  ncaab:{name:'NCAAB',url:"https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings"}
+};
+let funKeys=Object.keys(LEAGUES), funIdx=0;
+
+async function fetchRankings(){
+    const key = funKeys[funIdx];
+    try {
+        const res = await fetch(LEAGUES[key].url);
+        const data = await res.json();
+        
+        let teams = [];
+        if(key.includes('ncaa')) {
+            const poll = data.rankings?.find(p=>p.shortName==='AP' || p.name?.includes('Associated')) || data.rankings?.[0];
+            if(poll?.ranks) teams = poll.ranks.map(r=>({name: r.team.abbreviation || r.team.name, logo: r.team.logo, pct: r.current}));
+        } else {
+            const process = (node) => {
+                if(node.standings?.entries) teams.push(...node.standings.entries);
+                if(node.children) node.children.forEach(process);
+            };
+            process(data);
+            teams = teams.map(e => ({
+                name: e.team.abbreviation,
+                logo: e.team.logos?.[0]?.href,
+                pct: e.stats?.find(s=>s.name==='winPercent')?.value || 0
+            })).sort((a,b) => b.pct - a.pct);
+        }
+
+        renderRankings(teams.slice(0,25), LEAGUES[key].name); // Top 25
+        
+    } catch(e) { console.warn(e); }
+}
+
+function renderRankings(teams, leagueName){
+    const grid=document.getElementById('funGrid'); grid.innerHTML='';
+    document.getElementById('funTitle').innerText = `${leagueName} Top ${teams.length}`;
+    
+    teams.forEach((t, i)=>{
+        const div=document.createElement('div');
+        div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700 flex items-center justify-center p-1";
+        div.innerHTML=`<img src="${t.logo}" class="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition"><div class="absolute top-0 left-0 bg-white text-black text-[7px] font-black px-1 rounded-br">#${i+1}</div>`;
+        grid.appendChild(div);
+    });
+}
+function rotateFun(){ if(!pauseStates.fun){ funIdx=(funIdx+1)%funKeys.length; fetchRankings(); startTileSlider("funSlider", CONFIG.rotateIntervalMs); }}
+fetchRankings(); setInterval(rotateFun, CONFIG.rotateIntervalMs);
+
+/* ========== SPORTS (Next 5 Games w/ Skip) ========== */
+const MY_TEAMS=[
+  {id:'nuggets',sport:'basketball',league:'nba',espnId:'den',icon:'🏀'},
+  {id:'broncos',sport:'football',league:'nfl',espnId:'den',icon:'🏈'},
+  {id:'avalanche',sport:'hockey',league:'nhl',espnId:'col',icon:'🏒'},
+  {id:'rockies',sport:'baseball',league:'mlb',espnId:'col',icon:'⚾'}
+];
+let sportsIdx=0;
+
+async function loadSportsTeam(){
+    // Try to find a team with games (limit attempts to prevent infinite loop)
+    let attempts = 0;
+    let upcomingGames = [];
+    let team = null;
+
+    while(upcomingGames.length === 0 && attempts < MY_TEAMS.length) {
+        team = MY_TEAMS[sportsIdx];
+        try {
+            const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.espnId}/schedule`);
+            const data = await res.json();
+            const now = new Date();
+            // Filter future games
+            if(data.events) {
+                upcomingGames = data.events.filter(e => {
+                    const date = new Date(e.date);
+                    return date >= now || e.competitions[0].status.type.state === 'in';
+                }).slice(0, 5); // Take top 5
+            }
+        } catch(e) {}
+        
+        if(upcomingGames.length === 0) {
+            sportsIdx = (sportsIdx + 1) % MY_TEAMS.length; // Rotate to next
+            attempts++;
+        }
+    }
+
+    // Render (even if empty after checking all)
+    const container = document.getElementById('sportsContent');
+    if(upcomingGames.length === 0) {
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No upcoming games found</div>`;
+        return;
+    }
+
+    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId)?.team.logos[0].href;
+
+    let html = `
+        <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+            <div class="flex items-center gap-2">
+                <img src="${teamLogo}" class="w-6 h-6 object-contain">
+                <div>
+                    <div class="text-xs font-black text-white uppercase tracking-wider">${team.id}</div>
+                    <div class="text-[8px] font-bold text-slate-500 uppercase">Upcoming Schedule</div>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-1 overflow-y-auto no-scrollbar">
+    `;
+
+    upcomingGames.forEach(evt => {
+        const comp = evt.competitions[0];
+        const date = new Date(evt.date);
+        const dateStr = date.toLocaleDateString([],{month:'numeric',day:'numeric'}) + ' ' + date.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+        const vs = comp.competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId);
+        
+        html += `
+            <div class="flex justify-between items-center bg-slate-800/50 p-1.5 rounded text-[10px]">
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-slate-400 w-8">vs ${vs.team.abbreviation}</span>
+                    <img src="${vs.team.logos?.[0]?.href}" class="w-4 h-4 object-contain">
+                </div>
+                <span class="font-black text-white">${dateStr}</span>
+            </div>
+        `;
+    });
+    
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+function rotateSports(){
+    if(pauseStates.sports) return;
+    sportsIdx = (sportsIdx + 1) % MY_TEAMS.length;
+    loadSportsTeam();
+    startTileSlider("sportsSlider", CONFIG.rotateIntervalMs);
+}
+loadSportsTeam();
+setInterval(rotateSports, CONFIG.rotateIntervalMs);
+
+</script>
+</body>
+</html>
