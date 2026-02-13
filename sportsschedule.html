@@ -127,6 +127,10 @@
             <h1 class="text-sm md:text-lg font-bold tracking-tight text-slate-800 uppercase hidden sm:block">Master Schedule</h1>
         </div>
         <div class="flex gap-2">
+            <!-- Toggle Blank Days -->
+            <button onclick="toggleHideEmpty()" id="toggle-empty-btn" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[10px] font-black rounded-lg transition-all shadow-sm uppercase">
+                <span id="hide-label">Show All</span>
+            </button>
             <button onclick="toggleFlip()" class="flex items-center gap-2 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-all shadow-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 <span id="flip-btn-text" class="hidden sm:inline">AXIS</span>
@@ -195,6 +199,7 @@
         let SCHEDULES = {};
         let IS_FLIPPED = false;
         let SORTED_DATES = [];
+        let HIDE_EMPTY = localStorage.getItem('hide_empty') !== null ? JSON.parse(localStorage.getItem('hide_empty')) : true;
 
         async function init() {
             document.getElementById('loading').classList.remove('hidden');
@@ -209,6 +214,7 @@
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('table-container').classList.remove('hidden');
             
+            updateToggleLabel();
             render();
             // Force scroll to today on load
             setTimeout(scrollToToday, 300);
@@ -258,9 +264,27 @@
         }
 
         function render() {
-            const allDates = new Set();
-            Object.values(SCHEDULES).forEach(s => Object.keys(s).forEach(d => allDates.add(d)));
-            SORTED_DATES = Array.from(allDates).sort();
+            // 1. Gather all dates that have actual games
+            const gameDates = new Set();
+            Object.values(SCHEDULES).forEach(s => Object.keys(s).forEach(d => gameDates.add(d)));
+            const gameDatesArr = Array.from(gameDates).sort();
+
+            if (gameDatesArr.length === 0) {
+                SORTED_DATES = [];
+            } else if (HIDE_EMPTY) {
+                SORTED_DATES = gameDatesArr;
+            } else {
+                // Generate FULL RANGE between min and max
+                const min = new Date(gameDatesArr[0] + 'T12:00:00');
+                const max = new Date(gameDatesArr[gameDatesArr.length - 1] + 'T12:00:00');
+                const fullRange = [];
+                let curr = new Date(min);
+                while (curr <= max) {
+                    fullRange.push(curr.toLocaleDateString('en-CA'));
+                    curr.setDate(curr.getDate() + 1);
+                }
+                SORTED_DATES = fullRange;
+            }
             
             const today = new Date().toLocaleDateString('en-CA');
             const table = document.getElementById('main-table');
@@ -340,7 +364,7 @@
         }
 
         function renderCell(game, isPast) {
-            if (!game) return `<td><span class="text-slate-200 text-lg">-</span></td>`;
+            if (!game) return `<td><span class="text-slate-100 text-lg">.</span></td>`;
             const showScore = game.state === 'in' || game.state === 'post' || isPast;
             const displayValue = showScore ? (game.score || game.time) : game.time;
 
@@ -366,19 +390,30 @@
 
         function toggleFlip() {
             IS_FLIPPED = !IS_FLIPPED;
+            document.getElementById('flip-btn-text').textContent = IS_FLIPPED ? "STANDARD" : "AXIS";
             render();
             scrollToToday();
+        }
+
+        function toggleHideEmpty() {
+            HIDE_EMPTY = !HIDE_EMPTY;
+            localStorage.setItem('hide_empty', HIDE_EMPTY);
+            updateToggleLabel();
+            render();
+            scrollToToday();
+        }
+
+        function updateToggleLabel() {
+            document.getElementById('hide-label').textContent = HIDE_EMPTY ? "Show All" : "Hide Empty";
         }
 
         function scrollToToday() {
             const todayStr = new Date().toLocaleDateString('en-CA');
             const container = document.getElementById('table-container');
             
-            // Priority 1: Target row/col for TODAY
             let targetId = !IS_FLIPPED ? `row-${todayStr}` : `col-${todayStr}`;
             let target = document.getElementById(targetId);
             
-            // Priority 2: Closest future game
             if (!target) {
                 const futureDate = SORTED_DATES.find(d => d >= todayStr);
                 if (futureDate) {
@@ -387,7 +422,7 @@
             }
 
             if (target && container) {
-                const offset = 80; // Buffer for headers
+                const offset = 80; 
                 if (!IS_FLIPPED) {
                     container.scrollTop = target.offsetTop - offset;
                 } else {
@@ -407,12 +442,12 @@
             
             const sports = [
                 'basketball/nba', 'football/nfl', 'baseball/mlb', 'hockey/nhl', 
-                'football/college-football', 'basketball/mens-college-basketball'
+                'football/college-football', 'basketball/mens-college-basketball',
+                'basketball/womens-college-basketball'
             ];
             const hits = [];
 
             try {
-                // Use limit=1000 for college sports to ensure Alabama/Duke are found
                 const promises = sports.map(s => {
                     const limit = s.includes('college') ? '?limit=1000' : '';
                     return fetch(`https://site.api.espn.com/apis/site/v2/sports/${s}/teams${limit}`).then(r => r.json());
@@ -439,7 +474,7 @@
                 resBox.innerHTML = hits.map(t => 
                     `<div class="flex justify-between items-center p-2 border-b hover:bg-slate-50 cursor-pointer" onclick='addTeam(${JSON.stringify(t)})'>
                         <div class="flex items-center gap-2">
-                            <img src="${t.logo}" class="w-6 h-6 object-contain">
+                            <img src="${t.logo}" class="w-5 h-5 object-contain">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-800">${t.name}</span>
                                 <span class="text-[10px] text-slate-400 uppercase">${t.league}</span>
