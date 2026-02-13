@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Explorer | Smart Auth</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f1f5f9; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+        .history-item:hover .delete-hist { opacity: 1; }
+        .auth-memory-item:hover { background: rgba(59, 130, 246, 0.1); border-color: #3b82f6; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Top Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20">A</div>
+                <h1 class="text-sm font-bold uppercase tracking-widest text-slate-400">API Explorer</h1>
+            </div>
+            <div class="flex gap-4 items-center">
+                <button onclick="resetAll()" class="text-[10px] font-black uppercase text-slate-500 hover:text-red-400 transition-colors">Wipe All</button>
+                <div id="status-pill" class="hidden px-3 py-1 rounded-full text-[10px] font-black uppercase shadow-sm"></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6">
+        
+        <!-- Request Section -->
+        <section class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <div class="p-4 flex gap-2 bg-slate-800/50">
+                <select id="method" class="bg-slate-700 border-none rounded-xl px-4 py-2 text-sm font-bold text-blue-400 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                    <option>GET</option>
+                    <option>POST</option>
+                    <option>PUT</option>
+                    <option>PATCH</option>
+                    <option>DELETE</option>
+                </select>
+                <input id="url" type="text" placeholder="https://api.example.com/data" oninput="handleUrlInput(this.value)" class="flex-1 bg-slate-800 border-none rounded-xl px-4 py-2 text-sm mono focus:ring-2 focus:ring-blue-500 outline-none" value="https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard">
+                <button id="send-btn" onclick="sendRequest()" class="bg-blue-600 hover:bg-blue-500 text-white font-black px-8 py-2 rounded-xl transition-all active:scale-95 shadow-lg shadow-blue-900/20">
+                    SEND
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="border-b border-slate-800 flex px-4 overflow-x-auto scrollbar-hide">
+                <button onclick="switchTab('params')" id="tab-params" class="px-4 py-3 text-[10px] font-black uppercase tracking-widest tab-active whitespace-nowrap">Params</button>
+                <button onclick="switchTab('auth')" id="tab-auth" class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">Auth</button>
+                <button onclick="switchTab('headers')" id="tab-headers" class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">Headers</button>
+                <button onclick="switchTab('body')" id="tab-body" class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap">Body</button>
+                <button onclick="switchTab('history')" id="tab-history" class="px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 whitespace-nowrap border-l border-slate-800 ml-2">History</button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-4 min-h-[200px]">
+                <!-- Table Container -->
+                <div id="table-container" class="space-y-2">
+                    <div class="grid grid-cols-[1fr_1fr_40px] gap-2 px-2">
+                        <span class="text-[10px] font-black text-slate-500 uppercase">Key</span>
+                        <span class="text-[10px] font-black text-slate-500 uppercase">Value</span>
+                    </div>
+                    <div id="kv-rows" class="space-y-2"></div>
+                    <button onclick="addKVRow()" class="mt-2 text-[10px] font-bold text-blue-500 hover:text-blue-400 uppercase tracking-tighter transition-colors">+ Add Row</button>
+                </div>
+
+                <!-- Auth Container -->
+                <div id="auth-container" class="hidden space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Current Harbor Auth -->
+                        <div class="space-y-4">
+                            <div class="p-4 bg-blue-500/5 border border-blue-500/20 rounded-xl">
+                                <p class="text-[10px] font-black text-blue-400 uppercase mb-1 tracking-widest">Active Harbor</p>
+                                <p id="current-host" class="text-xs font-mono font-bold text-white truncate">Select a URL...</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest">Bearer Token for this Host</p>
+                                <input type="text" id="bearer-token" placeholder="Paste token here..." oninput="saveCurrentHostToken(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs mono focus:ring-1 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Token Memory -->
+                        <div>
+                            <p class="text-[10px] font-black text-slate-500 uppercase mb-2 tracking-widest italic">Auth Memory (Previous Tokens)</p>
+                            <div id="auth-memory-list" class="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                <!-- Memory items injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Body Container -->
+                <div id="body-container" class="hidden">
+                    <textarea id="body-data" placeholder='{"key": "value"}' class="w-full h-40 bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs mono focus:ring-1 focus:ring-blue-500 outline-none leading-relaxed"></textarea>
+                </div>
+
+                <!-- History Container -->
+                <div id="history-container" class="hidden space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                    <div id="history-list" class="space-y-2"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Response Section -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between px-2">
+                <h2 class="text-xs font-black uppercase tracking-widest text-slate-500 italic">Response Deck</h2>
+                <div id="resp-meta" class="hidden flex gap-4 text-[10px] font-bold text-slate-400 uppercase">
+                    <span>Time: <span id="resp-time" class="text-blue-400">0ms</span></span>
+                    <span>Size: <span id="resp-size" class="text-blue-400">0B</span></span>
+                </div>
+            </div>
+
+            <div class="relative group">
+                <div id="loading-overlay" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center rounded-2xl z-10">
+                    <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <pre id="response-output" class="w-full min-h-[200px] max-h-[600px] overflow-auto bg-slate-950 border border-slate-800 rounded-2xl p-6 text-sm mono leading-relaxed text-slate-300">Waiting for command...</pre>
+                
+                <button onclick="copyResponse()" class="absolute top-4 right-4 p-2 bg-slate-800 hover:bg-slate-700 rounded-lg opacity-0 group-hover:opacity-100 transition-all active:scale-90" title="Copy Response">
+                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let currentTab = 'params';
+        const storage = { 
+            params: JSON.parse(localStorage.getItem('exp_params')) || [], 
+            headers: JSON.parse(localStorage.getItem('exp_headers')) || [], 
+            // locker: { host: token }
+            authLocker: JSON.parse(localStorage.getItem('exp_auth_locker')) || {},
+            history: JSON.parse(localStorage.getItem('exp_history')) || []
+        };
+
+        // --- AUTH INTELLIGENCE ---
+
+        function getHost(url) {
+            try { return new URL(url).hostname; } catch (e) { return null; }
+        }
+
+        function handleUrlInput(val) {
+            const host = getHost(val);
+            const hostDisplay = document.getElementById('current-host');
+            const tokenInput = document.getElementById('bearer-token');
+            
+            if (host) {
+                hostDisplay.textContent = host;
+                tokenInput.value = storage.authLocker[host] || '';
+            } else {
+                hostDisplay.textContent = 'Invalid URL harbor...';
+                tokenInput.value = '';
+            }
+        }
+
+        function saveCurrentHostToken(val) {
+            const host = getHost(document.getElementById('url').value);
+            if (!host) return;
+            
+            storage.authLocker[host] = val.trim();
+            localStorage.setItem('exp_auth_locker', JSON.stringify(storage.authLocker));
+            renderAuthMemory();
+        }
+
+        function applyMemoryToken(token) {
+            document.getElementById('bearer-token').value = token;
+            saveCurrentHostToken(token);
+            alert('Token applied to current harbor!');
+        }
+
+        function renderAuthMemory() {
+            const list = document.getElementById('auth-memory-list');
+            list.innerHTML = '';
+            
+            const entries = Object.entries(storage.authLocker);
+            if (entries.length === 0) {
+                list.innerHTML = '<p class="text-[9px] text-slate-600 italic uppercase">No previous tokens logged...</p>';
+                return;
+            }
+
+            entries.reverse().forEach(([host, token]) => {
+                if (!token) return;
+                const div = document.createElement('div');
+                div.className = 'auth-memory-item p-2 bg-slate-800/30 border border-slate-800 rounded-lg cursor-pointer transition-all flex flex-col overflow-hidden';
+                div.onclick = () => applyMemoryToken(token);
+                div.innerHTML = `
+                    <span class="text-[9px] font-black text-blue-400 uppercase truncate">${host}</span>
+                    <span class="text-[8px] mono text-slate-500 truncate">${token.substring(0, 20)}...</span>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // --- UI LOGIC ---
+
+        function switchTab(tab) {
+            currentTab = tab;
+            ['params', 'auth', 'headers', 'body', 'history'].forEach(t => {
+                const el = document.getElementById('tab-' + t);
+                if (el) { el.classList.remove('tab-active'); el.classList.add('text-slate-500'); }
+            });
+            document.getElementById('tab-' + tab).classList.add('tab-active');
+            document.getElementById('tab-' + tab).classList.remove('text-slate-500');
+
+            const containers = {
+                table: document.getElementById('table-container'),
+                auth: document.getElementById('auth-container'),
+                body: document.getElementById('body-container'),
+                history: document.getElementById('history-container')
+            };
+
+            Object.values(containers).forEach(c => c.classList.add('hidden'));
+
+            if (tab === 'body') containers.body.classList.remove('hidden');
+            else if (tab === 'auth') {
+                containers.auth.classList.remove('hidden');
+                handleUrlInput(document.getElementById('url').value);
+                renderAuthMemory();
+            } else if (tab === 'history') {
+                containers.history.classList.remove('hidden');
+                renderHistory();
+            } else {
+                containers.table.classList.remove('hidden');
+                renderKVRows();
+            }
+        }
+
+        function addKVRow(k = '', v = '') {
+            storage[currentTab].push({ k, v });
+            renderKVRows();
+        }
+
+        function removeKVRow(index) {
+            storage[currentTab].splice(index, 1);
+            renderKVRows();
+            saveTables();
+        }
+
+        function renderKVRows() {
+            const container = document.getElementById('kv-rows');
+            container.innerHTML = '';
+            if (storage[currentTab].length === 0) storage[currentTab].push({k:'', v:''});
+
+            storage[currentTab].forEach((row, i) => {
+                const div = document.createElement('div');
+                div.className = 'grid grid-cols-[1fr_1fr_40px] gap-2';
+                div.innerHTML = `
+                    <input type="text" placeholder="Key" value="${row.k}" oninput="updateKV(${i}, 'k', this.value)" class="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-[11px] mono focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-slate-600">
+                    <input type="text" placeholder="Value" value="${row.v}" oninput="updateKV(${i}, 'v', this.value)" class="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-1.5 text-[11px] mono focus:ring-1 focus:ring-blue-500 outline-none placeholder:text-slate-600">
+                    <button onclick="removeKVRow(${i})" class="text-slate-600 hover:text-red-500 flex items-center justify-center text-lg transition-colors">&times;</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateKV(index, field, val) {
+            storage[currentTab][index][field] = val;
+            if (currentTab === 'params') updateUrlFromParams();
+            saveTables();
+        }
+
+        function saveTables() {
+            localStorage.setItem('exp_params', JSON.stringify(storage.params));
+            localStorage.setItem('exp_headers', JSON.stringify(storage.headers));
+        }
+
+        function updateUrlFromParams() {
+            const urlInput = document.getElementById('url');
+            let base = urlInput.value.split('?')[0];
+            const qs = storage.params.filter(p => p.k.trim()).map(p => `${encodeURIComponent(p.k.trim())}=${encodeURIComponent(p.v.trim())}`).join('&');
+            urlInput.value = base + (qs ? '?' + qs : '');
+        }
+
+        // --- HISTORY ---
+
+        function saveToHistory(req) {
+            storage.history.unshift(req);
+            if (storage.history.length > 50) storage.history.pop();
+            localStorage.setItem('exp_history', JSON.stringify(storage.history));
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = '';
+            if (storage.history.length === 0) {
+                list.innerHTML = '<p class="text-center py-10 text-slate-600 italic text-xs uppercase tracking-widest">No voyages logged yet...</p>';
+                return;
+            }
+            storage.history.forEach((h, i) => {
+                const div = document.createElement('div');
+                div.className = 'history-item flex items-center justify-between p-3 bg-slate-800/30 border border-slate-800 rounded-xl cursor-pointer hover:border-blue-500/50 transition-all';
+                div.onclick = (e) => { if (!e.target.closest('.delete-hist')) loadFromHistory(i); };
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="text-[9px] font-black px-2 py-0.5 rounded bg-slate-700 text-blue-400 uppercase">${h.method}</span>
+                        <div class="flex flex-col overflow-hidden">
+                            <span class="text-[11px] mono truncate text-slate-300">${h.url}</span>
+                            <span class="text-[8px] text-slate-600 font-bold uppercase">${new Date(h.timestamp).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <button onclick="deleteHistory(${i})" class="delete-hist opacity-0 text-slate-600 hover:text-red-500 px-2 transition-opacity"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function loadFromHistory(index) {
+            const h = storage.history[index];
+            document.getElementById('method').value = h.method;
+            document.getElementById('url').value = h.url;
+            storage.params = h.params || [];
+            storage.headers = h.headers || [];
+            document.getElementById('body-data').value = h.body || '';
+            saveTables();
+            handleUrlInput(h.url);
+            switchTab('params');
+        }
+
+        function deleteHistory(index) {
+            storage.history.splice(index, 1);
+            localStorage.setItem('exp_history', JSON.stringify(storage.history));
+            renderHistory();
+        }
+
+        // --- API EXECUTION ---
+
+        async function sendRequest() {
+            storage.params = storage.params.filter(p => p.k.trim());
+            storage.headers = storage.headers.filter(h => h.k.trim());
+            saveTables();
+            renderKVRows();
+
+            const url = document.getElementById('url').value;
+            const method = document.getElementById('method').value;
+            const output = document.getElementById('response-output');
+            const overlay = document.getElementById('loading-overlay');
+            const statusPill = document.getElementById('status-pill');
+            const meta = document.getElementById('resp-meta');
+
+            if (!url) return;
+            overlay.classList.remove('hidden');
+            output.textContent = 'Launching Request...';
+            statusPill.classList.add('hidden');
+
+            const headers = {};
+            storage.headers.forEach(h => { headers[h.k.trim()] = h.v.trim(); });
+            
+            // APPLY HOST-SPECIFIC TOKEN
+            const host = getHost(url);
+            const token = storage.authLocker[host];
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const body = document.getElementById('body-data').value;
+            const options = { method, headers };
+            if (method !== 'GET' && method !== 'HEAD') options.body = body;
+
+            saveToHistory({ method, url, body, params: [...storage.params], headers: [...storage.headers], timestamp: Date.now() });
+
+            const startTime = performance.now();
+            try {
+                const response = await fetch(url, options);
+                const duration = Math.round(performance.now() - startTime);
+                const text = await response.text();
+                const size = new TextEncoder().encode(text).length;
+
+                meta.classList.remove('hidden');
+                document.getElementById('resp-time').textContent = duration + 'ms';
+                document.getElementById('resp-size').textContent = formatBytes(size);
+
+                statusPill.classList.remove('hidden', 'bg-emerald-500/20', 'text-emerald-400', 'bg-red-500/20', 'text-red-400');
+                statusPill.textContent = `${response.status} ${response.statusText}`;
+                if (response.ok) statusPill.classList.add('bg-emerald-500/20', 'text-emerald-400');
+                else statusPill.classList.add('bg-red-500/20', 'text-red-400');
+
+                try {
+                    const json = JSON.parse(text);
+                    output.innerHTML = syntaxHighlight(JSON.stringify(json, null, 2));
+                } catch (e) { output.textContent = text || '(empty response)'; }
+            } catch (err) {
+                output.innerHTML = `<span class="text-red-400 font-bold uppercase text-[10px]">Transmission Failure:</span><br>${err.message}`;
+                statusPill.classList.remove('hidden'); statusPill.textContent = 'OFFLINE'; statusPill.classList.add('bg-red-500/20', 'text-red-400');
+            } finally { overlay.classList.add('hidden'); }
+        }
+
+        // --- HELPERS ---
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        function syntaxHighlight(json) {
+            if (!json) return "";
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, function (match) {
+                let cls = 'text-orange-400'; 
+                if (/^"/.test(match)) { if (/:$/.test(match)) cls = 'text-blue-400 font-bold'; else cls = 'text-emerald-400'; }
+                else if (/true|false/.test(match)) cls = 'text-purple-400';
+                else if (/null/.test(match)) cls = 'text-slate-500';
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function resetAll() { if (confirm('Wipe yer entire locker (history, tokens, tables)?')) { localStorage.clear(); location.reload(); } }
+        function copyResponse() { const text = document.getElementById('response-output').innerText; navigator.clipboard.writeText(text).then(() => alert('Loot copied to clipboard!')); }
+
+        // Init
+        handleUrlInput(document.getElementById('url').value);
+        renderKVRows();
+    </script>
+</body>
+</html>
