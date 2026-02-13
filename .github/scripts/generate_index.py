@@ -2,34 +2,47 @@ import os
 import sys
 import json
 
-def generate_index_html(target_directory="pi"):
+def generate_index_html(apps_source_directory, output_index_directory="."):
     """
-    Scans the target_directory and its subfolders for HTML files and generates a dynamic index.html
-    with a modern, professional, and responsive app choosing screen.
+    Scans the apps_source_directory and its subfolders for HTML files and generates a dynamic index.html
+    in the output_index_directory with a modern, professional, and responsive app choosing screen.
+    
+    Args:
+        apps_source_directory (str): The directory containing the HTML app files (e.g., "localonly").
+        output_index_directory (str): The directory where the index.html should be written (e.g., "." for repo root).
     """
     
-    app_files_with_paths = [] # List of (relative_path, subfolder_name)
+    app_files_with_paths = [] # List of (full_relative_path_to_app, subfolder_name)
     
-    # Ensure target_directory exists and is accessible
-    if not os.path.isdir(target_directory):
-        print(f"Error: Directory '{target_directory}' not found.")
+    # Ensure source directory exists and is accessible
+    if not os.path.isdir(apps_source_directory):
+        print(f"Error: Source directory '{apps_source_directory}' not found.")
         sys.exit(1)
 
-    # Walk through the directory
-    for root, dirs, files in os.walk(target_directory):
-        # Calculate relative path from target_directory
-        relative_root = os.path.relpath(root, target_directory)
-        if relative_root == '.':
-            subfolder_name = "" # Root directory
+    # Walk through the source directory
+    for root, dirs, files in os.walk(apps_source_directory):
+        # Calculate relative path from the apps_source_directory
+        relative_root_from_source = os.path.relpath(root, apps_source_directory)
+        if relative_root_from_source == '.':
+            subfolder_name = "" # Root of the apps_source_directory
         else:
-            subfolder_name = relative_root.replace('\\', '/') # Normalize path separators
+            subfolder_name = relative_root_from_source.replace('\\', '/') # Normalize path separators
 
         for filename in files:
-            if filename.endswith(".html") and filename != "index.html":
-                full_path = os.path.join(relative_root, filename)
-                # Normalize path separators for href
-                normalized_path = full_path.replace('\\', '/')
-                app_files_with_paths.append((normalized_path, subfolder_name))
+            if filename.endswith(".html") and filename != "index.html": # Exclude index.html, which is the launcher itself
+                # Construct the full relative path to the app file from the *output_index_directory*
+                # Example: If output_index_directory is '.' (repo root) and app is 'localonly/game/flip.html'
+                # Then app_href should be 'localonly/game/flip.html'
+                # If output_index_directory is 'localonly' and app is 'localonly/game/flip.html'
+                # Then app_href should be 'game/flip.html'
+                
+                # We need the path relative to the *output* index.html file.
+                # If index.html is in repo root, and app is in localonly/foo/bar.html,
+                # then href should be localonly/foo/bar.html
+                
+                # file_path is relative to the *output_index_directory* for the href
+                app_href = os.path.join(apps_source_directory, relative_root_from_source, filename).replace('\\', '/')
+                app_files_with_paths.append((app_href, subfolder_name))
 
     app_files_with_paths.sort(key=lambda x: x[0].lower()) # Sort by path for consistent order
 
@@ -75,7 +88,7 @@ def generate_index_html(target_directory="pi"):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Local App Launcher</title>
+    <title>App Launcher (pi)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     <style>
@@ -113,8 +126,8 @@ def generate_index_html(target_directory="pi"):
                 🚀
             </div>
             <div>
-                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">App Launcher</h1>
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Dynamic Local Index</p>
+                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">App Launcher (pi)</h1>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Repository Index</p>
             </div>
         </div>
         <div class="text-xs font-mono text-slate-500">{len(app_files_with_paths)} Apps Detected</div>
@@ -129,7 +142,7 @@ def generate_index_html(target_directory="pi"):
 </html>
     """
 
-    output_path = os.path.join(target_directory, "index.html")
+    output_path = os.path.join(output_index_directory, "index.html")
     with open(output_path, "w") as f:
         f.write(full_html_content)
     
@@ -137,9 +150,10 @@ def generate_index_html(target_directory="pi"):
 
 if __name__ == "__main__":
     # Ensure a directory is provided as an argument
-    if len(sys.argv) < 2:
-        print("Usage: python generate_index.py <target_directory>")
+    if len(sys.argv) < 3:
+        print("Usage: python generate_index.py <apps_source_directory> <output_index_directory>")
         sys.exit(1)
     
-    target_dir = sys.argv[1]
-    generate_index_html(target_dir)
+    apps_source_dir = sys.argv[1]
+    output_index_dir = sys.argv[2]
+    generate_index_html(apps_source_dir, output_index_dir)
