@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Weather Calendar</title>
+  <style>
+:root{
+  --bg: #000;
+  --card-bg: #1c1c1e;
+  --header-bg: rgba(28, 28, 30, 0.8);
+  --text: #fff;
+  --text-secondary: #98989d;
+  --accent: #007aff;
+  --separator: rgba(84, 84, 88, 0.6);
+  --today-accent: #ff9500;
+  color-scheme: dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;margin:0;padding:0}
+body{
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overscroll-behavior: none;
+}
+
+/* iOS-style header */
+header{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: var(--header-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: max(env(safe-area-inset-top), 12px) 16px 12px;
+  border-bottom: 0.5px solid var(--separator);
+}
+.header-content{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+h1{
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  flex: 1;
+  text-align: center;
+}
+.location-text{
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* iOS-style buttons */
+.btn{
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  -webkit-appearance: none;
+}
+.btn:active{opacity: 0.6}
+.btn-secondary{
+  background: var(--card-bg);
+  color: var(--accent);
+}
+.btn-icon{
+  background: transparent;
+  padding: 6px;
+  font-size: 18px;
+  color: var(--accent);
+  min-width: 30px;
+}
+
+/* Controls toolbar */
+.toolbar{
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: var(--header-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 12px 16px max(env(safe-area-inset-bottom), 12px);
+  border-top: 0.5px solid var(--separator);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+input[type=date]{
+  background: var(--card-bg);
+  border: none;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 15px;
+  flex: 1;
+  -webkit-appearance: none;
+}
+input[type=date]::-webkit-calendar-picker-indicator{
+  filter: invert(1);
+}
+
+/* Calendar scrolling view */
+main{
+  position: fixed;
+  top: calc(max(env(safe-area-inset-top), 12px) + 60px);
+  bottom: calc(max(env(safe-area-inset-bottom), 12px) + 60px);
+  left: 0;
+  right: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+.months-container{
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Month section */
+.month-section{
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 16px;
+  overflow: hidden;
+}
+.month-section.current-month{
+  border: 1px solid var(--today-accent);
+}
+.month-header{
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Weekday headers */
+.weekday-headers{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.weekday-header{
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Calendar grid */
+.calendar-grid{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+/* Day cell */
+.day-cell{
+  aspect-ratio: 1;
+  background: rgba(255,255,255,0.03);
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  font-size: 13px;
+}
+.day-cell.empty{
+  background: transparent;
+}
+.day-cell.today{
+  background: var(--today-accent);
+  font-weight: 700;
+}
+.day-cell.past{
+  opacity: 0.85;
+}
+/* Precipitation-based colors */
+.day-cell.temp-freezing{
+  background: linear-gradient(135deg, rgba(100, 150, 255, 0.5), rgba(150, 200, 255, 0.3));
+}
+.day-cell.temp-cold{
+  background: linear-gradient(135deg, rgba(150, 200, 255, 0.4), rgba(200, 220, 255, 0.2));
+}
+.day-cell.temp-cool{
+  background: linear-gradient(135deg, rgba(200, 220, 240, 0.3), rgba(220, 230, 245, 0.15));
+}
+.day-cell.temp-mild{
+  background: rgba(255,255,255,0.05);
+}
+.day-cell.temp-warm{
+  background: linear-gradient(135deg, rgba(255, 200, 100, 0.2), rgba(255, 220, 150, 0.1));
+}
+.day-cell.temp-hot{
+  background: linear-gradient(135deg, rgba(255, 150, 50, 0.4), rgba(255, 180, 80, 0.25));
+}
+.day-cell.temp-extreme{
+  background: linear-gradient(135deg, rgba(255, 100, 50, 0.6), rgba(255, 130, 60, 0.4));
+}
+.day-cell.future{
+  background: rgba(255,255,255,0.05);
+  border: 1px dashed rgba(255,255,255,0.2);
+}
+
+.day-number{
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.day-temp{
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff9f0a;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+.day-temp-hi{
+  color: #ff6b6b;
+}
+.day-temp-lo{
+  color: #4dabf7;
+  font-size: 11px;
+}
+.day-precip{
+  font-size: 9px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 2px;
+}
+.day-precip-rain{
+  color: #4dabf7;
+}
+.day-precip-snow{
+  color: #e0e0e0;
+}
+
+.loading{
+  text-align: center;
+  padding: 32px;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+/* Modal styles */
+.modal-overlay{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.active{
+  display: flex;
+}
+.modal{
+  background: var(--card-bg);
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 80vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header{
+  padding: 20px;
+  border-bottom: 0.5px solid var(--separator);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal-header-top{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-title{
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+.modal-tabs{
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.tab-btn{
+  background: rgba(255,255,255,0.05);
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.tab-btn.active{
+  background: var(--accent);
+  color: #fff;
+}
+.season-filters{
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 0 4px;
+}
+.season-filter-btn{
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 4px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+.season-filter-btn input{
+  display: none;
+}
+.season-filter-btn span{
+  font-size: 13px;
+  line-height: 1.3;
+}
+.season-filter-btn small{
+  font-size: 9px;
+  color: var(--text-secondary);
+  display: block;
+}
+.season-filter-btn.active{
+  background: rgba(0,122,255,0.2);
+  border-color: rgba(0,122,255,0.5);
+}
+.season-filter-btn:hover{
+  background: rgba(255,255,255,0.1);
+}
+.modal-close{
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+}
+.modal-body{
+  padding: 16px 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stat-item{
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 0.5px solid var(--separator);
+  gap: 12px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.stat-item:hover{
+  background: rgba(255,255,255,0.03);
+}
+.stat-item:last-child{
+  border-bottom: none;
+}
+.stat-date{
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 90px;
+  color: var(--text);
+}
+.stat-debug{
+  font-size: 11px;
+  color: var(--text-secondary);
+  width: 100%;
+  margin-top: 4px;
+  font-family: monospace;
+}
+.stat-breakdown{
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  display: none;
+  font-size: 13px;
+}
+.stat-breakdown.active{
+  display: block;
+}
+.breakdown-row{
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 0.5px solid var(--separator);
+}
+.breakdown-row:last-child{
+  border-bottom: none;
+}
+.breakdown-label{
+  color: var(--text-secondary);
+}
+.breakdown-value{
+  font-weight: 600;
+  color: var(--text);
+}
+.stat-bar-container{
+  flex: 1;
+  height: 24px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.stat-bar{
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+.stat-bar.precip{
+  background: linear-gradient(90deg, rgba(100, 150, 255, 0.7), rgba(50, 100, 255, 0.9));
+}
+.stat-bar.temp{
+  background: linear-gradient(90deg, rgba(255, 159, 10, 0.6), rgba(255, 69, 0, 0.9));
+}
+.stat-value{
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 60px;
+  text-align: right;
+  color: var(--text);
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-content">
+      <button id="locBtn" class="btn btn-icon" title="Change Location">📍</button>
+      <button id="calendarBtn" class="btn btn-icon" title="Pick date">📅</button>
+      <div style="flex:1;text-align:center">
+        <h1 id="monthLabel">Weather</h1>
+        <div class="location-text" id="locationLabel">80134</div>
+      </div>
+      <button id="precipBtn" class="btn btn-icon" title="Precipitation History">💧</button>
+      <button id="snowSeasonBtn" class="btn btn-icon" title="Seasonal Totals">📊</button>
+      <button id="tempBtn" class="btn btn-icon" title="Temperature History">🌡️</button>
+      <button id="todayBtn" class="btn btn-icon" title="Today">⊙</button>
+    </div>
+  </header>
+
+  <main id="calendar">
+    <div class="months-container" id="monthsContainer">
+      <!-- Month sections rendered here -->
+    </div>
+  </main>
+
+  <div class="toolbar">
+    <input id="datePicker" type="date" aria-label="Pick date" />
+  </div>
+
+  <!-- Precipitation Modal -->
+  <div id="precipModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-top">
+          <div class="modal-title">💧 Precipitation History</div>
+          <button class="modal-close" id="closePrecipModal">×</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="tab-btn active" data-tab="combined">Rain+Snow</button>
+          <button class="tab-btn" data-tab="rain">Rain (mm)</button>
+          <button class="tab-btn" data-tab="snow">Snow (cm)</button>
+        </div>
+      </div>
+      <div class="modal-body" id="precipModalBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Temperature Modal -->
+  <div id="tempModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-top">
+          <div class="modal-title">🌡️ Temperature History</div>
+          <button class="modal-close" id="closeTempModal">×</button>
+        </div>
+      </div>
+      <div class="modal-body" id="tempModalBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Seasonal Snow Modal -->
+  <div id="snowSeasonModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-header-top">
+          <div class="modal-title">📊 Seasonal Totals</div>
+          <button class="modal-close" id="closeSnowSeasonModal">×</button>
+        </div>
+        <div class="modal-tabs">
+          <button class="tab-btn active" data-tab="combined-season">Rain+Snow</button>
+          <button class="tab-btn" data-tab="rain-season">Rain</button>
+          <button class="tab-btn" data-tab="snow-season">Snow</button>
+        </div>
+        <div class="season-filters">
+          <label class="season-filter-btn active" data-season="spring">
+            <input type="checkbox" checked>
+            <span>� Spring<br><small>Mar-May</small></span>
+          </label>
+          <label class="season-filter-btn active" data-season="summer">
+            <input type="checkbox" checked>
+            <span>☀️ Summer<br><small>Jun-Aug</small></span>
+          </label>
+          <label class="season-filter-btn active" data-season="fall">
+            <input type="checkbox" checked>
+            <span>🍂 Autumn<br><small>Sep-Nov</small></span>
+          </label>
+          <label class="season-filter-btn active" data-season="winter">
+            <input type="checkbox" checked>
+            <span>❄️ Winter<br><small>Dec-Feb</small></span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-body" id="snowSeasonModalBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+  // State
+  const FORECAST_API = 'https://api.open-meteo.com/v1/forecast';
+  const ARCHIVE_API = 'https://archive-api.open-meteo.com/v1/archive';
+  const GEOCODE_API = 'https://geocoding-api.open-meteo.com/v1/search';
+  const START_YEAR = 2000; // Start from year 2000
+  const DAYS_FUTURE = 90;
+
+  const $ = sel => document.querySelector(sel);
+  const monthsContainer = $('#monthsContainer');
+  const datePicker = $('#datePicker');
+  const todayBtn = $('#todayBtn');
+  const calendarBtn = $('#calendarBtn');
+  const locBtn = $('#locBtn');
+  const locationLabel = $('#locationLabel');
+  const monthLabel = $('#monthLabel');
+  const calendar = $('#calendar');
+  const precipBtn = $('#precipBtn');
+  const tempBtn = $('#tempBtn');
+  const snowSeasonBtn = $('#snowSeasonBtn');
+  const precipModal = $('#precipModal');
+  const tempModal = $('#tempModal');
+  const snowSeasonModal = $('#snowSeasonModal');
+  const precipModalBody = $('#precipModalBody');
+  const tempModalBody = $('#tempModalBody');
+  const snowSeasonModalBody = $('#snowSeasonModalBody');
+  const closePrecipModal = $('#closePrecipModal');
+  const closeTempModal = $('#closeTempModal');
+  const closeSnowSeasonModal = $('#closeSnowSeasonModal');
+
+  let state = {
+    lat: null,
+    lon: null,
+    tz: 'auto',
+    data: {},
+    currentMonthEl: null,
+    precipTab: 'combined' // 'combined', 'rain', 'snow'
+  };
+
+  // Utils
+  const fmtDate = d => d.toISOString().slice(0,10);
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const isToday = d => fmtDate(d) === fmtDate(new Date());
+  const isPast = d => d < new Date(new Date().setHours(0,0,0,0));
+  const isFuture = d => d > new Date(new Date().setHours(23,59,59,999));
+  
+  // Get precipitation color class
+  function getTempClass(tempF){
+    if(tempF === null || tempF === undefined) return 'temp-mild';
+    if(tempF >= 95) return 'temp-extreme';  // 95°F+
+    if(tempF >= 85) return 'temp-hot';      // 85-94°F
+    if(tempF >= 70) return 'temp-warm';     // 70-84°F
+    if(tempF >= 50) return 'temp-mild';     // 50-69°F
+    if(tempF >= 35) return 'temp-cool';     // 35-49°F
+    if(tempF >= 20) return 'temp-cold';     // 20-34°F
+    return 'temp-freezing';                  // <20°F
+  }
+
+  function getPrecipClass(precipInches){
+    if(precipInches === null || precipInches === undefined) return 'precip-none';
+    if(precipInches >= 12) return 'precip-heavy';
+    if(precipInches >= 1) return 'precip-moderate';
+    if(precipInches >= 0.1) return 'precip-light';
+    if(precipInches > 0) return 'precip-trace';
+    return 'precip-none';
+  }
+
+  // Geocode
+  async function geocodeZip(zip){
+    try{
+      const url = `${GEOCODE_API}?name=${encodeURIComponent(zip)}&count=1&language=en`;
+      const r = await fetch(url);
+      if(!r.ok) return null;
+      const j = await r.json();
+      return j?.results?.[0] || null;
+    }catch(e){ console.warn('geocode',e); return null; }
+  }
+
+  // Fetch historical (archive API) - chunked for large date ranges
+  async function fetchArchive(lat, lon, startDate, endDate){
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const chunks = [];
+    
+    // Split into yearly chunks for better API performance
+    let current = new Date(start);
+    while(current <= end){
+      const chunkEnd = new Date(Math.min(
+        new Date(current.getFullYear(), 11, 31).getTime(),
+        end.getTime()
+      ));
+      chunks.push({
+        start: fmtDate(current),
+        end: fmtDate(chunkEnd)
+      });
+      current = new Date(current.getFullYear() + 1, 0, 1);
+    }
+    
+    // Fetch all chunks in parallel
+    const results = await Promise.all(chunks.map(async chunk => {
+      const params = new URLSearchParams({
+        latitude: lat,
+        longitude: lon,
+        start_date: chunk.start,
+        end_date: chunk.end,
+        daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum',
+        timezone: state.tz
+      });
+      try{
+        const res = await fetch(`${ARCHIVE_API}?${params}`);
+        if(!res.ok) return null;
+        return await res.json();
+      }catch(e){ console.warn('archive chunk error:', e); return null; }
+    }));
+    
+    // Merge results
+    const merged = { daily: { time: [], temperature_2m_max: [], temperature_2m_min: [], precipitation_sum: [], rain_sum: [], snowfall_sum: [] } };
+    results.filter(r => r).forEach(r => {
+      if(r.daily){
+        merged.daily.time.push(...(r.daily.time || []));
+        merged.daily.temperature_2m_max.push(...(r.daily.temperature_2m_max || []));
+        merged.daily.temperature_2m_min.push(...(r.daily.temperature_2m_min || []));
+        merged.daily.precipitation_sum.push(...(r.daily.precipitation_sum || []));
+        merged.daily.rain_sum.push(...(r.daily.rain_sum || []));
+        merged.daily.snowfall_sum.push(...(r.daily.snowfall_sum || []));
+      }
+    });
+    return merged;
+  }
+
+  // Fetch forecast (forecast API)
+  async function fetchForecast(lat, lon, startDate, endDate){
+    const params = new URLSearchParams({
+      latitude: lat,
+      longitude: lon,
+      start_date: startDate,
+      end_date: endDate,
+      daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,rain_sum,snowfall_sum',
+      timezone: state.tz
+    });
+    try{
+      const res = await fetch(`${FORECAST_API}?${params}`);
+      if(!res.ok) throw new Error('Forecast fetch failed');
+      return await res.json();
+    }catch(e){ console.warn('forecast error:', e); return null; }
+  }
+
+  // Build data map from API response
+  function buildDataMap(apiResponse){
+    const map = {};
+    if(apiResponse?.daily){
+      const times = apiResponse.daily.time || [];
+      const temps = apiResponse.daily.temperature_2m_max || [];
+      const tempsMin = apiResponse.daily.temperature_2m_min || [];
+      const precs = apiResponse.daily.precipitation_sum || [];
+      const rains = apiResponse.daily.rain_sum || [];
+      const snows = apiResponse.daily.snowfall_sum || [];
+      times.forEach((t, i) => {
+        map[t] = { 
+          temp: temps[i] ?? null,
+          tempMin: tempsMin[i] ?? null,
+          precip: precs[i] ?? 0,
+          rain: rains[i] ?? 0,
+          snow: snows[i] ?? 0
+        };
+      });
+    }
+    return map;
+  }
+  
+  // Calculate historical average for a day of year
+  function calculateHistoricalAverage(month, day){
+    const temps = [];
+    Object.entries(state.data).forEach(([dateKey, data]) => {
+      const d = new Date(dateKey);
+      if(d.getMonth() === month && d.getDate() === day && data.temp !== null && isPast(d)){
+        temps.push(data.temp);
+      }
+    });
+    if(temps.length === 0) return null;
+    return temps.reduce((sum, t) => sum + t, 0) / temps.length;
+  }
+
+  // Render month section
+  function renderMonth(year, month){
+    const section = document.createElement('div');
+    section.className = 'month-section';
+    const monthDate = new Date(year, month, 1);
+    section.dataset.month = fmtDate(monthDate);
+    
+    const today = new Date();
+    if(year === today.getFullYear() && month === today.getMonth()){
+      section.classList.add('current-month');
+      state.currentMonthEl = section;
+    }
+
+    const monthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    section.innerHTML = `
+      <div class="month-header">${monthName}</div>
+      <div class="weekday-headers">
+        <div class="weekday-header">Sun</div>
+        <div class="weekday-header">Mon</div>
+        <div class="weekday-header">Tue</div>
+        <div class="weekday-header">Wed</div>
+        <div class="weekday-header">Thu</div>
+        <div class="weekday-header">Fri</div>
+        <div class="weekday-header">Sat</div>
+      </div>
+      <div class="calendar-grid" id="grid-${year}-${month}"></div>
+    `;
+
+    const grid = section.querySelector('.calendar-grid');
+    const firstDay = monthDate.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Empty cells before first day
+    for(let i = 0; i < firstDay; i++){
+      const empty = document.createElement('div');
+      empty.className = 'day-cell empty';
+      grid.appendChild(empty);
+    }
+
+    // Day cells
+    for(let day = 1; day <= daysInMonth; day++){
+      const date = new Date(year, month, day);
+      const dateKey = fmtDate(date);
+      const data = state.data[dateKey];
+      
+      const cell = document.createElement('div');
+      cell.className = 'day-cell';
+      cell.dataset.date = dateKey;
+      
+      if(isToday(date)) cell.classList.add('today');
+      if(isPast(date)) cell.classList.add('past');
+
+      let tempHiVal = '—';
+      let tempLoVal = '—';
+      let rainVal = '';
+      let snowVal = '';
+      let tempF = null;
+      
+      // For future dates, use historical average and no precip
+      if(isFuture(date)){
+        cell.classList.add('future');
+        const avgTemp = calculateHistoricalAverage(date.getMonth(), date.getDate());
+        if(avgTemp !== null){
+          tempF = avgTemp * 9/5 + 32;
+          tempHiVal = `${Math.round(tempF)}°`;
+        }
+        rainVal = '';
+        snowVal = '';
+      } else {
+        // Past/present dates: use actual data
+        if(data && data.temp !== null){
+          tempF = data.temp * 9/5 + 32;
+          tempHiVal = `${Math.round(tempF)}°`;
+        }
+        if(data && data.tempMin !== null){
+          const tempMinF = data.tempMin * 9/5 + 32;
+          tempLoVal = `${Math.round(tempMinF)}°`;
+        }
+        if(data && data.rain !== null && data.rain > 0){
+          const rainInches = data.rain * 0.03937; // mm to inches
+          rainVal = rainInches >= 0.01 ? `💧${rainInches.toFixed(2)}"` : '';
+        }
+        if(data && data.snow !== null && data.snow > 0){
+          const snowInches = data.snow * 0.3937; // cm to inches
+          snowVal = snowInches >= 0.01 ? `❄️${snowInches.toFixed(2)}"` : '';
+        }
+        // Add temperature color class
+        if(!isToday(date) && tempF !== null){
+          cell.classList.add(getTempClass(tempF));
+        }
+      }
+
+      const precipDisplay = [rainVal, snowVal].filter(v => v).join(' ');
+
+      cell.innerHTML = `
+        <div class="day-number">${day}</div>
+        <div class="day-temp">
+          <span class="day-temp-hi">${tempHiVal}</span>
+          ${tempLoVal !== '—' ? `<span class="day-temp-lo">${tempLoVal}</span>` : ''}
+        </div>
+        ${precipDisplay ? `<div class="day-precip">${precipDisplay}</div>` : ''}
+      `;
+      
+      grid.appendChild(cell);
+    }
+
+    return section;
+  }
+
+  // Load calendar data
+  async function loadCalendar(){
+    if(!state.lat || !state.lon) return;
+    
+    monthsContainer.innerHTML = '<div class="loading">Loading weather data since 2000...</div>';
+    
+    const today = new Date();
+    const startPast = new Date(START_YEAR, 0, 1); // Jan 1, 2000
+    const endFuture = addDays(today, DAYS_FUTURE);
+    const yesterdayStr = fmtDate(addDays(today, -1));
+    
+    // Fetch historical data only (past dates including today)
+    const archiveData = await fetchArchive(state.lat, state.lon, fmtDate(startPast), yesterdayStr);
+
+    // Build data map from archive
+    state.data = buildDataMap(archiveData);
+
+    // Render months
+    monthsContainer.innerHTML = '';
+    const startMonth = new Date(startPast.getFullYear(), startPast.getMonth(), 1);
+    const endMonth = new Date(endFuture.getFullYear(), endFuture.getMonth(), 1);
+    
+    let current = new Date(startMonth);
+    while(current <= endMonth){
+      const monthSection = renderMonth(current.getFullYear(), current.getMonth());
+      monthsContainer.appendChild(monthSection);
+      current.setMonth(current.getMonth() + 1);
+    }
+
+    // Update month label
+    monthLabel.textContent = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // Scroll to current month after render
+    setTimeout(() => {
+      if(state.currentMonthEl) state.currentMonthEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  }
+
+  // Set location
+  function setLocation(lat, lon, label){
+    state.lat = lat;
+    state.lon = lon;
+    locationLabel.textContent = label || `${lat.toFixed(3)}, ${lon.toFixed(3)}`;
+  }
+
+  // Build precipitation modal
+  function showPrecipModal(){
+    renderPrecipData();
+    precipModal.classList.add('active');
+  }
+
+  function renderPrecipData(){
+    const precipData = [];
+    Object.entries(state.data).forEach(([dateKey, data]) => {
+      const d = new Date(dateKey);
+      if(isPast(d)){
+        let valueMm = 0;
+        let rawValue = 0;
+        let unit = 'mm';
+        
+        if(state.precipTab === 'combined' && data.precip !== null){
+          valueMm = data.precip; // mm (rain + snow as water equivalent)
+          rawValue = data.precip;
+          unit = 'mm';
+        } else if(state.precipTab === 'rain' && data.rain !== null){
+          valueMm = data.rain; // mm
+          rawValue = data.rain;
+          unit = 'mm';
+        } else if(state.precipTab === 'snow' && data.snow !== null){
+          // Snow is in CM not MM!
+          valueMm = data.snow * 10; // Convert cm to mm
+          rawValue = data.snow;
+          unit = 'cm';
+        }
+        
+        if(valueMm > 0){
+          const valueInches = valueMm * 0.03937; // mm to inches
+          precipData.push({ 
+            date: d, 
+            dateKey, 
+            valueInches, 
+            rawValue, 
+            unit,
+            // Store all values for breakdown
+            rain: data.rain ?? 0,
+            snow: data.snow ?? 0,
+            total: data.precip ?? 0
+          });
+        }
+      }
+    });
+    
+    // Sort by date descending (most recent first)
+    precipData.sort((a, b) => b.date - a.date);
+    
+    // Find max for scaling
+    const maxPrecip = Math.max(...precipData.map(d => d.valueInches));
+    
+    precipModalBody.innerHTML = '';
+    if(precipData.length === 0){
+      const tabLabel = state.precipTab === 'combined' ? 'precipitation' : state.precipTab;
+      precipModalBody.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-secondary)">No ${tabLabel} data</div>`;
+    } else {
+      precipData.forEach(d => {
+        const dateStr = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const widthPct = (d.valueInches / maxPrecip) * 100;
+        const item = document.createElement('div');
+        item.className = 'stat-item';
+        
+        // Calculate breakdown values
+        const rainMm = d.rain;
+        const rainIn = rainMm * 0.03937;
+        const snowCm = d.snow;
+        const snowIn = snowCm * 0.3937; // cm to inches
+        const totalMm = d.total;
+        const totalIn = totalMm * 0.03937;
+        
+        item.innerHTML = `
+          <div class="stat-date">${dateStr}</div>
+          <div class="stat-bar-container">
+            <div class="stat-bar precip" style="width: ${widthPct}%"></div>
+          </div>
+          <div class="stat-value">${d.valueInches.toFixed(2)}"</div>
+          <div class="stat-debug">Raw: ${d.rawValue.toFixed(2)} ${d.unit} = ${d.valueInches.toFixed(3)} inches</div>
+          <div class="stat-breakdown">
+            <div class="breakdown-row">
+              <div class="breakdown-label">Rain (liquid)</div>
+              <div class="breakdown-value">${rainIn.toFixed(2)}" (${rainMm.toFixed(1)} mm)</div>
+            </div>
+            <div class="breakdown-row">
+              <div class="breakdown-label">Snow (actual)</div>
+              <div class="breakdown-value">${snowIn.toFixed(2)}" (${snowCm.toFixed(1)} cm)</div>
+            </div>
+            <div class="breakdown-row">
+              <div class="breakdown-label">Total (water equiv)</div>
+              <div class="breakdown-value">${totalIn.toFixed(2)}" (${totalMm.toFixed(1)} mm)</div>
+            </div>
+          </div>
+        `;
+        
+        // Add click handler to toggle breakdown
+        item.addEventListener('click', (e) => {
+          const breakdown = item.querySelector('.stat-breakdown');
+          const isActive = breakdown.classList.contains('active');
+          // Close all other breakdowns
+          precipModalBody.querySelectorAll('.stat-breakdown').forEach(b => b.classList.remove('active'));
+          // Toggle this one
+          if(!isActive) breakdown.classList.add('active');
+        });
+        
+        precipModalBody.appendChild(item);
+      });
+    }
+  }
+
+  // Build temperature modal
+  function showTempModal(){
+    const tempData = [];
+    Object.entries(state.data).forEach(([dateKey, data]) => {
+      const d = new Date(dateKey);
+      if(isPast(d) && data.temp !== null){
+        const tempF = data.temp * 9/5 + 32;
+        tempData.push({ date: d, dateKey, tempF });
+      }
+    });
+    
+    // Sort by date descending (most recent first)
+    tempData.sort((a, b) => b.date - a.date);
+    
+    // Find min/max for scaling
+    const minTemp = Math.min(...tempData.map(d => d.tempF));
+    const maxTemp = Math.max(...tempData.map(d => d.tempF));
+    const range = maxTemp - minTemp || 1;
+    
+    tempModalBody.innerHTML = '';
+    if(tempData.length === 0){
+      tempModalBody.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary)">No temperature data</div>';
+    } else {
+      tempData.forEach(d => {
+        const dateStr = d.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const widthPct = ((d.tempF - minTemp) / range) * 100;
+        const item = document.createElement('div');
+        item.className = 'stat-item';
+        item.innerHTML = `
+          <div class="stat-date">${dateStr}</div>
+          <div class="stat-bar-container">
+            <div class="stat-bar temp" style="width: ${widthPct}%"></div>
+          </div>
+          <div class="stat-value">${Math.round(d.tempF)}°F</div>
+        `;
+        tempModalBody.appendChild(item);
+      });
+    }
+    
+    tempModal.classList.add('active');
+  }
+
+  // Get season for a date
+  function getSeason(date){
+    const month = date.getMonth() + 1; // 1-12
+    const day = date.getDate();
+    
+    if(month >= 3 && month <= 5) return 'Spring';
+    if(month >= 6 && month <= 8) return 'Summer';
+    if(month >= 9 && month <= 11) return 'Fall';
+    return 'Winter'; // Dec, Jan, Feb
+  }
+
+  // Get winter year (e.g., Winter 2023-2024)
+  function getWinterYear(date){
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    // Dec is start of winter season
+    if(month === 12) return `${year}-${year + 1}`;
+    // Jan/Feb are end of winter season
+    return `${year - 1}-${year}`;
+  }
+
+  // Build seasonal snow modal
+  // Track seasonal modal state
+  let seasonalTab = 'combined-season';
+  let seasonFilters = { spring: true, summer: true, fall: true, winter: true };
+  
+  function showSnowSeasonModal(){
+    renderSeasonalModal();
+    snowSeasonModal.classList.add('active');
+  }
+  
+  // Update season filter defaults based on tab
+  function updateSeasonFiltersForTab(tab){
+    if(tab === 'snow-season'){
+      // Snow tab: winter only
+      seasonFilters = { spring: false, summer: false, fall: false, winter: true };
+    } else if(tab === 'rain-season'){
+      // Rain tab: non-winter seasons
+      seasonFilters = { spring: true, summer: true, fall: true, winter: false };
+    } else {
+      // Combined tab: all seasons
+      seasonFilters = { spring: true, summer: true, fall: true, winter: true };
+    }
+    
+    // Update UI checkboxes and active states
+    snowSeasonModal.querySelectorAll('.season-filter-btn').forEach(btn => {
+      const season = btn.dataset.season;
+      const checkbox = btn.querySelector('input');
+      checkbox.checked = seasonFilters[season];
+      btn.classList.toggle('active', seasonFilters[season]);
+    });
+  }
+  
+  function renderSeasonalModal(){
+    const seasonalData = {};
+    
+    // Determine which data field to use
+    const dataField = seasonalTab === 'rain-season' ? 'rain' : 
+                      seasonalTab === 'snow-season' ? 'snow' : 'precip';
+    
+    // Aggregate by season
+    Object.entries(state.data).forEach(([dateKey, data]) => {
+      const d = new Date(dateKey);
+      const value = data[dataField];
+      if(isPast(d) && value && value > 0){
+        const season = getSeason(d);
+        const seasonLower = season.toLowerCase();
+        
+        // Check if this season is filtered
+        if(!seasonFilters[seasonLower]) return;
+        
+        const year = d.getFullYear();
+        let seasonKey;
+        let sortKey;
+        
+        if(season === 'Winter'){
+          const winterYear = getWinterYear(d);
+          seasonKey = `❄️ Winter ${winterYear}`;
+          sortKey = parseInt(winterYear.split('-')[1]);
+        } else {
+          const emoji = season === 'Spring' ? '�' : season === 'Summer' ? '☀️' : '🍂';
+          seasonKey = `${emoji} ${season} ${year}`;
+          sortKey = year + (season === 'Spring' ? 0.25 : season === 'Summer' ? 0.5 : 0.75);
+        }
+        
+        if(!seasonalData[seasonKey]){
+          seasonalData[seasonKey] = { total: 0, dates: [], sortKey, season: seasonLower };
+        }
+        
+        seasonalData[seasonKey].total += value;
+        seasonalData[seasonKey].dates.push({ date: d, dateKey, value, data });
+      }
+    });
+    
+    // Sort by sortKey (reverse chronological)
+    const sortedSeasons = Object.entries(seasonalData).sort((a, b) => {
+      return b[1].sortKey - a[1].sortKey;
+    });
+    
+    snowSeasonModalBody.innerHTML = '';
+    if(sortedSeasons.length === 0){
+      snowSeasonModalBody.innerHTML = '<div style="text-align:center;padding:32px;color:var(--text-secondary)">No data for selected filters</div>';
+    } else {
+      const maxValue = Math.max(...sortedSeasons.map(([_, data]) => data.total));
+      
+      sortedSeasons.forEach(([seasonKey, data]) => {
+        let totalIn, totalRaw, unitLabel;
+        
+        if(seasonalTab === 'snow-season'){
+          totalRaw = data.total; // cm
+          totalIn = totalRaw * 0.3937;
+          unitLabel = 'cm';
+        } else {
+          totalRaw = data.total; // mm
+          totalIn = totalRaw * 0.03937;
+          unitLabel = 'mm';
+        }
+        
+        const widthPct = (data.total / maxValue) * 100;
+        
+        // Sort dates within season (most recent first)
+        data.dates.sort((a, b) => b.date - a.date);
+        
+        // Build breakdown HTML
+        let breakdownHTML = '';
+        data.dates.forEach(dayData => {
+          const dayStr = dayData.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+          let valueIn, valueRaw, valueUnit;
+          
+          if(seasonalTab === 'snow-season'){
+            valueRaw = dayData.value;
+            valueIn = valueRaw * 0.3937;
+            valueUnit = 'cm';
+          } else if(seasonalTab === 'rain-season'){
+            valueRaw = dayData.value;
+            valueIn = valueRaw * 0.03937;
+            valueUnit = 'mm';
+          } else {
+            valueRaw = dayData.value;
+            valueIn = valueRaw * 0.03937;
+            valueUnit = 'mm';
+            // Show breakdown for combined
+            const rain = dayData.data.rain || 0;
+            const snow = dayData.data.snow || 0;
+            const rainIn = rain * 0.03937;
+            const snowIn = snow * 0.3937;
+            breakdownHTML += `
+              <div class="breakdown-row">
+                <div class="breakdown-label">${dayStr}</div>
+                <div class="breakdown-value">${valueIn.toFixed(2)}" (${rainIn.toFixed(2)}" rain + ${snowIn.toFixed(2)}" snow)</div>
+              </div>
+            `;
+            return;
+          }
+          
+          breakdownHTML += `
+            <div class="breakdown-row">
+              <div class="breakdown-label">${dayStr}</div>
+              <div class="breakdown-value">${valueIn.toFixed(2)}" (${valueRaw.toFixed(1)} ${valueUnit})</div>
+            </div>
+          `;
+        });
+        
+        const item = document.createElement('div');
+        item.className = 'stat-item';
+        item.innerHTML = `
+          <div class="stat-date" style="min-width:140px">${seasonKey}</div>
+          <div class="stat-bar-container">
+            <div class="stat-bar precip" style="width: ${widthPct}%"></div>
+          </div>
+          <div class="stat-value">${totalIn.toFixed(1)}"</div>
+          <div class="stat-debug">Total: ${totalRaw.toFixed(1)} ${unitLabel} = ${totalIn.toFixed(2)} inches (${data.dates.length} days)</div>
+          <div class="stat-breakdown">
+            ${breakdownHTML}
+          </div>
+        `;
+        
+        // Add click handler to toggle breakdown
+        item.addEventListener('click', (e) => {
+          const breakdown = item.querySelector('.stat-breakdown');
+          const isActive = breakdown.classList.contains('active');
+          snowSeasonModalBody.querySelectorAll('.stat-breakdown').forEach(b => b.classList.remove('active'));
+          if(!isActive) breakdown.classList.add('active');
+        });
+        
+        snowSeasonModalBody.appendChild(item);
+      });
+    }
+  }
+
+  // Event handlers
+  todayBtn.addEventListener('click', () => {
+    if(state.currentMonthEl) state.currentMonthEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  calendarBtn.addEventListener('click', () => {
+    datePicker.showPicker?.();
+  });
+
+  datePicker.addEventListener('change', () => {
+    const val = datePicker.value;
+    if(!val) return;
+    const targetDate = new Date(val);
+    const targetMonth = monthsContainer.querySelector(`[data-month^="${targetDate.getFullYear()}-${String(targetDate.getMonth()+1).padStart(2,'0')}"]`);
+    if(targetMonth) targetMonth.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  locBtn.addEventListener('click', () => {
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        p => { setLocation(p.coords.latitude, p.coords.longitude, 'Current Location'); loadCalendar(); },
+        () => alert('Location access denied')
+      );
+    } else {
+      alert('Geolocation not supported');
+    }
+  });
+
+  precipBtn.addEventListener('click', showPrecipModal);
+  tempBtn.addEventListener('click', showTempModal);
+  snowSeasonBtn.addEventListener('click', showSnowSeasonModal);
+  
+  // Tab switching for precipitation modal
+  precipModal.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      precipModal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.precipTab = btn.dataset.tab;
+      renderPrecipData();
+    });
+  });
+  
+  closePrecipModal.addEventListener('click', () => precipModal.classList.remove('active'));
+  closeTempModal.addEventListener('click', () => tempModal.classList.remove('active'));
+  closeSnowSeasonModal.addEventListener('click', () => snowSeasonModal.classList.remove('active'));
+  
+  // Tab switching for seasonal modal
+  snowSeasonModal.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      snowSeasonModal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      seasonalTab = btn.dataset.tab;
+      updateSeasonFiltersForTab(seasonalTab);
+      renderSeasonalModal();
+    });
+  });
+  
+  // Season filter toggles
+  snowSeasonModal.querySelectorAll('.season-filter-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const season = btn.dataset.season;
+      const checkbox = btn.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      seasonFilters[season] = checkbox.checked;
+      btn.classList.toggle('active', checkbox.checked);
+      renderSeasonalModal();
+    });
+  });
+  
+  precipModal.addEventListener('click', (e) => {
+    if(e.target === precipModal) precipModal.classList.remove('active');
+  });
+  tempModal.addEventListener('click', (e) => {
+    if(e.target === tempModal) tempModal.classList.remove('active');
+  });
+  snowSeasonModal.addEventListener('click', (e) => {
+    if(e.target === snowSeasonModal) snowSeasonModal.classList.remove('active');
+  });
+
+  // Init
+  async function init(){
+    const today = new Date();
+    datePicker.value = fmtDate(today);
+    datePicker.max = fmtDate(addDays(today, DAYS_FUTURE));
+    datePicker.min = `${START_YEAR}-01-01`; // Jan 1, 2000
+
+    // Try geolocation, fallback to ZIP 80134
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(
+        async p => { setLocation(p.coords.latitude, p.coords.longitude, 'Current Location'); loadCalendar(); },
+        async () => {
+          const g = await geocodeZip('80134');
+          if(g){ setLocation(g.latitude, g.longitude, g.name || '80134'); loadCalendar(); }
+        }
+      );
+    } else {
+      const g = await geocodeZip('80134');
+      if(g){ setLocation(g.latitude, g.longitude, g.name || '80134'); loadCalendar(); }
+    }
+  }
+
+  init();
+  </script>
+</body>
+</html>

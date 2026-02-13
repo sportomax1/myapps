@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NBA Stat Vault | Pro Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Simple Base64 Favicon to prevent 404 -->
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGDYDRiDAiMGDGAoAKGDBhjBjw0GjIwMIMYBAkYgYQeGCAAYGABrWf3hDfojJgAAAABJRU5ErkJggg==">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; background-color: #020617; color: #f8fafc; 
+            height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 70%);
+            background-attachment: fixed;
+        }
+        
+        #stats-grid {
+            display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 1rem;
+            flex: 1; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory;
+        }
+        
+        .stat-column {
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px;
+            display: flex; flex-direction: column; min-width: 320px; max-width: 320px;
+            height: 100%; overflow: hidden; scroll-snap-align: start;
+        }
+
+        @media (max-width: 767px) {
+            #stats-grid { display: block; overflow-x: hidden; }
+            .stat-column { width: 100%; max-width: 100%; min-width: 100%; height: 100%; border-radius: 0; background: transparent; border: none; }
+            .stat-column.hidden { display: none; }
+            .stat-column.active { display: flex; }
+            /* Hide column header on mobile for active column */
+            .stat-column.active .column-header { display: none; }
+        }
+
+        .scroll-area { flex: 1; overflow-y: auto; padding: 0.5rem; }
+        .player-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border-radius: 16px; cursor: pointer; border: 1px solid transparent; }
+        .player-row:hover { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); }
+        
+        /* Balanced Sizes */
+        .rank { width: 20px; font-size: 0.65rem; font-weight: 900; color: #475569; text-align: center; }
+        .headshot { width: 32px; height: 32px; border-radius: 50%; background: #1e293b; object-fit: cover; }
+        .row-team-logo { width: 14px; height: 14px; object-fit: contain; }
+        .value { margin-left: auto; font-weight: 900; color: #3b82f6; font-size: 0.95rem; }
+
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100;
+            display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #0f172a; width: 95%; max-width: 550px; border-radius: 32px;
+            padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            max-height: 90vh; overflow-y: auto; animation: scaleUp 0.2s ease-out;
+        }
+        @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .stat-grid-mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+        .mini-card { background: rgba(30, 41, 59, 0.5); padding: 1rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .loader { width: 20px; height: 20px; border: 2px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-6 flex flex-col">
+
+    <header class="max-w-[1800px] w-full mx-auto flex flex-col gap-4 mb-6 shrink-0">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-500/20 text-xl italic">NBA</div>
+                <div>
+                    <h1 class="text-xl font-black uppercase tracking-tighter italic leading-none">NBA Stat Vault</h1>
+                    <p class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-1 italic">Pro Matrix • 2025-26 Season</p>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="p-2 text-slate-500 hover:text-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+        </div>
+        
+        <div class="flex flex-col md:flex-row items-center gap-3">
+            <select id="mobile-stat-selector" onchange="switchMobileStat(this.value)" 
+                    class="md:hidden w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-xs font-black uppercase tracking-widest text-blue-400 focus:ring-2 focus:ring-blue-500 outline-none">
+            </select>
+
+            <div id="status-pill" class="hidden w-full md:flex-none text-[9px] font-black text-slate-500 uppercase tracking-widest px-3 py-1.5 border border-slate-800 rounded-full flex items-center justify-center gap-2">
+                <div id="loader-icon" class="loader"></div>
+                <span id="status-text"></span>
+            </div>
+        </div>
+    </header>
+
+    <main id="stats-grid" class="max-w-[1800px] w-full mx-auto">
+        <!-- Columns -->
+    </main>
+
+    <!-- Formula Modal -->
+    <div id="formula-modal" class="modal-overlay" onclick="closeFormulaModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h2 class="text-xl font-black uppercase tracking-widest mb-6 text-blue-400 italic">Impact Formula</h2>
+            <div id="formula-checks" class="space-y-3 mb-6">
+                <!-- Checkboxes -->
+            </div>
+            <div class="pt-6 border-t border-slate-800">
+                <label class="flex items-center justify-between p-4 bg-blue-600/10 border border-blue-600/30 rounded-2xl cursor-pointer group">
+                    <div class="flex flex-col">
+                        <span class="text-xs font-black uppercase tracking-widest text-blue-400">Durability Multiplier</span>
+                        <span class="text-[9px] text-slate-500 uppercase font-bold">Multiply score by Games Played</span>
+                    </div>
+                    <input type="checkbox" id="formula-mult-gp" class="w-6 h-6 accent-blue-500" onchange="updateFormula('multGP', this.checked)">
+                </label>
+            </div>
+            <button onclick="closeFormulaModal()" class="mt-8 w-full py-4 bg-blue-600 text-white font-black uppercase rounded-2xl tracking-widest transition-colors shadow-lg shadow-blue-900/40">Apply & Recalculate</button>
+        </div>
+    </div>
+
+    <!-- Player Modal -->
+    <div id="player-modal" class="modal-overlay" onclick="closePlayerModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div id="modal-body"></div>
+            <button onclick="closePlayerModal()" class="mt-8 w-full py-4 bg-slate-800 hover:bg-slate-700 text-xs font-black uppercase rounded-2xl tracking-widest transition-colors">Close Locker</button>
+        </div>
+    </div>
+
+    <script>
+        const CORE_API_URL = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2026/types/2/leaders';
+        const HYDRATION_CACHE = {};
+        const PLAYER_MAP = {}; 
+        const CAT_LABELS = {
+            'pointsPerGame': 'Points', 'assistsPerGame': 'Assists', 'reboundsPerGame': 'Rebounds',
+            'stealsPerGame': 'Steals', 'blocksPerGame': 'Blocks', 'fieldGoalPercentage': 'FG%',
+            'threePointFieldGoalPercentage': '3P%', 'freeThrowPercentage': 'FT%', 'playerEfficiencyRating': 'PER',
+            'avgTurnovers': 'TO', 'gamesPlayed': 'GP', 'customImpact': 'Impact'
+        };
+
+        let FORMULA = JSON.parse(localStorage.getItem('exp_formula')) || {
+            pointsPerGame: true, reboundsPerGame: true, assistsPerGame: 2, 
+            stealsPerGame: true, blocksPerGame: true, avgTurnovers: -1, multGP: true
+        };
+
+        let ACTIVE_STAT_MOBILE = localStorage.getItem('exp_mobile_stat') || 'customImpact';
+
+        async function fetchJSON(url) {
+            // Force HTTPS for all internal API calls
+            const secureUrl = url.replace('http://', 'https://');
+            if (HYDRATION_CACHE[secureUrl]) return HYDRATION_CACHE[secureUrl];
+            const res = await fetch(secureUrl);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            HYDRATION_CACHE[secureUrl] = data;
+            return data;
+        }
+
+        async function init() {
+            try {
+                document.getElementById('status-pill').style.display = 'flex'; 
+                document.getElementById('status-text').textContent = 'Hydrating Deck...';
+                document.getElementById('loader-icon').classList.remove('hidden');
+
+                const coreData = await fetchJSON(CORE_API_URL);
+                const categories = coreData.categories || [];
+                const TARGET_CATS = ['pointsPerGame', 'assistsPerGame', 'reboundsPerGame', 'stealsPerGame', 'blocksPerGame', 'fieldGoalPercentage', 'threePointFieldGoalPercentage', 'freeThrowPercentage', 'playerEfficiencyRating', 'avgTurnovers', 'points'];
+                const filtered = categories.filter(c => TARGET_CATS.includes(c.name));
+
+                for (let prop in PLAYER_MAP) delete PLAYER_MAP[prop];
+
+                for (const cat of filtered) {
+                    (cat.leaders || []).forEach((leader, idx) => {
+                        const id = leader.athlete.$ref.split('/').pop();
+                        if (!PLAYER_MAP[id]) {
+                            PLAYER_MAP[id] = { id, athleteRef: leader.athlete.$ref, stats: {}, ranks: {}, name: '...', team: '...', logo: '', headshot: '', jersey: '' };
+                        }
+                        PLAYER_MAP[id].stats[cat.name] = leader.value;
+                        PLAYER_MAP[id].ranks[cat.name] = idx + 1;
+                    });
+                }
+
+                recalculate();
+                renderColumns(filtered);
+                setupMobileSelector(filtered);
+
+                document.getElementById('status-pill').style.display = 'none'; // Hide after loading
+
+            } catch (err) { console.error(err); document.getElementById('status-text').textContent = 'Mutiny!'; }
+        }
+
+        function recalculate() {
+            const players = Object.values(PLAYER_MAP);
+            players.forEach(p => {
+                p.stats.gamesPlayed = (p.stats.points && p.stats.pointsPerGame) ? Math.round(p.stats.points / p.stats.pointsPerGame) : 0;
+                let score = 0;
+                Object.entries(FORMULA).forEach(([stat, weight]) => {
+                    if (stat === 'multGP') return;
+                    const val = p.stats[stat] || 0;
+                    if (typeof weight === 'number') score += (val * weight);
+                    else if (weight === true) score += val;
+                });
+                p.stats.customImpact = FORMULA.multGP ? (score * p.stats.gamesPlayed) : score;
+            });
+
+            ['customImpact', 'gamesPlayed'].forEach(key => {
+                players.sort((a, b) => (b.stats[key] || 0) - (a.stats[key] || 0));
+                players.forEach((p, i) => p.ranks[key] = i + 1);
+            });
+        }
+
+        function setupMobileSelector(filtered) {
+            const selector = document.getElementById('mobile-stat-selector');
+            let html = `<option value="customImpact">🏆 Impact Score</option>`;
+            html += `<option value="gamesPlayed">🕒 Games Played</option>`;
+            filtered.filter(c => !['points', 'avgTurnovers'].includes(c.name)).forEach(c => {
+                html += `<option value="${c.name}">${c.displayName}</option>`;
+            });
+            selector.innerHTML = html;
+            selector.value = ACTIVE_STAT_MOBILE;
+            switchMobileStat(ACTIVE_STAT_MOBILE);
+        }
+
+        function switchMobileStat(key) {
+            ACTIVE_STAT_MOBILE = key;
+            localStorage.setItem('exp_mobile_stat', key);
+            document.querySelectorAll('.stat-column').forEach(col => {
+                col.classList.add('hidden');
+                if (col.id === `col-${key}`) {
+                    col.classList.remove('hidden');
+                    col.classList.add('active'); // Add active for mobile-specific styles
+                } else {
+                    col.classList.remove('active');
+                }
+            });
+        }
+
+        function renderColumns(filtered) {
+            const grid = document.getElementById('stats-grid');
+            grid.innerHTML = '';
+
+            const customCol = document.createElement('div');
+            customCol.id = 'col-customImpact';
+            customCol.className = 'stat-column active'; // Initially active for desktop/mobile start
+            customCol.innerHTML = `
+                <div class="column-header p-5 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                    <div class="flex flex-col">
+                        <h2 class="text-[10px] font-black uppercase tracking-widest text-blue-400">Impact Score</h2>
+                        <p class="text-[8px] text-slate-500 font-bold uppercase">${FORMULA.multGP ? 'Weighted Total' : 'Weighted Avg'}</p>
+                    </div>
+                    <button onclick="openFormulaModal()" class="p-2 bg-slate-800 rounded-xl hover:bg-blue-600 transition-colors shadow-lg">
+                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.532 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+                <div id="list-customImpact" class="scroll-area space-y-1"></div>
+            `;
+            grid.appendChild(customCol);
+            const impactPlayers = Object.values(PLAYER_MAP).filter(p => p.stats.customImpact > 0).sort((a,b) => b.stats.customImpact - a.stats.customImpact);
+            renderPlayerList(`list-customImpact`, 'customImpact', impactPlayers.slice(0, 100));
+
+            createColumn('GAMES PLAYED', 'gamesPlayed', Object.values(PLAYER_MAP).filter(p => p.stats.gamesPlayed > 0).sort((a,b) => b.stats.gamesPlayed - a.stats.gamesPlayed).slice(0, 100));
+
+            filtered.filter(c => !['points', 'avgTurnovers'].includes(c.name)).forEach(cat => {
+                const colPlayers = (cat.leaders || []).slice(0, 100).map(l => PLAYER_MAP[l.athlete.$ref.split('/').pop()]);
+                createColumn(cat.displayName, cat.name, colPlayers);
+            });
+            
+            // Re-activate the selected mobile column if on mobile
+            if (window.innerWidth < 768) {
+                switchMobileStat(ACTIVE_STAT_MOBILE);
+            }
+        }
+
+        function createColumn(title, statKey, players) {
+            const grid = document.getElementById('stats-grid');
+            const col = document.createElement('div');
+            col.id = `col-${statKey}`;
+            col.className = 'stat-column hidden md:flex'; 
+            col.innerHTML = `
+                <div class="column-header p-5 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                    <h2 class="text-[10px] font-black uppercase tracking-widest text-blue-400 truncate pr-2">${title}</h2>
+                </div>
+                <div id="list-${statKey}" class="scroll-area space-y-1"></div>
+            `;
+            grid.appendChild(col);
+            renderPlayerList(`list-${statKey}`, statKey, players);
+        }
+
+        async function renderPlayerList(containerId, statKey, players) {
+            const container = document.getElementById(containerId);
+            const rows = await Promise.all(players.map(async (p, idx) => {
+                try {
+                    if (p.name === '...') {
+                        const athlete = await fetchJSON(p.athleteRef);
+                        p.name = athlete.displayName; p.headshot = athlete.headshot?.href; p.jersey = athlete.jersey;
+                        if (athlete.team?.$ref) {
+                            const team = await fetchJSON(athlete.team.$ref);
+                            p.team = team.abbreviation; p.logo = team.logos?.[0]?.href;
+                        }
+                    }
+                    let displayVal = (p.stats[statKey] || 0).toFixed(1);
+                    if (['fieldGoalPercentage', 'threePointFieldGoalPercentage', 'freeThrowPercentage'].includes(statKey)) displayVal += '%';
+
+                    return `
+                        <div class="player-row" onclick="openPlayerModal('${p.id}')">
+                            <span class="rank">${idx + 1}</span>
+                            <img src="${p.headshot || 'https://a.espncdn.com/i/headshots/nba/players/full/unknown.png'}" class="headshot shadow-sm">
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[11px] font-black uppercase truncate text-slate-200">${p.name}</span>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <img src="${p.logo}" class="row-team-logo opacity-80">
+                                    <span class="text-[9px] font-bold text-slate-500 uppercase">${p.team} • #${p.jersey || '--'}</span>
+                                </div>
+                            </div>
+                            <span class="value">${displayVal}</span>
+                        </div>
+                    `;
+                } catch (e) { return ''; }
+            }));
+            container.innerHTML = rows.join('');
+        }
+
+        function openFormulaModal() {
+            const modal = document.getElementById('formula-modal');
+            const checks = document.getElementById('formula-checks');
+            modal.classList.add('active');
+            
+            const stats = [
+                { key: 'pointsPerGame', label: 'Points' },
+                { key: 'reboundsPerGame', label: 'Rebounds' },
+                { key: 'assistsPerGame', label: 'Assists (x2)' },
+                { key: 'stealsPerGame', label: 'Steals' },
+                { key: 'blocksPerGame', label: 'Blocks' },
+                { key: 'avgTurnovers', label: 'Turnovers (-1)' }
+            ];
+
+            checks.innerHTML = stats.map(s => `
+                <label class="flex items-center justify-between p-4 bg-slate-900/50 border border-slate-800 rounded-2xl cursor-pointer">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-300">${s.label}</span>
+                    <input type="checkbox" class="w-6 h-6 accent-blue-500" ${FORMULA[s.key] ? 'checked' : ''} onchange="updateFormula('${s.key}', this.checked)">
+                </label>
+            `).join('');
+            
+            document.getElementById('formula-mult-gp').checked = FORMULA.multGP;
+        }
+
+        function updateFormula(key, checked) {
+            if (key === 'multGP') FORMULA.multGP = checked;
+            else if (key === 'assistsPerGame') FORMULA[key] = checked ? 2 : false;
+            else if (key === 'avgTurnovers') FORMULA[key] = checked ? -1 : false;
+            else FORMULA[key] = checked;
+            localStorage.setItem('exp_formula', JSON.stringify(FORMULA));
+        }
+
+        function closeFormulaModal() { document.getElementById('formula-modal').classList.remove('active'); init(); }
+
+        function openPlayerModal(id) {
+            const p = PLAYER_MAP[id];
+            const modal = document.getElementById('player-modal');
+            const body = document.getElementById('modal-body');
+            modal.classList.add('active');
+            body.innerHTML = `
+                <div class="flex flex-col items-center mb-8">
+                    <img src="${p.headshot}" class="w-24 h-24 rounded-full border-4 border-blue-600/30 mb-4 shadow-2xl">
+                    <h2 class="text-2xl font-black uppercase tracking-tighter italic text-center leading-none">${p.name}</h2>
+                    <div class="flex items-center gap-2 mt-2">
+                        <img src="${p.logo}" class="w-6 h-6">
+                        <span class="text-sm font-bold text-slate-400 uppercase tracking-widest">${p.team} • #${p.jersey}</span>
+                    </div>
+                </div>
+                <div class="stat-grid-mini">
+                    ${Object.entries(p.stats).map(([k, v]) => {
+                        if (k === 'points') return '';
+                        const label = CAT_LABELS[k] || k.toUpperCase();
+                        const rank = p.ranks[k] ? `#${p.ranks[k]}` : '--';
+                        let display = (typeof v === 'number') ? v.toFixed(1) : v;
+                        if (k.toLowerCase().includes('percentage')) display += '%';
+                        return `
+                            <div class="mini-card">
+                                <div class="flex justify-between items-start mb-1">
+                                    <p class="text-[9px] font-black text-slate-500 uppercase tracking-widest">${label}</p>
+                                    <p class="text-[10px] font-black text-emerald-500">${rank}</p>
+                                </div>
+                                <p class="text-xl font-black text-white">${display}</p>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function closePlayerModal() { document.getElementById('player-modal').classList.remove('active'); }
+        window.onload = init;
+    </script>
+</body>
+</html>

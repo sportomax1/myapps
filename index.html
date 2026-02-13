@@ -1,0 +1,164 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Launcher (pi)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617; 
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+            color: #f8fafc; 
+            min-height: 100vh;
+        }
+        
+        .glass-tile {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .glass-tile:hover {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(56, 189, 248, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex flex-col gap-8">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 font-black text-2xl shadow-xl border border-slate-700">
+                🚀
+            </div>
+            <div>
+                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">App Launcher (pi)</h1>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Repository Index</p>
+            </div>
+        </div>
+        <div class="text-xs font-mono text-slate-500">15 Apps Detected</div>
+    </header>
+
+    <!-- App Grid -->
+    <main id="app-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        
+            <a href="games/gameday.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🎲</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">GAMES / GAMEDAY</div>
+                </div>
+            </a>
+        
+            <a href="games/qwingo.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🎲</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">GAMES / QWINGO</div>
+                </div>
+            </a>
+        
+            <a href="other/api.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🔌</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">OTHER / API</div>
+                </div>
+            </a>
+        
+            <a href="other/logomap.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🗺️</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">OTHER / LOGOMAP</div>
+                </div>
+            </a>
+        
+            <a href="other/panels.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🖥️</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">OTHER / PANELS</div>
+                </div>
+            </a>
+        
+            <a href="other/receipt.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🧾</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">OTHER / RECEIPT</div>
+                </div>
+            </a>
+        
+            <a href="sports/marchmadness/index.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏀</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS/MARCHMADNESS / INDEX</div>
+                </div>
+            </a>
+        
+            <a href="sports/marchmadness/test.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏀</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS/MARCHMADNESS / TEST</div>
+                </div>
+            </a>
+        
+            <a href="sports/mlbplayers.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">⚾</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS / MLBPLAYERS</div>
+                </div>
+            </a>
+        
+            <a href="sports/nbaplayers.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏀</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS / NBAPLAYERS</div>
+                </div>
+            </a>
+        
+            <a href="sports/nbastats.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏀</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS / NBASTATS</div>
+                </div>
+            </a>
+        
+            <a href="sports/nflplayers.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏈</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS / NFLPLAYERS</div>
+                </div>
+            </a>
+        
+            <a href="sports/sportsschedule.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🏆</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">SPORTS / SPORTSSCHEDULE</div>
+                </div>
+            </a>
+        
+            <a href="weather/weather.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🌦️</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">WEATHER / WEATHER</div>
+                </div>
+            </a>
+        
+            <a href="weather/weathermap.html" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
+                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">🌦️</div>
+                <div class="w-full">
+                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">WEATHER / WEATHERMAP</div>
+                </div>
+            </a>
+        
+    </main>
+
+</body>
+</html>
+    
