@@ -22,7 +22,7 @@ jobs:
         python-version: '3.x' # Use the latest Python 3 version
 
     - name: Generate index.html
-      run: python .github/scripts/generate_index.py pi . # Scan 'pi', output 'index.html' to repo root
+      run: python .github/scripts/generate_index.py localonly . # Scan 'localonly', output 'index.html' to repo root
 
     - name: Commit generated index.html
       # This step will commit the new/updated index.html back to the repository
