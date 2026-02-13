@@ -21,6 +21,9 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
 
     # Walk through the source directory
     for root, dirs, files in os.walk(apps_source_directory):
+        # Skip hidden directories like .git and .github
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        
         # Calculate relative path from the apps_source_directory
         relative_root_from_source = os.path.relpath(root, apps_source_directory)
         if relative_root_from_source == '.':
@@ -29,19 +32,15 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
             subfolder_name = relative_root_from_source.replace('\\', '/') # Normalize path separators
 
         for filename in files:
-            if filename.endswith(".html") and filename != "index.html": # Exclude index.html, which is the launcher itself
+            if filename.endswith(".html"):
                 # Construct the full relative path to the app file from the *output_index_directory*
-                # Example: If output_index_directory is '.' (repo root) and app is 'localonly/game/flip.html'
-                # Then app_href should be 'localonly/game/flip.html'
-                # If output_index_directory is 'localonly' and app is 'localonly/game/flip.html'
-                # Then app_href should be 'game/flip.html'
+                app_full_path = os.path.join(root, filename)
+                app_href = os.path.relpath(app_full_path, output_index_directory).replace('\\', '/')
                 
-                # We need the path relative to the *output* index.html file.
-                # If index.html is in repo root, and app is in localonly/foo/bar.html,
-                # then href should be localonly/foo/bar.html
+                # Exclude the index.html that we are generating in the output directory
+                if app_href == "index.html" or app_href == "./index.html":
+                    continue
                 
-                # file_path is relative to the *output_index_directory* for the href
-                app_href = os.path.join(apps_source_directory, relative_root_from_source, filename).replace('\\', '/')
                 app_files_with_paths.append((app_href, subfolder_name))
 
     app_files_with_paths.sort(key=lambda x: x[0].lower()) # Sort by path for consistent order
@@ -59,18 +58,20 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
         
         # Determine icon based on name keywords (for flair)
         icon = '📄'
-        if 'NBA' in display_name: icon = '🏀'
-        elif 'NFL' in display_name: icon = '🏈'
-        elif 'MLB' in display_name: icon = '⚾'
-        elif 'WEATHER' in display_name or ('MAP' in display_name and 'WEATHER' in display_name): icon = '🌦️'
-        elif 'GAME' in display_name or 'FLIP' in display_name or 'QWINGO' in display_name: icon = '🎲'
-        elif 'LOGOMAP' in display_name: icon = '🗺️'
-        elif 'PHOTO' in display_name: icon = '📸'
-        elif 'PANEL' in display_name: icon = '🖥️'
+        if 'NBA' in display_name or 'BASKETBALL' in display_name or 'MARCH' in display_name: icon = '🏀'
+        elif 'NFL' in display_name or 'FOOTBALL' in display_name: icon = '🏈'
+        elif 'MLB' in display_name or 'BASEBALL' in display_name: icon = '⚾'
+        elif 'WEATHER' in display_name or 'TEMP' in display_name: icon = '🌦️'
+        elif 'GAME' in display_name or 'FLIP' in display_name or 'QWINGO' in display_name or 'DICE' in display_name: icon = '🎲'
+        elif 'MAP' in display_name: icon = '🗺️'
+        elif 'PHOTO' in display_name or 'GALLERY' in display_name: icon = '📸'
+        elif 'PANEL' in display_name or 'DASHBOARD' in display_name: icon = '🖥️'
         elif 'API' in display_name: icon = '🔌'
-        elif 'AIRPORT' in display_name: icon = '✈️'
-        elif 'RECEIPT' in display_name: icon = '🧾'
-        elif 'SPORTS' in display_name: icon = '🏆'
+        elif 'AIRPORT' in display_name or 'FLIGHT' in display_name: icon = '✈️'
+        elif 'RECEIPT' in display_name or 'INVOICE' in display_name: icon = '🧾'
+        elif 'SPORTS' in display_name or 'STATS' in display_name or 'SCHEDULE' in display_name: icon = '🏆'
+        elif 'NEWS' in display_name: icon = '📰'
+        elif 'CHART' in display_name or 'GRAPH' in display_name: icon = '📊'
         
         card_html = f"""
             <a href="{file_path}" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
@@ -143,7 +144,7 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
     """
 
     output_path = os.path.join(output_index_directory, "index.html")
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write(full_html_content)
     
     print(f"Generated index.html with {len(app_files_with_paths)} apps in {output_path}")
