@@ -23,11 +23,10 @@
             background-color: rgba(255, 255, 255, 0.9);
         }
 
-        /* Table Architecture */
         .table-container {
             overflow-x: auto;
             overflow-y: auto;
-            max-height: calc(100vh - 180px);
+            max-height: calc(100vh - 190px);
             border-radius: 12px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             background: white;
@@ -63,13 +62,12 @@
             white-space: nowrap;
         }
 
-        /* Sticky Columns for Mobile */
         .sticky-col-idx {
             position: sticky;
             left: 0;
             z-index: 20;
             background: #f8fafc;
-            width: 45px;
+            width: 40px;
             text-align: center;
             font-weight: 900;
             color: #94a3b8;
@@ -78,12 +76,19 @@
 
         .sticky-col-team {
             position: sticky;
-            left: 45px;
+            left: 40px;
             z-index: 20;
             background: white;
             border-right: 2px solid #f1f5f9;
-            min-width: 140px;
-            font-weight: 700;
+            min-width: 50px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .sticky-col-team {
+                min-width: 180px;
+                text-align: left;
+            }
         }
 
         tr:nth-child(even) td { background-color: #fafafa; }
@@ -106,8 +111,6 @@
             transition: width 0.3s ease;
         }
 
-        select { appearance: none; -webkit-appearance: none; }
-
         .sort-icon::after { content: ' ↕'; opacity: 0.3; font-size: 10px; }
         .sort-active-desc::after { content: ' ↓'; opacity: 1; color: var(--espn-blue); }
         .sort-active-asc::after { content: ' ↑'; opacity: 1; color: var(--espn-blue); }
@@ -115,77 +118,68 @@
 </head>
 <body class="text-slate-900">
 
-    <!-- Nav -->
     <nav class="sticky top-0 z-50 iphone-blur border-b border-slate-200 px-4 py-4">
         <div class="max-w-7xl mx-auto">
-            <div class="flex items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
-                        <span id="yearIcon" class="text-white font-black text-sm">26</span>
+            <div class="flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg">
+                        <span id="yearIcon" class="text-white font-black text-xs">26</span>
                     </div>
                     <div>
-                        <h1 class="text-base font-black tracking-tight leading-none uppercase">CBB Analytics</h1>
-                        <p id="statusText" class="text-[10px] font-bold text-slate-400 mt-1 uppercase">Ready</p>
+                        <h1 class="text-xs font-black tracking-tight uppercase leading-none">CBB Master Stats</h1>
+                        <p id="statusText" class="text-[9px] font-bold text-slate-400 uppercase mt-1">Ready</p>
                     </div>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <div class="relative">
-                        <select id="seasonSelector" class="bg-slate-100 border-none rounded-xl pl-3 pr-8 py-2.5 text-xs font-black text-slate-700 outline-none cursor-pointer focus:ring-2 focus:ring-blue-500">
-                            <!-- Populated by JS -->
-                        </select>
-                        <div class="absolute right-3 top-3 pointer-events-none text-slate-400">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/></svg>
-                        </div>
-                    </div>
+                    <select id="seasonSelector" class="bg-slate-100 border-none rounded-lg px-2 py-2 text-[10px] font-black text-slate-700 outline-none">
+                    </select>
                 </div>
             </div>
 
-            <div id="progressContainer" class="mt-4 hidden">
+            <div id="progressContainer" class="mt-3 hidden">
                 <div class="loading-bar-container">
                     <div id="progressBar" class="loading-bar-fill" style="width: 0%"></div>
                 </div>
             </div>
             
-            <div class="mt-4 relative">
-                <input type="text" id="teamSearch" placeholder="Filter team name..." 
-                       class="w-full bg-slate-100 border-none rounded-xl py-2.5 pl-10 pr-4 text-sm font-medium focus:ring-2 focus:ring-blue-500 transition-all">
-                <svg class="w-4 h-4 absolute left-3 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5"/></svg>
+            <div class="mt-3 flex gap-2 items-center">
+                <div class="relative flex-1">
+                    <input type="text" id="teamSearch" placeholder="Search team..." 
+                           class="w-full bg-slate-100 border-none rounded-xl py-2.5 pl-9 pr-4 text-xs font-medium focus:ring-2 focus:ring-blue-500 transition-all">
+                    <svg class="w-4 h-4 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="3"/></svg>
+                </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Table -->
-    <main class="max-w-7xl mx-auto p-4">
+    <main class="max-w-7xl mx-auto p-3">
         <div class="table-container shadow-sm no-scrollbar">
             <table id="statsTable">
                 <thead>
                     <tr>
                         <th class="sticky-col-idx">#</th>
                         <th class="sticky-col-team" onclick="handleSort('displayName')">Team <span class="sort-icon"></span></th>
+                        <th onclick="handleSort('rank')">Rank <span class="sort-icon"></span></th>
+                        <th onclick="handleSort('pollPoints')">Points <span class="sort-icon"></span></th>
+                        <th onclick="handleSort('isORV')">ORV <span class="sort-icon"></span></th>
                         <th onclick="handleSort('avgPoints')">PPG <span class="sort-icon"></span></th>
+                        <th onclick="handleSort('oppAvgPoints')">Opp PPG <span class="sort-icon"></span></th>
                         <th onclick="handleSort('fieldGoalPct')">FG% <span class="sort-icon"></span></th>
                         <th onclick="handleSort('threePointFieldGoalPct')">3P% <span class="sort-icon"></span></th>
-                        <th onclick="handleSort('freeThrowPct')">FT% <span class="sort-icon"></span></th>
                         <th onclick="handleSort('avgRebounds')">REB <span class="sort-icon"></span></th>
                         <th onclick="handleSort('avgAssists')">AST <span class="sort-icon"></span></th>
-                        <th onclick="handleSort('avgSteals')">STL <span class="sort-icon"></span></th>
-                        <th onclick="handleSort('avgBlocks')">BLK <span class="sort-icon"></span></th>
-                        <th onclick="handleSort('avgTurnovers')">TO <span class="sort-icon"></span></th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
-                    <!-- Rows injected here -->
-                </tbody>
+                <tbody id="tableBody"></tbody>
             </table>
         </div>
     </main>
 
-    <!-- Modal for Detailed View (Tapping Row) -->
     <div id="statsModal" class="fixed inset-0 z-[60] hidden flex items-end sm:items-center justify-center">
         <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
         <div class="bg-white w-full max-w-lg relative transform transition-transform duration-300 translate-y-full sm:translate-y-0 sm:rounded-3xl overflow-hidden shadow-2xl">
-            <div id="modalContent" class="p-6 max-h-[80vh] overflow-y-auto"></div>
+            <div id="modalContent" class="p-6 max-h-[70vh] overflow-y-auto"></div>
             <div class="p-4 bg-slate-50 border-t">
                 <button onclick="closeModal()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold active:scale-95 transition">Close Details</button>
             </div>
@@ -201,11 +195,12 @@
         let selectedSeason = "2026";
         let currentSort = { key: 'avgPoints', direction: 'desc' };
         let abortController = null;
+        let rankingsMap = new Map(); // Stores { rank, points, isORV }
 
         window.onload = async () => {
             setupSeasonDropdown();
             await fetchTeams();
-            autoSync(); // Trigger first sync automatically
+            autoSync();
 
             document.getElementById('teamSearch').addEventListener('input', renderTable);
             document.getElementById('seasonSelector').addEventListener('change', (e) => {
@@ -217,7 +212,7 @@
 
         function setupSeasonDropdown() {
             const selector = document.getElementById('seasonSelector');
-            for (let year = 2026; year >= 1985; year--) {
+            for (let year = 2026; year >= 2002; year--) {
                 const opt = document.createElement('option');
                 opt.value = year;
                 opt.innerText = `${year} SEASON`;
@@ -225,11 +220,52 @@
             }
         }
 
+        async function fetchRankings(year) {
+            try {
+                const url = year === "2026" 
+                    ? `${API_BASE}/rankings` 
+                    : `${API_BASE}/rankings?season=${year}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                rankingsMap.clear();
+                
+                const apPoll = data.rankings?.find(r => r.name === 'ap' || r.shortName === 'AP');
+                const pollToUse = apPoll || data.rankings?.[0];
+                
+                if (pollToUse) {
+                    // Top 25
+                    pollToUse.ranks?.forEach(r => {
+                        rankingsMap.set(r.team.id, {
+                            rank: parseInt(r.current),
+                            points: parseInt(r.points) || 0,
+                            isORV: false
+                        });
+                    });
+                    
+                    // Others Receiving Votes
+                    pollToUse.others?.forEach(r => {
+                        rankingsMap.set(r.team.id, {
+                            rank: 999,
+                            points: parseInt(r.points) || 0,
+                            isORV: true
+                        });
+                    });
+                }
+            } catch (e) { 
+                console.warn("Rankings fetch error for " + year, e); 
+            }
+        }
+
         async function fetchTeams() {
             try {
                 const res = await fetch(`${API_BASE}/teams?limit=500`);
                 const data = await res.json();
-                allTeams = data.sports[0].leagues[0].teams.map(t => t.team);
+                allTeams = data.sports[0].leagues[0].teams.map(t => ({
+                    id: t.team.id,
+                    displayName: t.team.displayName,
+                    logo: t.team.logos?.[0]?.href
+                }));
             } catch (e) { console.error("Team fetch failed", e); }
         }
 
@@ -240,14 +276,16 @@
             statsData.clear();
             renderTable();
 
-            const progressContainer = document.getElementById('progressContainer');
-            const progressBar = document.getElementById('progressBar');
-            const statusText = document.getElementById('statusText');
+            const prog = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            const status = document.getElementById('statusText');
             
-            progressContainer.classList.remove('hidden');
-            statusText.innerText = `Connecting to ${selectedSeason}...`;
+            prog.classList.remove('hidden');
+            status.innerText = `Fetching ${selectedSeason} Ranks...`;
             
-            const batchSize = 25;
+            await fetchRankings(selectedSeason);
+
+            const batchSize = 35;
             for (let i = 0; i < allTeams.length; i += batchSize) {
                 const batch = allTeams.slice(i, i + batchSize);
                 
@@ -256,33 +294,35 @@
                         const res = await fetch(`${CORE_API_BASE}/seasons/${selectedSeason}/types/2/teams/${team.id}/statistics`, { signal: abortController.signal });
                         if (!res.ok) return;
                         const data = await res.json();
-                        const flat = { displayName: team.displayName, logo: team.logos?.[0]?.href, id: team.id };
+                        
+                        const pollInfo = rankingsMap.get(team.id) || { rank: 999, points: 0, isORV: false };
+                        
+                        const flat = { 
+                            displayName: team.displayName, 
+                            logo: team.logo, 
+                            id: team.id,
+                            rank: pollInfo.rank,
+                            pollPoints: pollInfo.points,
+                            isORV: pollInfo.isORV
+                        };
                         
                         data.splits.categories.forEach(cat => {
                             cat.stats.forEach(s => {
                                 flat[s.name] = { val: parseFloat(s.displayValue) || 0, display: s.displayValue };
                             });
                         });
+                        
                         statsData.set(team.id, flat);
-                    } catch(e) { if (e.name !== 'AbortError') console.error(e); }
+                    } catch(e) { if (e.name !== 'AbortError') console.error(team.displayName, e); }
                 }));
 
-                const progress = Math.round((statsData.size / allTeams.length) * 100);
-                progressBar.style.width = `${progress}%`;
-                statusText.innerText = `Syncing: ${statsData.size}/${allTeams.length} Teams`;
-                
-                // Partial render to show data flowing in
-                if (i % 50 === 0) renderTable();
+                bar.style.width = `${Math.round((statsData.size / allTeams.length) * 100)}%`;
+                status.innerText = `Syncing ${selectedSeason}: ${statsData.size}/${allTeams.length}`;
+                if (i % 70 === 0) renderTable();
             }
 
-            statusLabelComplete();
-        }
-
-        function statusLabelComplete() {
-            const progressContainer = document.getElementById('progressContainer');
-            const statusText = document.getElementById('statusText');
-            progressContainer.classList.add('hidden');
-            statusText.innerText = `${selectedSeason} Season Synced (${statsData.size} Teams)`;
+            prog.classList.add('hidden');
+            status.innerText = `${selectedSeason} Season Ready`;
             renderTable();
         }
 
@@ -291,7 +331,7 @@
                 currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
             } else {
                 currentSort.key = key;
-                currentSort.direction = 'desc';
+                currentSort.direction = (key === 'oppAvgPoints' || key === 'rank') ? 'asc' : 'desc';
             }
             updateSortIcons();
             renderTable();
@@ -302,67 +342,60 @@
                 const icon = th.querySelector('.sort-icon');
                 if (!icon) return;
                 th.className = th.className.replace(/sort-active-(asc|desc)/g, '').trim();
-                
                 const key = th.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-                if (key === currentSort.key) {
-                    th.classList.add(`sort-active-${currentSort.direction}`);
-                }
+                if (key === currentSort.key) th.classList.add(`sort-active-${currentSort.direction}`);
             });
         }
 
         function renderTable() {
             const body = document.getElementById('tableBody');
-            const searchTerm = document.getElementById('teamSearch').value.toLowerCase();
+            const search = document.getElementById('teamSearch').value.toLowerCase();
             
             const dataArray = Array.from(statsData.values()).filter(t => 
-                t.displayName.toLowerCase().includes(searchTerm)
+                t.displayName.toLowerCase().includes(search)
             );
 
-            // Sort logic
             dataArray.sort((a, b) => {
-                let valA, valB;
-                if (currentSort.key === 'displayName') {
-                    valA = a.displayName;
-                    valB = b.displayName;
-                } else {
-                    valA = a[currentSort.key]?.val ?? -Infinity;
-                    valB = b[currentSort.key]?.val ?? -Infinity;
-                }
-
-                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
-                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                let vA = currentSort.key === 'displayName' ? a.displayName : (a[currentSort.key]?.val ?? a[currentSort.key] ?? -Infinity);
+                let vB = currentSort.key === 'displayName' ? b.displayName : (b[currentSort.key]?.val ?? b[currentSort.key] ?? -Infinity);
+                
+                if (vA < vB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (vA > vB) return currentSort.direction === 'asc' ? 1 : -1;
                 return 0;
             });
 
-            body.innerHTML = dataArray.map((t, i) => `
-                <tr onclick="showDetails('${t.id}')">
-                    <td class="sticky-col-idx">${i + 1}</td>
-                    <td class="sticky-col-team">
-                        <div class="flex items-center gap-2">
-                            <img src="${t.logo}" class="w-5 h-5 object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
-                            <span class="truncate max-w-[100px]">${t.displayName}</span>
-                        </div>
-                    </td>
-                    <td class="font-mono text-center">${t.avgPoints?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.fieldGoalPct?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.threePointFieldGoalPct?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.freeThrowPct?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.avgRebounds?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.avgAssists?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.avgSteals?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.avgBlocks?.display || '--'}</td>
-                    <td class="font-mono text-center">${t.avgTurnovers?.display || '--'}</td>
-                </tr>
-            `).join('');
+            body.innerHTML = dataArray.map((t, i) => {
+                return `
+                    <tr onclick="showDetails('${t.id}')">
+                        <td class="sticky-col-idx text-slate-400 font-mono text-[10px]">${i + 1}</td>
+                        <td class="sticky-col-team">
+                            <div class="flex items-center justify-center md:justify-start gap-2">
+                                <img src="${t.logo}" class="w-6 h-6 object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
+                                <span class="hidden md:inline truncate max-w-[120px] font-bold">${t.displayName}</span>
+                            </div>
+                        </td>
+                        <td class="font-bold text-center text-xs ${t.rank <= 25 ? 'text-red-600' : 'text-slate-300'}">${t.rank <= 25 ? t.rank : '--'}</td>
+                        <td class="font-mono text-center text-xs text-slate-500">${t.pollPoints > 0 ? t.pollPoints : '--'}</td>
+                        <td class="text-center">
+                            ${t.isORV ? '<span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-black rounded border border-blue-100">YES</span>' : '<span class="text-slate-200 text-[9px]">--</span>'}
+                        </td>
+                        <td class="font-mono text-center font-bold">${t.avgPoints?.display || '--'}</td>
+                        <td class="font-mono text-center font-bold text-blue-600">${t.oppAvgPoints?.display || '--'}</td>
+                        <td class="font-mono text-center">${t.fieldGoalPct?.display || '--'}</td>
+                        <td class="font-mono text-center">${t.threePointFieldGoalPct?.display || '--'}</td>
+                        <td class="font-mono text-center">${t.avgRebounds?.display || '--'}</td>
+                        <td class="font-mono text-center">${t.avgAssists?.display || '--'}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         async function showDetails(teamId) {
             const modal = document.getElementById('statsModal');
             const content = document.getElementById('modalContent');
             const team = statsData.get(teamId);
-            
             modal.classList.remove('hidden');
-            content.innerHTML = `<div class="p-10 text-center font-bold text-slate-400">Loading ${team.displayName} Full Stats...</div>`;
+            content.innerHTML = `<div class="p-10 text-center font-bold text-slate-400 animate-pulse">Loading ${team.displayName}...</div>`;
 
             try {
                 const res = await fetch(`${CORE_API_BASE}/seasons/${selectedSeason}/types/2/teams/${teamId}/statistics`);
@@ -373,7 +406,8 @@
                         <img src="${team.logo}" class="w-16 h-16 object-contain">
                         <div>
                             <h2 class="text-2xl font-black">${team.displayName}</h2>
-                            <p class="text-xs font-bold text-blue-600 uppercase">${selectedSeason} Full Analytics</p>
+                            <p class="text-xs font-bold text-blue-600 uppercase">Season ${selectedSeason} • AP Rank: ${team.rank <= 25 ? team.rank : (team.isORV ? 'ORV' : 'Unranked')}</p>
+                            ${team.pollPoints > 0 ? `<p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Poll Points: ${team.pollPoints}</p>` : ''}
                         </div>
                     </div>
                 `;
@@ -384,9 +418,9 @@
                             <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b pb-1 mb-3">${cat.displayName}</h3>
                             <div class="grid grid-cols-2 gap-2">
                                 ${cat.stats.map(s => `
-                                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <p class="text-[9px] font-bold text-slate-400 uppercase">${s.displayName}</p>
-                                        <p class="text-base font-black text-slate-800">${s.displayValue}</p>
+                                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center">
+                                        <p class="text-[9px] font-bold text-slate-500 uppercase">${s.displayName}</p>
+                                        <p class="text-sm font-black text-slate-800">${s.displayValue}</p>
                                     </div>
                                 `).join('')}
                             </div>
@@ -395,7 +429,7 @@
                 });
                 content.innerHTML = html;
             } catch (e) {
-                content.innerHTML = `<p class="text-center p-10 font-bold text-red-500">Error loading historical details.</p>`;
+                content.innerHTML = `<p class="text-center p-10 font-bold text-red-500">Error loading details.</p>`;
             }
         }
 
