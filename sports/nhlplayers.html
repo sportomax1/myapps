@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NBA Player Vault | Pro & College History</title>
+    <title>NHL Player Vault | Pro & College History</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -52,12 +52,12 @@
     <!-- Header -->
     <header class="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0">
         <div class="flex items-center gap-4 cursor-pointer" onclick="showHome()">
-            <div class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic">
-                🏀
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic">
+                🏒
             </div>
             <div>
-                <h1 class="text-2xl font-black uppercase tracking-tighter italic">NBA Vault</h1>
-                <p class="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Roster • College • Stats</p>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic">NHL Vault</h1>
+                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Roster • College • Stats</p>
             </div>
         </div>
 
@@ -66,14 +66,14 @@
             <!-- Search -->
             <div class="relative">
                 <input type="text" id="team-search" oninput="applySearch()" placeholder="Search Teams or Players..." 
-                       class="bg-slate-900 text-white text-xs font-bold uppercase p-2 pl-8 rounded-lg border border-slate-700 outline-none focus:border-indigo-500 w-48">
+                       class="bg-slate-900 text-white text-xs font-bold uppercase p-2 pl-8 rounded-lg border border-slate-700 outline-none focus:border-blue-500 w-48">
                 <svg class="w-3 h-3 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
 
             <!-- View Mode -->
             <div class="flex bg-slate-800 p-1 rounded-xl flex-wrap justify-center">
-                <button id="btn-view-nba" onclick="switchView('nba')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-indigo-600 text-white shadow-lg">
-                    NBA Teams
+                <button id="btn-view-nhl" onclick="switchView('nhl')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600 text-white shadow-lg">
+                    NHL Teams
                 </button>
                 <button id="btn-view-college" onclick="switchView('college')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
                     Colleges
@@ -90,7 +90,7 @@
             </div>
 
             <!-- Sort Dropdown -->
-            <select id="main-sort" onchange="applyMainSort()" class="bg-slate-900 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none focus:border-indigo-500">
+            <select id="main-sort" onchange="applyMainSort()" class="bg-slate-900 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none focus:border-blue-500">
                 <!-- Options populated dynamically -->
             </select>
         </div>
@@ -101,15 +101,15 @@
         <div class="loader w-12 h-12 border-4"></div>
         <p id="loading-text" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Initializing Vault...</p>
         <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
-            <div id="progress-bar" class="bg-indigo-500 h-full transition-all duration-300" style="width: 0%"></div>
+            <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
         </div>
     </div>
 
     <!-- Main Content Area -->
     <main id="main-container" class="max-w-7xl mx-auto w-full flex-grow relative hidden">
         
-        <!-- View 1: NBA Teams Grid -->
-        <div id="nba-view" class="view-section">
+        <!-- View 1: NHL Teams Grid -->
+        <div id="nhl-view" class="view-section">
             <div id="team-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <!-- Teams injected here -->
             </div>
@@ -183,27 +183,27 @@
 
                 <!-- Header -->
                 <div class="glass-panel p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden mb-8">
-                    <div class="absolute inset-0 bg-gradient-to-r from-indigo-900 to-transparent opacity-50"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent opacity-50"></div>
                     
                     <img id="roster-header-logo" src="" class="w-24 h-24 object-contain drop-shadow-2xl z-10">
                     <div class="text-center md:text-left z-10 flex-grow">
                         <h2 id="roster-header-title" class="text-4xl font-black uppercase italic tracking-tighter text-white"></h2>
-                        <p id="roster-header-subtitle" class="text-sm font-bold text-indigo-300 mt-2 tracking-widest uppercase"></p>
+                        <p id="roster-header-subtitle" class="text-sm font-bold text-blue-300 mt-2 tracking-widest uppercase"></p>
                     </div>
 
                     <!-- Filters -->
                     <div class="z-10 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                         <input type="text" id="roster-search" oninput="applyFilters()" placeholder="Filter Players..." 
-                               class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-indigo-500 w-full md:w-40">
-                        <select id="position-filter" onchange="applyFilters()" class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-indigo-500">
+                               class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500 w-full md:w-40">
+                        <select id="position-filter" onchange="applyFilters()" class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500">
                             <option value="all">All Positions</option>
-                            <option value="PG">Point Guard</option>
-                            <option value="SG">Shooting Guard</option>
-                            <option value="SF">Small Forward</option>
-                            <option value="PF">Power Forward</option>
                             <option value="C">Center</option>
+                            <option value="LW">Left Wing</option>
+                            <option value="RW">Right Wing</option>
+                            <option value="D">Defenseman</option>
+                            <option value="G">Goalie</option>
                         </select>
-                        <select id="sort-filter" onchange="applyFilters()" class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-indigo-500">
+                        <select id="sort-filter" onchange="applyFilters()" class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-blue-500">
                             <option value="name">Name (A-Z)</option>
                             <option value="jersey">Jersey #</option>
                             <option value="weight">Weight</option>
@@ -223,14 +223,19 @@
     </main>
 
     <script>
+        // --- IMMEDIATE DEBUG ---
+        alert("NHL Vault Debug: JavaScript is executing!");
+        console.log("NHL Vault Debug: Script started.");
+        // --- END IMMEDIATE DEBUG ---
+
         // --- API Config ---
-        const TEAMS_API = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams';
-        const STANDINGS_API = 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings';
-        const TEAM_ROSTER_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}/roster`;
-        const ATHLETE_OVERVIEW_API = (id) => `https://site.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${id}/overview`;
+        const TEAMS_API = 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams';
+        const STANDINGS_API = 'https://site.api.espn.com/apis/v2/sports/hockey/nhl/standings';
+        const TEAM_ROSTER_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams/${id}/roster`;
+        const ATHLETE_OVERVIEW_API = (id) => `https://site.api.espn.com/apis/common/v3/sports/hockey/nhl/athletes/${id}/overview`;
 
         // --- State ---
-        let nbaTeams = []; 
+        let nhlTeams = []; 
         let collegeMap = {}; 
         let hometownMap = {};
         let positionMap = {};
@@ -238,20 +243,23 @@
         let allPlayers = []; 
         let teamRecords = {};
         let currentRoster = []; 
-        let currentView = 'nba';
+        let currentView = 'nhl';
         let currentMapData = 'college'; 
         let currentMapScope = 'usa';
 
         // --- Caching ---
-        const CACHE_KEY = 'nba_vault_data_v9'; 
+        const CACHE_KEY = 'nhl_vault_data_v2'; // Changed key to force fresh fetch
         const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
 
         // --- Init ---
         async function init() {
+            console.log('--- NHL Vault Init Start ---');
+            console.log('Fetching data using generic ESPN NHL API endpoints.');
             try {
                 const cached = loadFromCache();
+                console.log('Init: Cached data loaded:', !!cached);
                 if (cached) {
-                    nbaTeams = cached.nbaTeams;
+                    nhlTeams = cached.nhlTeams;
                     collegeMap = cached.collegeMap;
                     hometownMap = cached.hometownMap || {};
                     positionMap = cached.positionMap || {};
@@ -261,27 +269,38 @@
                     return; 
                 }
 
-                updateProgress(10, "Fetching NBA Teams & Standings...");
+                updateProgress(10, "Fetching NHL Teams & Standings...");
                 const [teamsRes, standingsRes] = await Promise.all([
                     fetch(TEAMS_API),
                     fetch(STANDINGS_API)
                 ]);
                 
+                // Check for HTTP errors before parsing JSON
                 if (!teamsRes.ok) throw new Error(`Teams API HTTP error! status: ${teamsRes.status}`);
                 if (!standingsRes.ok) throw new Error(`Standings API HTTP error! status: ${standingsRes.status}`);
 
                 const teamsData = await teamsRes.json();
                 const standingsData = await standingsRes.json();
                 
+                console.log('DEBUG: teamsData structure:', teamsData); 
+                console.log('DEBUG: standingsData structure:', standingsData); 
+
                 processStandings(standingsData);
 
                 const rawTeams = teamsData.sports[0].leagues[0].teams.map(t => t.team);
                 
                 updateProgress(20, "Scouting Rosters...");
                 await fetchAllRosters(rawTeams);
+                console.log('Init: nhlTeams count after fetchAllRosters:', nhlTeams.length);
+                console.log('Init: allPlayers count after fetchAllRosters:', allPlayers.length);
 
                 processLocationData();
+                console.log('processLocationData: collegeMap size:', Object.keys(collegeMap).length);
+                console.log('processLocationData: hometownMap size:', Object.keys(hometownMap).length);
+
                 processAttributeData();
+                console.log('processAttributeData: positionMap size:', Object.keys(positionMap).length);
+                console.log('processAttributeData: numberMap size:', Object.keys(numberMap).length);
 
                 saveToCache();
                 renderApp();
@@ -291,6 +310,7 @@
                 document.getElementById('loading-text').textContent = `Failed to load data: ${e.message}. Please refresh.`;
                 document.getElementById('loading-text').classList.add('text-red-500');
             }
+            console.log('--- NHL Vault Init End ---');
         }
 
         function loadFromCache() {
@@ -307,7 +327,7 @@
             try {
                 localStorage.setItem(CACHE_KEY, JSON.stringify({
                     timestamp: Date.now(),
-                    nbaTeams,
+                    nhlTeams,
                     collegeMap,
                     hometownMap,
                     positionMap,
@@ -322,7 +342,7 @@
             document.getElementById('init-loader').classList.add('hidden');
             document.getElementById('main-container').classList.remove('hidden');
             updateSortOptions();
-            renderNbaView();
+            renderNhlView();
         }
 
         function processStandings(data) {
@@ -330,15 +350,16 @@
             const traverse = (node) => {
                 if (node.standings && node.standings.entries) {
                     node.standings.entries.forEach(entry => {
-                        let record = "0-0";
+                        let record = "0-0-0"; // W-L-OTL
                         let winPct = 0;
                         if(entry.stats) {
                             const w = entry.stats.find(s => s.name === 'wins')?.value || 0;
                             const l = entry.stats.find(s => s.name === 'losses')?.value || 0;
+                            const otl = entry.stats.find(s => s.name === 'otLosses')?.value || 0;
                             winPct = entry.stats.find(s => s.name === 'winPercent')?.value || 0;
-                            record = `${w}-${l}`;
+                            record = `${w}-${l}-${otl}`;
                         }
-                        teamRecords[entry.team.id] = { record, winPct, wins: parseInt(record.split('-')[0]), losses: parseInt(record.split('-')[1]) };
+                        teamRecords[entry.team.id] = { record, winPct, wins: parseInt(record.split('-')[0]), losses: parseInt(record.split('-')[1]), otl: parseInt(record.split('-')[2]) };
                     });
                 }
                 if (node.children) {
@@ -356,45 +377,40 @@
                 const promises = chunk.map(async (team) => {
                     try {
                         const rRes = await fetch(TEAM_ROSTER_API(team.id));
-                        if (!rRes.ok) throw new Error(`Roster API HTTP error! status: ${rRes.status}`);
+                        if (!rRes.ok) throw new Error(`Roster API HTTP error! status: ${rRes.status} for team ${team.displayName}`);
 
                         const rData = await rRes.json();
                         
                         let roster = [];
-                        // Corrected logic for NBA: players are directly in rData.athletes
                         if (rData.athletes && Array.isArray(rData.athletes)) {
-                            roster = rData.athletes; 
+                            rData.athletes.forEach(group => {
+                                if (group.items) {
+                                    roster = roster.concat(group.items);
+                                }
+                            });
                         }
                         
                         team.roster = roster;
                         team.playerCount = roster.length;
-                        const recData = teamRecords[team.id] || { record: "0-0", winPct: 0 };
+                        const recData = teamRecords[team.id] || { record: "0-0-0", winPct: 0 };
                         team.record = recData.record;
                         team.winPct = recData.winPct; 
-                        nbaTeams.push(team);
+                        nhlTeams.push(team);
 
                         roster.forEach(p => {
-                            // Fix circular structure: Store only essential team info
-                            p.currentTeamInfo = { 
-                                id: team.id, 
-                                displayName: team.displayName, 
-                                abbreviation: team.abbreviation, 
-                                logos: team.logos,
-                                record: team.record,
-                                winPct: recData.winPct
-                            };
+                            p.currentTeam = team; 
                             allPlayers.push(p);
                         });
 
                     } catch (err) {
                         console.error('Error fetching roster for team', team.displayName, err);
-                        nbaTeams.push(team); 
+                        nhlTeams.push(team); // Still add team even if roster fails
                     }
                 });
 
                 await Promise.all(promises);
                 const percent = 20 + Math.round(((i + chunkSize) / teams.length) * 70);
-                updateProgress(Math.min(percent, 90), `Loading Rosters (${nbaTeams.length}/${teams.length})...`);
+                updateProgress(Math.min(percent, 90), `Loading Rosters (${nhlTeams.length}/${teams.length})...`);
             }
         }
 
@@ -402,7 +418,7 @@
             collegeMap = {};
             hometownMap = {}; 
             allPlayers.forEach(p => {
-                // College Data
+                // College Data (less common for NHL, but still process if available)
                 if (p.college && p.college.name) {
                     const cName = p.college.name;
                     if (!collegeMap[cName]) {
@@ -418,8 +434,8 @@
                     }
                     collegeMap[cName].players.push(p);
                     
-                    if (p.currentTeamInfo && teamRecords[p.currentTeamInfo.id]) { // Use currentTeamInfo
-                        const rec = teamRecords[p.currentTeamInfo.id];
+                    if (p.currentTeam && teamRecords[p.currentTeam.id]) {
+                        const rec = teamRecords[p.currentTeam.id];
                         collegeMap[cName].totalWins += rec.wins || 0;
                         collegeMap[cName].totalLosses += rec.losses || 0;
                     }
@@ -468,7 +484,7 @@
             
             grid.innerHTML = list.map(item => `
                 <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('position', '${item.name}')">
-                    <div class="w-16 h-16 bg-indigo-600/20 rounded-full flex items-center justify-center border border-indigo-500/50">
+                    <div class="w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center border border-blue-500/50">
                         <span class="text-2xl font-black text-white">${item.name}</span>
                     </div>
                     <div class="text-center">
@@ -497,7 +513,7 @@
             select.innerHTML = '';
             select.disabled = false;
             
-            if (currentView === 'nba') {
+            if (currentView === 'nhl') {
                 select.innerHTML = `
                     <option value="alpha">Name (A-Z)</option>
                     <option value="record">Record (Best)</option>
@@ -524,8 +540,8 @@
             const sortVal = document.getElementById('main-sort').value;
             const term = searchTerm.toLowerCase();
             
-            if (currentView === 'nba') {
-                let filtered = nbaTeams.filter(t => {
+            if (currentView === 'nhl') {
+                let filtered = nhlTeams.filter(t => {
                     const matchTeam = t.displayName.toLowerCase().includes(term);
                     const matchPlayer = t.roster && t.roster.some(p => p.displayName.toLowerCase().includes(term));
                     return matchTeam || matchPlayer;
@@ -536,7 +552,7 @@
                 } else if (sortVal === 'record') {
                     filtered.sort((a,b) => b.winPct - a.winPct);
                 }
-                renderNbaView(filtered);
+                renderNhlView(filtered);
             } else {
                 let filtered = Object.values(collegeMap).filter(c => {
                     const matchCollege = c.name.toLowerCase().includes(term);
@@ -559,23 +575,25 @@
 
         // --- Rendering ---
 
-        function renderNbaView(teams = null) {
+        function renderNhlView(teams = null) {
             const grid = document.getElementById('team-grid');
-            const list = teams || nbaTeams;
+            const list = teams || nhlTeams;
             
             if (list.length === 0) {
+                console.log('renderNhlView: No teams to render.');
                 grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No teams match your search.</div>';
                 return;
             }
+            console.log('renderNhlView: rendering', list.length, 'teams');
 
             grid.innerHTML = list.map(team => `
-                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('nba', '${team.id}')">
+                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('nhl', '${team.id}')">
                     <img src="${team.logos[0].href}" class="w-20 h-20 object-contain drop-shadow-lg group-hover:scale-110 transition duration-300">
                     <div class="text-center">
                         <h3 class="text-sm font-black uppercase tracking-wider text-white">${team.displayName}</h3>
                         <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">${team.playerCount} Players</p>
                         <div class="mt-2 px-3 py-1 bg-slate-800 rounded-full inline-block">
-                            <span class="text-xs font-black text-indigo-400 tracking-widest">${team.record}</span>
+                            <span class="text-xs font-black text-blue-400 tracking-widest">${team.record}</span>
                         </div>
                     </div>
                 </div>
@@ -589,9 +607,11 @@
             document.getElementById('college-count').textContent = `${list.length} Colleges Found`;
             
             if (list.length === 0) {
+                console.log('renderCollegeView: No colleges to render.');
                 grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-10">No colleges match your search.</div>';
                 return;
             }
+            console.log('renderCollegeView: rendering', list.length, 'colleges');
 
             grid.innerHTML = list.map(c => `
                 <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('college', '${c.name.replace(/'/g, "\\'")}')">
@@ -612,8 +632,8 @@
         function openRoster(type, id) {
             let title, subtitle, logo, record;
 
-            if (type === 'nba') {
-                const team = nbaTeams.find(t => t.id === id);
+            if (type === 'nhl') {
+                const team = nhlTeams.find(t => t.id === id);
                 title = team.displayName;
                 record = team.record;
                 subtitle = `Active Roster • ${record}`;
@@ -623,20 +643,20 @@
                 const cName = id;
                 const college = collegeMap[cName];
                 title = college.name;
-                subtitle = `NBA Alumni • Combined Record: ${college.proRecord}`;
+                subtitle = `NHL Alumni • Combined Record: ${college.proRecord}`;
                 logo = college.logo;
                 currentRoster = college.players; 
             } else if (type === 'position') {
                 const posData = positionMap[id];
                 title = `${id} - Position Group`;
                 subtitle = `Active Players: ${posData.players.length}`;
-                logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png';
+                logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nhl.png';
                 currentRoster = posData.players;
             } else if (type === 'number') {
                 const numData = numberMap[id];
                 title = `Jersey #${id}`;
                 subtitle = `Active Players: ${numData.players.length}`;
-                logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nba.png';
+                logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nhl.png';
                 currentRoster = numData.players;
             }
 
@@ -698,13 +718,13 @@
             }
 
             grid.innerHTML = players.map(p => {
-                const headshot = p.headshot ? p.headshot.href : 'https://a.espncdn.com/i/headshots/nba/players/full/0.png';
+                const headshot = p.headshot ? p.headshot.href : 'https://a.espncdn.com/i/headshots/nhl/players/full/0.png';
                 const collegeName = p.college ? p.college.name : 'No College';
-                const teamLogo = p.currentTeamInfo.logos[0].href; // Use currentTeamInfo
-                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.displayName + " past teams NBA history")}`;
+                const teamLogo = p.currentTeam.logos[0].href;
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.displayName + " past teams NHL history")}`;
 
                 return `
-                <div class="glass-panel p-4 flex gap-4 relative overflow-hidden group hover:border-indigo-500/30 transition">
+                <div class="glass-panel p-4 flex gap-4 relative overflow-hidden group hover:border-blue-500/30 transition">
                     <div class="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-bl-full -mr-8 -mt-8 z-0"></div>
                     
                     <!-- Headshot -->
@@ -719,7 +739,7 @@
                                 <h3 class="text-lg font-black uppercase text-white truncate">${p.firstName}</h3>
                                 <div class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded text-[10px] font-bold text-slate-400">
                                     <img src="${teamLogo}" class="w-3 h-3">
-                                    ${p.currentTeamInfo.abbreviation}
+                                    ${p.currentTeam.abbreviation}
                                 </div>
                             </div>
                             <h3 class="text-lg font-black uppercase text-white truncate -mt-1">${p.lastName}</h3>
@@ -786,10 +806,10 @@
                     const labels = statsObj.labels; 
                     const indices = [];
                     
-                    // NBA Logic: Points, Rebounds, Assists
-                    ['PTS', 'REB', 'AST'].forEach(key => {
+                    // NHL Logic: Goals, Assists, Points, Plus/Minus
+                    ['goals', 'assists', 'points', 'plusMinus'].forEach(key => {
                         const idx = labels.indexOf(key);
-                        if(idx > -1) indices.push({label: key, idx: idx});
+                        if(idx > -1) indices.push({label: key.replace('goals', 'G').replace('assists', 'A').replace('points', 'P').replace('plusMinus', '+/-'), idx: idx});
                     });
 
                     return indices.map(item => ({
@@ -810,13 +830,13 @@
 
                 container.innerHTML = `
                     <div class="flex flex-col gap-1">
-                        <span class="text-[8px] uppercase font-bold text-green-400">Current</span>
+                        <span class="text-[8px] uppercase font-bold text-blue-400">Current</span>
                         <div class="flex gap-2">
                             ${renderStatLine(currentStats)}
                         </div>
                     </div>
                     <div class="flex flex-col gap-1 border-l border-white/10 pl-2">
-                        <span class="text-[8px] uppercase font-bold text-blue-400">Career</span>
+                        <span class="text-[8px] uppercase font-bold text-green-400">Career</span>
                         <div class="flex gap-2">
                             ${renderStatLine(careerStats)}
                         </div>
@@ -836,7 +856,7 @@
         }
 
         function switchView(view) {
-            const btnNba = document.getElementById('btn-view-nba');
+            const btnNhl = document.getElementById('btn-view-nhl');
             const btnCollege = document.getElementById('btn-view-college');
             const btnMap = document.getElementById('btn-view-map');
             const btnPos = document.getElementById('btn-view-position');
@@ -846,28 +866,28 @@
             updateSortOptions();
 
             // Reset buttons
-            [btnNba, btnCollege, btnMap, btnPos, btnNum].forEach(btn => 
+            [btnNhl, btnCollege, btnMap, btnPos, btnNum].forEach(btn => 
                 btn.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white"
             );
 
             // Hide all views
-            document.getElementById('nba-view').classList.add('hidden');
+            document.getElementById('nhl-view').classList.add('hidden');
             document.getElementById('college-view').classList.add('hidden');
             document.getElementById('map-view').classList.add('hidden');
             document.getElementById('position-view').classList.add('hidden');
             document.getElementById('number-view').classList.add('hidden');
 
-            if (view === 'nba') {
-                btnNba.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-indigo-600 text-white shadow-lg";
-                document.getElementById('nba-view').classList.remove('hidden');
+            if (view === 'nhl') {
+                btnNhl.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600 text-white shadow-lg";
+                document.getElementById('nhl-view').classList.remove('hidden');
                 applyMainSort(); 
             } else if (view === 'college') {
-                btnCollege.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600 text-white shadow-lg";
+                btnCollege.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-green-600 text-white shadow-lg";
                 document.getElementById('college-view').classList.remove('hidden');
                 renderCollegeView();
                 applyMainSort(); 
             } else if (view === 'map') {
-                btnMap.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-green-600 text-white shadow-lg";
+                btnMap.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-blue-600 text-white shadow-lg";
                 document.getElementById('map-view').classList.remove('hidden');
                 
                 // Initialize default map state
@@ -906,7 +926,8 @@
                 "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ",
                 "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH",
                 "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC",
-                "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT",
+                "South Dakota": "SD", "Tennessee": "TN", "Vanderbilt": "TN", "Memphis": "TN", "Tennessee Tech": "TN",
+                "Texas": "TX", "Utah": "UT", "Vermont": "VT",
                 "Virginia": "VA", "Virginia Tech": "VA", "Old Dominion": "VA", "VCU": "VA", "Liberty": "VA", "William & Mary": "VA", "Richmond": "VA", "James Madison": "VA", "George Mason": "VA", "VMI": "VA", "Radford": "VA",
                 "Washington": "WA", "Washington State": "WA", "Gonzaga": "WA", "Seattle U": "WA",
                 "West Virginia": "WV", "Marshall": "WV",
@@ -914,7 +935,7 @@
                 "Wyoming": "WY"
             };
 
-            if (usStateMap[name]) return usStateMap[name]; 
+            if (usStateMap[name]) return usStateMap[name]; // Corrected line
             if (name.includes("Florida")) return "FL";
             if (name.includes("California") || name.includes("Cal State")) return "CA";
             if (name.includes("Texas")) return "TX";
