@@ -1,2345 +1,509 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <title>March Madness Archive</title>
-  <link rel="icon" href="data:,">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #0f172a;
-      --surface: rgba(15, 23, 42, 0.82);
-      --surface-light: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --accent: #38bdf8;
-      --accent-soft: rgba(56, 189, 248, 0.15);
-      --border: rgba(148, 163, 184, 0.25);
-      --shadow: 0 18px 40px rgba(15, 23, 42, 0.35);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100dvh;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .app {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: calc(60px + env(safe-area-inset-bottom));
-      overflow: hidden;
-    }
-
-    main {
-      flex: 1;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tab-panel {
-      flex: 1;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 12px;
-      display: none;
-    }
-
-    .tab-panel.active {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tab-bar {
-      display: flex;
-      gap: 0;
-      background: rgba(20, 27, 45, 0.95);
-      border-top: 1px solid rgba(148, 163, 184, 0.15);
-      padding: 6px 0 calc(6px + env(safe-area-inset-bottom));
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-    }
-
-    .tab-btn {
-      flex: 1;
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 0.65rem;
-      font-weight: 500;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-      padding: 4px 8px;
-      border-radius: 0;
-      transition: color 0.15s ease;
-      cursor: pointer;
-    }
-
-    .tab-btn svg {
-      width: 22px;
-      height: 22px;
-      stroke-width: 1.8;
-    }
-
-    .tab-btn.active {
-      color: var(--accent);
-    }
-
-    .tab-btn.active svg {
-      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.5));
-    }
-
-    .panel-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 12px;
-      margin-bottom: 12px;
-    }
-
-    .panel-card h2 {
-      margin: 0 0 10px;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .control-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    label {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
-
-    select, button.primary {
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: rgba(15, 23, 42, 0.7);
-      color: var(--text);
-      padding: 8px 10px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-    }
-
-    select:focus, button.primary:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    button.primary {
-      background: linear-gradient(135deg, var(--accent), #3b82f6);
-      border: none;
-    }
-
-    button.primary:active {
-      opacity: 0.9;
-    }
-
-    .btn-secondary {
-      background: var(--surface-light);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 0.7rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      border-color: var(--accent);
-    }
-
-    .simtab-panel {
-      display: none;
-    }
-
-    .simtab-panel.active {
-      display: block;
-    }
-
-    .view-toggle {
-      display: flex;
-      gap: 4px;
-      background: rgba(15, 23, 42, 0.5);
-      padding: 4px;
-      border-radius: 8px;
-      margin-left: auto;
-    }
-
-    .view-toggle button {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 0.75rem;
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-
-    .view-toggle button.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .bracket-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      width: 100%;
-    }
-
-    .round-column h3 {
-      margin: 0 0 8px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .game-card {
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      padding: 8px;
-      background: rgba(15, 23, 42, 0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 6px;
-    }
-
-    .game-card.highlight {
-      border-color: rgba(56, 189, 248, 0.5);
-    }
-
-    .team-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-    }
-
-    .team-row.winner {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .team-meta {
-      font-size: 0.65rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    /* Bracket Tree View - Real bracket with lines */
-    .bracket-tree {
-      display: none;
-      overflow: auto;
-      -webkit-overflow-scrolling: touch;
-      flex: 1;
-    }
-
-    .bracket-tree.active {
-      display: block;
-    }
-
-    .bracket-container {
-      display: flex;
-      padding: 12px;
-      min-width: max-content;
-      gap: 0;
-    }
-
-    .bracket-round {
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .bracket-round-header {
-      text-align: center;
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: var(--accent);
-      padding: 4px 8px 10px;
-      position: sticky;
-      top: 0;
-      background: var(--bg);
-      z-index: 3;
-      min-width: 120px;
-    }
-
-    .bracket-games {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      flex: 1;
-      position: relative;
-    }
-
-    .bracket-game {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      margin: 4px 0;
-      font-size: 0.68rem;
-      position: relative;
-      min-width: 110px;
-      overflow: hidden;
-    }
-
-    .bracket-game.champion {
-      border-color: var(--accent);
-      box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
-    }
-
-    .bracket-team {
-      display: flex;
-      align-items: center;
-      padding: 5px 8px;
-      gap: 6px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-      transition: background 0.15s;
-    }
-
-    .bracket-team:last-child {
-      border-bottom: none;
-    }
-
-    .bracket-team.winner {
-      background: rgba(56, 189, 248, 0.12);
-    }
-
-    .bracket-team.winner .bracket-team-name {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .bracket-seed {
-      color: var(--muted);
-      font-size: 0.6rem;
-      min-width: 14px;
-      text-align: center;
-    }
-
-    .bracket-team-name {
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text);
-    }
-
-    .bracket-score {
-      color: var(--muted);
-      font-size: 0.6rem;
-      min-width: 16px;
-      text-align: right;
-    }
-
-    .team-logo {
-      width: 20px;
-      height: 20px;
-      object-fit: contain;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-
-    .team-logo.small {
-      width: 16px;
-      height: 16px;
-    }
-
-    .team-logo.large {
-      width: 32px;
-      height: 32px;
-    }
-
-    .modal-team-logo {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-      border-radius: 6px;
-    }
-
-    /* Connector lines */
-    .bracket-connector {
-      width: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      position: relative;
-    }
-
-    .connector-line {
-      position: absolute;
-      background: var(--border);
-    }
-
-    .connector-h {
-      height: 1px;
-      width: 10px;
-    }
-
-    .connector-v {
-      width: 1px;
-    }
-
-    /* List view styling */
-    .bracket-list {
-      display: none;
-      overflow: auto;
-      flex: 1;
-    }
-
-    .bracket-list.active {
-      display: block;
-    }
-
-    .stat-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.75rem;
-    }
-
-    .stat-table th, .stat-table td {
-      padding: 8px 6px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
-      text-align: left;
-    }
-
-    .stat-table th {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .stat-table th.sortable {
-      cursor: pointer;
-      user-select: none;
-      color: var(--muted);
-    }
-
-    .stat-table th.sortable::after {
-      content: '';
-      margin-left: 2px;
-    }
-
-    .stat-table th.sortable.active-asc::after {
-      content: '↑';
-    }
-
-    .stat-table th.sortable.active-desc::after {
-      content: '↓';
-    }
-
-    .stat-table tbody tr:active {
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    .clickable-row {
-      cursor: pointer;
-    }
-
-    .win-bar {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .win-bar-fill {
-      height: 4px;
-      background: var(--accent);
-      border-radius: 2px;
-      min-width: 2px;
-    }
-
-    .subtab-bar {
-      display: flex;
-      gap: 4px;
-      background: rgba(15, 23, 42, 0.5);
-      padding: 4px;
-      border-radius: 8px;
-      margin-bottom: 12px;
-    }
-
-    .subtab-btn {
-      flex: 1;
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-weight: 500;
-      padding: 8px 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.75rem;
-    }
-
-    .subtab-btn.active {
-      background: var(--accent-soft);
-      color: var(--accent);
-    }
-
-    .subtab-panel {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .subtab-panel.active {
-      display: block;
-    }
-
-    .tag-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(56, 189, 248, 0.12);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      color: var(--accent);
-      padding: 6px 10px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      margin-right: 8px;
-    }
-
-    .empty-state {
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px dashed rgba(148, 163, 184, 0.3);
-      text-align: center;
-      color: var(--muted);
-    }
-
-    .seed-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 8px;
-    }
-
-    .seed-card {
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.15);
-      background: rgba(15, 23, 42, 0.6);
-    }
-
-    .seed-card h4 {
-      margin: 0 0 8px;
-      font-size: 0.8rem;
-    }
-
-    .muted {
-      color: var(--muted);
-      font-size: 0.8rem;
-    }
-
-    .sim-output {
-      margin-top: 12px;
-    }
-
-    .loading {
-      display: inline-flex;
-      gap: 8px;
-      align-items: center;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
-    .loading span {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 3px solid rgba(56, 189, 248, 0.35);
-      border-top-color: var(--accent);
-      animation: spin 0.9s linear infinite;
-    }
-
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      padding: 0;
-      z-index: 200;
-    }
-
-    .modal-overlay[hidden] {
-      display: none;
-    }
-
-    .modal-content {
-      width: 100%;
-      max-height: 85vh;
-      overflow-y: auto;
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
-      border-radius: 24px 24px 0 0;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-bottom: none;
-      box-shadow: 0 -12px 60px rgba(0, 0, 0, 0.45);
-      padding: 0;
-      color: var(--text);
-      animation: slideUp 0.25s ease-out;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-      position: sticky;
-      top: 0;
-      background: rgba(30, 41, 59, 0.98);
-      z-index: 1;
-    }
-
-    .modal-header h3 {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 600;
-    }
-
-    .modal-subtitle {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 2px;
-    }
-
-    .modal-close {
-      background: var(--surface-light);
-      border: none;
-      color: var(--muted);
-      font-size: 1rem;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s, color 0.15s;
-    }
-
-    .modal-close:hover {
-      background: rgba(255, 255, 255, 0.15);
-      color: var(--accent);
-    }
-
-    .modal-stats-row {
-      display: flex;
-      gap: 8px;
-      padding: 16px 20px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      background: rgba(15, 23, 42, 0.4);
-    }
-
-    .modal-stat {
-      flex: 1;
-      min-width: 70px;
-      text-align: center;
-      padding: 12px 8px;
-      background: rgba(15, 23, 42, 0.6);
-      border-radius: 12px;
-      border: 1px solid rgba(148, 163, 184, 0.1);
-    }
-
-    .modal-stat-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .modal-stat-label {
-      font-size: 0.65rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      margin-top: 2px;
-    }
-
-    .modal-body {
-      padding: 16px 20px 24px;
-    }
-
-    .modal-section-title {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      margin: 0 0 12px;
-    }
-
-    .game-history-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .game-history-item {
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      border-radius: 12px;
-      padding: 12px 14px;
-      background: rgba(15, 23, 42, 0.5);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .game-history-item.win {
-      border-left: 3px solid #22c55e;
-    }
-
-    .game-history-item.loss {
-      border-left: 3px solid #ef4444;
-    }
-
-    .game-history-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .game-history-year {
-      font-weight: 600;
-      color: var(--accent);
-      font-size: 0.8rem;
-    }
-
-    .game-history-round {
-      font-size: 0.7rem;
-      color: var(--muted);
-      background: var(--surface-light);
-      padding: 2px 8px;
-      border-radius: 10px;
-    }
-
-    .game-history-matchup {
-      font-size: 0.8rem;
-      color: var(--text);
-    }
-
-    .game-history-detail {
-      font-size: 0.7rem;
-      color: var(--muted);
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 640px) {
-      .modal-content {
-        max-height: 90dvh;
-        max-height: 90vh;
-        padding: 16px;
-        border-radius: 16px;
-      }
-
-      .control-row {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .control-row label {
-        margin-bottom: -4px;
-      }
-    }
-
-    @media (max-width: 820px) {
-      .bracket-grid {
-        display: flex;
-        overflow-x: auto;
-        gap: 12px;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .bracket-grid::-webkit-scrollbar {
-        display: none;
-      }
-
-      .round-column {
-        flex: 0 0 160px;
-        scroll-snap-align: start;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>March Madness Vault | Bracket & Stats</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+        }
+
+        .hover-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hover-card:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: rgba(249, 115, 22, 0.4);
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #f97316;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Bracket Specific Lines */
+        .bracket-line-r {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 10px;
+            height: 1px;
+            background: #475569;
+        }
+        .bracket-connector-r {
+            position: absolute;
+            right: -10px;
+            width: 10px;
+            border-right: 1px solid #475569;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
 </head>
-<body>
-  <div class="app" role="application">
-    <main>
-      <section id="tab-brackets" class="tab-panel active" aria-labelledby="nav-brackets">
-        <div class="panel-card">
-          <div class="control-row">
-            <label for="yearSelect">Year</label>
-            <select id="yearSelect" aria-label="Select tournament year"></select>
-            <div class="view-toggle" id="bracketViewToggle">
-              <button data-view="tree" class="active">Bracket</button>
-              <button data-view="list">List</button>
+<body class="p-4 md:p-6 lg:p-8">
+
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="location.reload()">
+            <div class="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-orange-500/20 italic">
+                🏀
             </div>
-          </div>
-          <div id="bracketSummary" class="muted" style="font-size:0.8rem;"></div>
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic">March Madness Vault</h1>
+                <p class="text-[10px] text-orange-400 font-bold uppercase tracking-widest">History • Live • Bracketology</p>
+            </div>
         </div>
 
-        <div class="panel-card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
-          <div id="bracketTreeView" class="bracket-tree active"></div>
-          <div id="bracketListView" class="bracket-list"></div>
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <!-- Navigation -->
+            <div class="flex bg-slate-800 p-1 rounded-xl">
+                <button id="nav-history" onclick="switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-orange-600 text-white shadow-lg">
+                    Archive
+                </button>
+                <button id="nav-live" onclick="switchTab('live')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
+                    Live Intel
+                </button>
+                <button id="nav-predict" onclick="switchTab('predict')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
+                    Predictor
+                </button>
+            </div>
         </div>
-      </section>
+    </header>
 
-      <section id="tab-insights" class="tab-panel" aria-labelledby="nav-insights">
-        <div class="panel-card" style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-          <div class="subtab-bar" role="tablist">
-            <button class="subtab-btn active" data-subtab="team-history" aria-selected="true">Teams</button>
-            <button class="subtab-btn" data-subtab="seed-rounds" aria-selected="false">Seeds</button>
-            <button class="subtab-btn" data-subtab="seed-matchups" aria-selected="false">Matchups</button>
-          </div>
+    <!-- Main Content -->
+    <main class="max-w-full mx-auto w-full flex-grow relative overflow-hidden flex flex-col">
 
-          <div id="subtab-team-history" class="subtab-panel active" role="tabpanel" style="flex:1; overflow:auto;">
-            <div class="muted" id="teamHistorySummary" style="font-size:0.75rem; margin-bottom:8px;"></div>
-            <table class="stat-table" aria-describedby="teamHistorySummary" data-team-table="true">
-              <thead>
-                <tr>
-                  <th scope="col" class="sortable" data-sort="team">Team</th>
-                  <th scope="col" class="sortable" data-sort="titles">🏆</th>
-                  <th scope="col" class="sortable" data-sort="wins">W</th>
-                  <th scope="col" class="sortable" data-sort="losses">L</th>
-                  <th scope="col" class="sortable" data-sort="winPct">%</th>
-                </tr>
-              </thead>
-              <tbody id="teamHistoryTable"></tbody>
-            </table>
-          </div>
-
-          <div id="subtab-seed-rounds" class="subtab-panel" role="tabpanel" style="flex:1; overflow:auto;">
-            <div id="seedRoundGrid" class="seed-grid"></div>
-          </div>
-
-          <div id="subtab-seed-matchups" class="subtab-panel" role="tabpanel" style="flex:1; overflow:auto;">
-            <table class="stat-table">
-              <thead>
-                <tr>
-                  <th scope="col">Matchup</th>
-                  <th scope="col">G</th>
-                  <th scope="col">Low%</th>
-                  <th scope="col">High%</th>
-                </tr>
-              </thead>
-              <tbody id="seedMatchupTable"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="tab-sim" class="tab-panel" aria-labelledby="nav-sim">
-        <div class="panel-card">
-          <div class="subtab-bar" role="tablist" style="margin-bottom:8px;">
-            <button class="subtab-btn active" data-simtab="single" aria-selected="true">Single Year</button>
-            <button class="subtab-btn" data-simtab="batch" aria-selected="false">All Years</button>
-            <button class="subtab-btn" data-simtab="custom" aria-selected="false">Custom</button>
-          </div>
-
-          <div id="simtab-single" class="simtab-panel active">
-            <div class="control-row">
-              <label for="simYearSelect">Year</label>
-              <select id="simYearSelect" aria-label="Select a bracket for simulation"></select>
-              <label for="simModeSelect">Mode</label>
-              <select id="simModeSelect" aria-label="Select simulation mode">
-                <option value="seed-record">Seed record</option>
-                <option value="random">Random</option>
-                <option value="legacy">Legacy</option>
-                <option value="team-win-pct">Win %</option>
-                <option value="team-total-wins">Total W</option>
-                <option value="team-titles">Titles</option>
-                <option value="seed-weighted">Weighted</option>
-              </select>
-              <button class="primary" id="simulateBtn">Run</button>
+        <!-- TAB: HISTORY ARCHIVE -->
+        <div id="tab-history" class="view-section flex flex-col gap-6 h-full">
+            
+            <!-- Year Selector & Controls -->
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                <div class="flex items-center gap-3">
+                    <label class="text-xs font-bold text-slate-400 uppercase">Tournament Year:</label>
+                    <select id="year-select" onchange="loadTournament(this.value)" class="bg-slate-800 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none focus:border-orange-500">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div id="tournament-summary" class="text-xs font-bold text-slate-300"></div>
             </div>
-          </div>
 
-          <div id="simtab-batch" class="simtab-panel" style="display:none;">
-            <div class="control-row">
-              <label for="batchModeSelect">Mode</label>
-              <select id="batchModeSelect" aria-label="Select batch simulation mode">
-                <option value="seed-record">Seed record</option>
-                <option value="random">Random</option>
-                <option value="legacy">Legacy</option>
-                <option value="team-win-pct">Win %</option>
-                <option value="team-total-wins">Total W</option>
-                <option value="team-titles">Titles</option>
-                <option value="seed-weighted">Weighted</option>
-              </select>
-              <button class="primary" id="batchSimBtn">Run All Years</button>
+            <!-- Bracket Container -->
+            <div class="glass-panel p-4 overflow-x-auto flex-grow relative min-h-[600px]">
+                <div id="bracket-tree" class="flex gap-8 min-w-max p-4">
+                    <!-- Rounds injected here -->
+                </div>
             </div>
-            <div id="batchResults" style="margin-top:10px; font-size:0.75rem; max-height:150px; overflow-y:auto;"></div>
-          </div>
-
-          <div id="simtab-custom" class="simtab-panel" style="display:none;">
-            <div class="control-row" style="margin-bottom:8px;">
-              <label for="customModeSelect">Mode</label>
-              <select id="customModeSelect" aria-label="Select custom simulation mode">
-                <option value="seed-record">Seed record</option>
-                <option value="random">Random</option>
-                <option value="legacy">Legacy</option>
-                <option value="team-win-pct">Win %</option>
-                <option value="team-total-wins">Total W</option>
-                <option value="team-titles">Titles</option>
-                <option value="seed-weighted">Weighted</option>
-              </select>
-              <button class="primary" id="runCustomBtn">Run</button>
-            </div>
-            <textarea id="customTeams" placeholder="64 teams, one per line (seeded 1-16 in each region)..." style="width:100%; height:100px; background:rgba(15,23,42,0.7); color:var(--text); border:1px solid var(--border); border-radius:6px; padding:8px; font-size:0.75rem; font-family:inherit; resize:none;"></textarea>
-            <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-              <button class="btn-secondary" id="fillDummyBtn">Dummy Teams</button>
-              <button class="btn-secondary" id="scrambleTeamsBtn">Random Historical</button>
-              <button class="btn-secondary" id="loadYearBtn">Load Year Field</button>
-              <button class="btn-secondary" id="clearCustomBtn">Clear</button>
-            </div>
-            <div id="customLoadRow" style="margin-top:6px; display:none;">
-              <select id="loadYearSelect" style="background:var(--surface-light); color:var(--text); border:1px solid var(--border); border-radius:4px; padding:4px 8px; font-size:0.7rem;"></select>
-              <button class="btn-secondary" id="confirmLoadYearBtn" style="margin-left:4px;">Load</button>
-            </div>
-          </div>
         </div>
 
-        <div class="panel-card" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
-          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <div id="simStats" class="tag-pill" style="display:none; font-size:0.7rem; padding:4px 8px;"></div>
-            <div id="simSummary" class="muted" style="font-size:0.8rem;"></div>
-            <div class="view-toggle" id="simViewToggle" style="margin-left:auto;">
-              <button data-view="tree" class="active">Bracket</button>
-              <button data-view="list">List</button>
+        <!-- TAB: LIVE INTEL -->
+        <div id="tab-live" class="view-section hidden flex flex-col gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Top 25 Rankings -->
+                <div class="glass-panel p-6 col-span-1 lg:col-span-2">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-black italic uppercase text-white">AP Top 25</h2>
+                        <span class="text-[10px] font-bold text-orange-400 uppercase bg-orange-400/10 px-2 py-1 rounded">Live Data</span>
+                    </div>
+                    <div id="rankings-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="col-span-full text-center py-10"><div class="loader mx-auto"></div></div>
+                    </div>
+                </div>
+
+                <!-- Bubble Watch / Conf Standings (Simplified) -->
+                <div class="glass-panel p-6">
+                    <h2 class="text-lg font-black italic uppercase text-white mb-6">Power Conferences</h2>
+                    <div id="conferences-list" class="flex flex-col gap-2 h-[500px] overflow-y-auto pr-2">
+                         <div class="text-center py-10 text-slate-500 text-xs">Loading Standings...</div>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div id="simTreeView" class="bracket-tree active"></div>
-          <div id="simListView" class="bracket-list"></div>
         </div>
-      </section>
+
+        <!-- TAB: PREDICTOR -->
+        <div id="tab-predict" class="view-section hidden flex flex-col gap-6 h-full">
+            <div class="glass-panel p-8 text-center max-w-2xl mx-auto w-full">
+                <h2 class="text-3xl font-black italic uppercase text-white mb-2">Bracket Generator</h2>
+                <p class="text-slate-400 text-sm mb-8">Create a "Perfect" Bracket using historical probability logic.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                    <button onclick="generateBracket('chalk')" class="p-4 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 hover:border-orange-500 transition group text-left">
+                        <div class="text-orange-500 font-black uppercase text-sm mb-1">Chalk (Favorites)</div>
+                        <p class="text-[10px] text-slate-400">Picks higher seeds. Boring, but historically accurate for early rounds.</p>
+                    </button>
+                    <button onclick="generateBracket('chaos')" class="p-4 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 hover:border-red-500 transition group text-left">
+                        <div class="text-red-500 font-black uppercase text-sm mb-1">Chaos Mode</div>
+                        <p class="text-[10px] text-slate-400">Introduces random upsets based on historical upset probability.</p>
+                    </button>
+                    <button onclick="generateBracket('weighted')" class="p-4 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 hover:border-blue-500 transition group text-left">
+                        <div class="text-blue-500 font-black uppercase text-sm mb-1">Smart Weighted</div>
+                        <p class="text-[10px] text-slate-400">Uses weighted probability. A 16-seed has a 1% chance, etc.</p>
+                    </button>
+                    <button onclick="generateBracket('random')" class="p-4 bg-slate-800 rounded-xl hover:bg-slate-700 border border-slate-700 hover:border-green-500 transition group text-left">
+                        <div class="text-green-500 font-black uppercase text-sm mb-1">Pure Random</div>
+                        <p class="text-[10px] text-slate-400">Coin flips for every game. Good luck.</p>
+                    </button>
+                </div>
+
+                <div id="prediction-result" class="hidden">
+                    <div class="bg-slate-900 rounded-xl p-4 border border-white/10">
+                        <h3 class="text-white font-bold uppercase text-sm mb-4">Predicted Final Four</h3>
+                        <div class="grid grid-cols-2 gap-4" id="predicted-f4"></div>
+                        <div class="mt-6 pt-6 border-t border-white/5">
+                            <p class="text-[10px] text-slate-500 uppercase tracking-widest mb-2">National Champion</p>
+                            <div id="predicted-champ" class="text-2xl font-black text-orange-400 uppercase italic"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
-  </div>
 
-  <nav class="tab-bar" role="tablist">
-    <button class="tab-btn active" id="nav-brackets" data-tab="brackets" aria-controls="tab-brackets" aria-selected="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 5h4v4H3z"/><path d="M3 15h4v4H3z"/><path d="M7 7h4v0"/><path d="M7 17h4v0"/><path d="M11 7v10"/><path d="M11 12h4"/><path d="M15 12v0h4v0"/>
-      </svg>
-      Bracket
-    </button>
-    <button class="tab-btn" id="nav-insights" data-tab="insights" aria-controls="tab-insights" aria-selected="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
-      </svg>
-      Stats
-    </button>
-    <button class="tab-btn" id="nav-sim" data-tab="sim" aria-controls="tab-sim" aria-selected="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
-      Simulate
-    </button>
-  </nav>
+    <script>
+        // --- Config ---
+        const YEAR_START = 1985;
+        const YEAR_END = 2025;
+        const LIVE_API_RANKINGS = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings';
+        const LIVE_API_TEAMS = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams?limit=400';
 
-    <div id="teamModal" class="modal-overlay" hidden>
-      <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle">
-        <div class="modal-header">
-          <div>
-            <h3 id="teamModalTitle"></h3>
-            <div id="teamModalSubtitle" class="modal-subtitle"></div>
-          </div>
-          <button class="modal-close" id="teamModalClose" aria-label="Close team history dialog">&times;</button>
-        </div>
-        <div id="teamModalStats" class="modal-stats-row"></div>
-        <div class="modal-body" id="teamModalBody">
-          <h4 class="modal-section-title">Tournament History</h4>
-          <ul id="teamModalList" class="game-history-list"></ul>
-        </div>
-      </div>
-    </div>
+        // --- State ---
+        let tournaments = {};
+        let currentYearData = null;
+        let liveRankings = [];
+        let allTeams = [];
 
-  <template id="loadingTemplate">
-    <div class="loading" role="status">
-      <span aria-hidden="true"></span>
-      <strong>Loading tournaments…</strong>
-    </div>
-  </template>
-
-  <script>
-    const YEAR_START = 1985;
-    const YEAR_END = 2025;
-    const ROUND_SEQUENCE = ['round1', 'round2', 'sweet16', 'elite8', 'finalFour', 'championship'];
-
-    // Team name aliases - maps variations to canonical names
-    const TEAM_ALIASES = {
-      'Connecticut': 'UConn',
-      'UNC': 'North Carolina',
-      'Pitt': 'Pittsburgh',
-      'Ole Miss': 'Mississippi',
-    };
-
-    function normalizeTeamName(name) {
-      if (!name) return name;
-      return TEAM_ALIASES[name] || name;
-    }
-
-    const state = {
-      tournaments: new Map(),
-      aggregated: null,
-      currentYear: null,
-      loaded: false,
-      teamSort: { key: 'titles', direction: 'desc' },
-      bracketView: 'tree',
-      simView: 'tree',
-      allHistoricalTeams: [], // For random team scrambler
-      teamLogos: {}, // Loaded from team-logos.json
-    };
-
-    document.addEventListener('DOMContentLoaded', () => {
-      setupTabs();
-      setupSubtabs();
-      setupSimTabs();
-      setupViewToggles();
-      setupTeamTableInteractions();
-      setupModalControls();
-      setupSimControls();
-      bootstrap();
-    });
-
-    async function bootstrap() {
-      renderLoading();
-      await loadTeamLogos();
-      await loadAllTournaments();
-      populateYearSelectors();
-      computeAggregatedStats();
-      hydrateInsights();
-      state.loaded = true;
-      const defaultYear = state.tournaments.size ? Math.max(...state.tournaments.keys()) : YEAR_END;
-      setActiveYear(defaultYear);
-    }
-
-    async function loadTeamLogos() {
-      try {
-        const response = await fetch('./team-logos.json');
-        if (response.ok) {
-          const data = await response.json();
-          state.teamLogos = data.teamLogos || {};
-        }
-      } catch (err) {
-        console.warn('Failed to load team logos:', err);
-      }
-    }
-
-    function getTeamLogoUrl(teamName) {
-      if (!teamName || !state.teamLogos) return null;
-      // Try normalized name first
-      const normalized = normalizeTeamName(teamName);
-      return state.teamLogos[normalized] || state.teamLogos[teamName] || null;
-    }
-
-    function setupTabs() {
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          if (btn.classList.contains('active')) return;
-          document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.toggle('active', b === btn);
-            b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
-          });
-          document.querySelectorAll('.tab-panel').forEach(panel => {
-            panel.classList.toggle('active', panel.id === `tab-${btn.dataset.tab}`);
-          });
-        });
-      });
-    }
-
-    function setupSubtabs() {
-      document.querySelectorAll('.subtab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = btn.dataset.subtab;
-          if (!target) return; // Skip if no subtab data attribute (might be simtab)
-          document.querySelectorAll('.subtab-btn[data-subtab]').forEach(b => {
-            const isActive = b === btn;
-            b.classList.toggle('active', isActive);
-            b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-          });
-          document.querySelectorAll('.subtab-panel').forEach(panel => {
-            panel.classList.toggle('active', panel.id === `subtab-${target}`);
-          });
-        });
-      });
-    }
-
-    function setupSimTabs() {
-      document.querySelectorAll('[data-simtab]').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const target = btn.dataset.simtab;
-          document.querySelectorAll('[data-simtab]').forEach(b => {
-            const isActive = b === btn;
-            b.classList.toggle('active', isActive);
-            b.setAttribute('aria-selected', isActive ? 'true' : 'false');
-          });
-          document.querySelectorAll('.simtab-panel').forEach(panel => {
-            const isTarget = panel.id === `simtab-${target}`;
-            panel.style.display = isTarget ? 'block' : 'none';
-            panel.classList.toggle('active', isTarget);
-          });
-        });
-      });
-    }
-
-    function setupSimControls() {
-      // Single year simulate
-      document.getElementById('simulateBtn')?.addEventListener('click', runSimulation);
-
-      // Batch simulation
-      document.getElementById('batchSimBtn')?.addEventListener('click', runBatchSimulation);
-
-      // Custom field controls
-      document.getElementById('runCustomBtn')?.addEventListener('click', runCustomSimulation);
-      document.getElementById('fillDummyBtn')?.addEventListener('click', fillDummyTeams);
-      document.getElementById('scrambleTeamsBtn')?.addEventListener('click', scrambleRandomTeams);
-      document.getElementById('clearCustomBtn')?.addEventListener('click', () => {
-        document.getElementById('customTeams').value = '';
-      });
-      
-      // Load year field
-      document.getElementById('loadYearBtn')?.addEventListener('click', () => {
-        const loadRow = document.getElementById('customLoadRow');
-        loadRow.style.display = loadRow.style.display === 'none' ? 'flex' : 'none';
-      });
-      document.getElementById('confirmLoadYearBtn')?.addEventListener('click', loadYearField);
-    }
-
-    function setupViewToggles() {
-      // Bracket tab view toggle
-      document.querySelectorAll('#bracketViewToggle button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const view = btn.dataset.view;
-          state.bracketView = view;
-          document.querySelectorAll('#bracketViewToggle button').forEach(b => b.classList.toggle('active', b === btn));
-          document.getElementById('bracketListView').classList.toggle('active', view === 'list');
-          document.getElementById('bracketTreeView').classList.toggle('active', view === 'tree');
-        });
-      });
-
-      // Sim tab view toggle
-      document.querySelectorAll('#simViewToggle button').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const view = btn.dataset.view;
-          state.simView = view;
-          document.querySelectorAll('#simViewToggle button').forEach(b => b.classList.toggle('active', b === btn));
-          document.getElementById('simListView').classList.toggle('active', view === 'list');
-          document.getElementById('simTreeView').classList.toggle('active', view === 'tree');
-        });
-      });
-    }
-
-    function renderLoading() {
-      const bracketTree = document.getElementById('bracketTreeView');
-      const simTree = document.getElementById('simTreeView');
-      const template = document.getElementById('loadingTemplate');
-      bracketTree.innerHTML = '';
-      bracketTree.appendChild(template.content.cloneNode(true));
-      simTree.innerHTML = '';
-      simTree.appendChild(template.content.cloneNode(true));
-    }
-
-    async function loadAllTournaments() {
-      const fetches = [];
-      for (let year = YEAR_START; year <= YEAR_END; year++) {
-        if (year === 2020) {
-          console.info('Skipping 2020 tournament data (season canceled).');
-          continue;
-        }
-        const url = `json/tournament-${year}.json`;
-        fetches.push(fetch(url)
-          .then(resp => {
-            if (!resp.ok) throw new Error(`Missing dataset ${year}`);
-            return resp.json().then(data => state.tournaments.set(year, data));
-          })
-          .catch(() => {
-            console.warn(`Tournament data not found for ${year}, skipping.`);
-          }));
-      }
-      await Promise.all(fetches);
-    }
-
-    function populateYearSelectors() {
-      const yearOptions = Array.from(state.tournaments.keys()).sort((a, b) => b - a);
-      const yearSelect = document.getElementById('yearSelect');
-      const simYearSelect = document.getElementById('simYearSelect');
-      const loadYearSelect = document.getElementById('loadYearSelect');
-      yearOptions.forEach(year => {
-        const option = new Option(year, year);
-        yearSelect.add(option.cloneNode(true));
-        simYearSelect.add(option.cloneNode(true));
-        if (loadYearSelect) loadYearSelect.add(option.cloneNode(true));
-      });
-      yearSelect.addEventListener('change', event => setActiveYear(Number(event.target.value)));
-    }
-
-    function fillDummyTeams() {
-      const dummies = Array.from({ length: 64 }, (_, i) => `Team ${i + 1}`);
-      document.getElementById('customTeams').value = dummies.join('\n');
-    }
-
-    function scrambleRandomTeams() {
-      if (state.allHistoricalTeams.length < 64) {
-        alert('Historical team data not yet loaded');
-        return;
-      }
-      // Shuffle and pick 64 unique teams
-      const shuffled = [...state.allHistoricalTeams].sort(() => Math.random() - 0.5);
-      const uniqueTeams = [...new Set(shuffled)].slice(0, 64);
-      if (uniqueTeams.length < 64) {
-        // Fill with duplicates if needed
-        while (uniqueTeams.length < 64) {
-          uniqueTeams.push(shuffled[uniqueTeams.length % shuffled.length]);
-        }
-      }
-      document.getElementById('customTeams').value = uniqueTeams.join('\n');
-    }
-
-    function loadYearField() {
-      const year = Number(document.getElementById('loadYearSelect').value);
-      if (!state.tournaments.has(year)) return;
-      const data = state.tournaments.get(year);
-      const teams = [];
-      // Extract teams from round1 in bracket order
-      (data.rounds.round1 || []).forEach(game => {
-        teams.push(game.team1 || 'TBD');
-        teams.push(game.team2 || 'TBD');
-      });
-      document.getElementById('customTeams').value = teams.join('\n');
-      document.getElementById('customLoadRow').style.display = 'none';
-    }
-
-    function runCustomSimulation() {
-      if (!state.loaded || !state.aggregated) {
-        alert('Datasets still loading. Try again in a moment.');
-        return;
-      }
-      const customInput = document.getElementById('customTeams').value.trim();
-      if (!customInput) {
-        alert('Please enter teams or use the fill options.');
-        return;
-      }
-      const teams = customInput.split('\n').map(t => t.trim()).filter(Boolean);
-      if (teams.length < 64) {
-        alert(`Please provide at least 64 teams (currently ${teams.length}).`);
-        return;
-      }
-      const mode = document.getElementById('customModeSelect').value;
-      const baseRounds = { round1: buildCustomRound1(teams.slice(0, 64)) };
-      const bracket = simulateBracket(baseRounds, mode);
-      renderSimulation(bracket, mode, null);
-    }
-
-    function runBatchSimulation() {
-      if (!state.loaded || !state.aggregated) {
-        alert('Datasets still loading. Try again in a moment.');
-        return;
-      }
-      const mode = document.getElementById('batchModeSelect').value;
-      const resultsDiv = document.getElementById('batchResults');
-      resultsDiv.innerHTML = '<div class="muted">Running simulations...</div>';
-      
-      const years = Array.from(state.tournaments.keys()).sort((a, b) => b - a);
-      const results = [];
-      let totalAccuracy = 0;
-      let count = 0;
-      
-      years.forEach(year => {
-        const data = state.tournaments.get(year);
-        if (!data?.rounds?.round1) return;
-        const bracket = simulateBracket(data.rounds, mode);
-        const accuracy = calculateBracketAccuracy(bracket, data.rounds);
-        if (accuracy !== null) {
-          totalAccuracy += accuracy;
-          count++;
-        }
-        const correct = bracket.championship?.winner === data.champion;
-        results.push({ year, accuracy, champion: bracket.championship?.winner, actual: data.champion, correct });
-      });
-      
-      const avgAccuracy = count > 0 ? (totalAccuracy / count).toFixed(1) : '0';
-      const correctChamps = results.filter(r => r.correct).length;
-      
-      let html = `<div style="margin-bottom:8px;"><strong>Avg Accuracy:</strong> ${avgAccuracy}% · <strong>Correct Champs:</strong> ${correctChamps}/${results.length}</div>`;
-      html += '<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:4px;">';
-      results.forEach(r => {
-        const color = r.correct ? '#22c55e' : 'var(--muted)';
-        html += `<div style="padding:4px 6px; background:var(--surface-light); border-radius:6px; font-size:0.7rem;">
-          <span style="color:${color};">${r.year}</span>: ${r.accuracy ?? '?'}% ${r.correct ? '✓' : ''}
-        </div>`;
-      });
-      html += '</div>';
-      resultsDiv.innerHTML = html;
-    }
-
-    function setActiveYear(year) {
-      if (!state.tournaments.has(year)) return;
-      state.currentYear = year;
-      document.getElementById('yearSelect').value = year;
-      document.getElementById('simYearSelect').value = year;
-      renderBracketTree(year);
-      renderBracketList(year);
-      renderBracketSummary(year);
-    }
-
-    function renderBracketTree(year) {
-      const data = state.tournaments.get(year);
-      if (!data) return;
-      const container = document.getElementById('bracketTreeView');
-      container.innerHTML = '';
-      container.appendChild(createBracketTreeElement(data.rounds));
-    }
-
-    function renderBracketList(year) {
-      const data = state.tournaments.get(year);
-      if (!data) return;
-      const container = document.getElementById('bracketListView');
-      container.innerHTML = '';
-      
-      const roundOrder = [
-        { key: 'round1', label: 'Round of 64' },
-        { key: 'round2', label: 'Round of 32' },
-        { key: 'sweet16', label: 'Sweet 16' },
-        { key: 'elite8', label: 'Elite Eight' },
-        { key: 'finalFour', label: 'Final Four' },
-        { key: 'championship', label: 'Championship' },
-      ];
-      
-      roundOrder.forEach(round => {
-        const section = document.createElement('div');
-        section.style.marginBottom = '16px';
-        
-        const header = document.createElement('h3');
-        header.style.cssText = 'font-size:0.85rem; color:var(--accent); margin:0 0 8px; padding:0 4px;';
-        header.textContent = round.label;
-        section.appendChild(header);
-        
-        const gamesContainer = document.createElement('div');
-        gamesContainer.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px;';
-        
-        if (round.key === 'championship') {
-          const final = data.rounds.championship;
-          if (final) gamesContainer.appendChild(renderListGame(final, true));
-        } else {
-          (data.rounds[round.key] || []).forEach(game => {
-            gamesContainer.appendChild(renderListGame(game, round.key === 'finalFour'));
-          });
-        }
-        
-        section.appendChild(gamesContainer);
-        container.appendChild(section);
-      });
-    }
-
-    function createBracketTreeElement(rounds, isChampion = false) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'bracket-container';
-      
-      const roundOrder = [
-        { key: 'round1', label: 'R64', games: 32 },
-        { key: 'round2', label: 'R32', games: 16 },
-        { key: 'sweet16', label: 'Sweet 16', games: 8 },
-        { key: 'elite8', label: 'Elite 8', games: 4 },
-        { key: 'finalFour', label: 'Final 4', games: 2 },
-        { key: 'championship', label: 'Champion', games: 1 },
-      ];
-      
-      roundOrder.forEach((round, roundIndex) => {
-        // Add round column
-        const col = document.createElement('div');
-        col.className = 'bracket-round';
-        
-        const header = document.createElement('div');
-        header.className = 'bracket-round-header';
-        header.textContent = round.label;
-        col.appendChild(header);
-        
-        const gamesDiv = document.createElement('div');
-        gamesDiv.className = 'bracket-games';
-        
-        if (round.key === 'championship') {
-          const final = rounds.championship;
-          if (final) {
-            gamesDiv.appendChild(createBracketGame(final, true));
-          }
-        } else {
-          const games = rounds[round.key] || [];
-          games.forEach(game => {
-            gamesDiv.appendChild(createBracketGame(game, false));
-          });
-        }
-        
-        col.appendChild(gamesDiv);
-        wrapper.appendChild(col);
-        
-        // Add connector column between rounds (except after last)
-        if (roundIndex < roundOrder.length - 1) {
-          const connector = document.createElement('div');
-          connector.className = 'bracket-connector';
-          wrapper.appendChild(connector);
-        }
-      });
-      
-      return wrapper;
-    }
-
-    function createBracketGame(game, isChampionship = false) {
-      const card = document.createElement('div');
-      card.className = 'bracket-game' + (isChampionship ? ' champion' : '');
-      
-      const createTeamDiv = (team, seed, score, isWinner) => {
-        const div = document.createElement('div');
-        div.className = 'bracket-team' + (isWinner ? ' winner' : '');
-        
-        const logoUrl = getTeamLogoUrl(team);
-        const logoHtml = logoUrl ? `<img src="${logoUrl}" alt="${team}" class="team-logo" onerror="this.style.display='none'">` : '';
-        
-        div.innerHTML = `
-          <span class="bracket-seed">${seed ?? ''}</span>
-          ${logoHtml}
-          <span class="bracket-team-name">${team || 'TBD'}</span>
-          <span class="bracket-score">${score ?? ''}</span>
-        `;
-        return div;
-      };
-      
-      card.appendChild(createTeamDiv(game.team1, game.seed1, game.score1, game.winner === game.team1));
-      card.appendChild(createTeamDiv(game.team2, game.seed2, game.score2, game.winner === game.team2));
-      return card;
-    }
-
-    function renderListGame(game, highlight = false) {
-      const card = document.createElement('div');
-      card.className = 'game-card' + (highlight ? ' highlight' : '');
-      
-      const teams = [
-        { team: game.team1, seed: game.seed1, score: game.score1 },
-        { team: game.team2, seed: game.seed2, score: game.score2 },
-      ];
-      
-      teams.forEach(entry => {
-        const row = document.createElement('div');
-        row.className = 'team-row' + (entry.team === game.winner ? ' winner' : '');
-        
-        const logoUrl = getTeamLogoUrl(entry.team);
-        const logoHtml = logoUrl ? `<img src="${logoUrl}" alt="${entry.team}" class="team-logo small" onerror="this.style.display='none'">` : '';
-        
-        row.innerHTML = `<span>${logoHtml}<span>${entry.seed ?? '?'} ${entry.team || 'TBD'}</span></span><span>${entry.score ?? ''}</span>`;
-        card.appendChild(row);
-      });
-      
-      return card;
-    }
-
-    function renderGameCard(game, highlight = false) {
-      return renderListGame(game, highlight);
-    }
-
-    function renderChampionshipCard(final) {
-      if (!final) {
-        const empty = document.createElement('div');
-        empty.className = 'empty-state';
-        empty.textContent = 'No data';
-        return empty;
-      }
-      return renderListGame(final, true);
-    }
-
-    function renderBracketSummary(year) {
-      const data = state.tournaments.get(year);
-      const summary = document.getElementById('bracketSummary');
-      summary.innerHTML = `🏆 ${data.champion} (${data.championSeed}) def. ${data.runnerUp} (${data.runnerUpSeed})`;
-    }
-
-    function resolveWinnerSeed(game) {
-      if (!game || !game.winner) return null;
-      if (game.winner === game.team1) return game.seed1 ?? null;
-      if (game.winner === game.team2) return game.seed2 ?? null;
-      return null;
-    }
-
-    function computeAggregatedStats() {
-      const teamMap = new Map();
-      const seedRoundMap = new Map();
-      const matchupMap = new Map();
-      const roundKeys = ['round1', 'round2', 'sweet16', 'elite8', 'finalFour'];
-
-      const tournaments = Array.from(state.tournaments.values());
-      tournaments.forEach(tournament => {
-        const championStats = ensureTeam(teamMap, tournament.champion);
-        if (championStats) championStats.titles += 1;
-        const runnerStats = ensureTeam(teamMap, tournament.runnerUp);
-        if (runnerStats) runnerStats.runnerUp += 1;
-        (tournament.finalFour || []).forEach(entry => {
-          const teamStats = ensureTeam(teamMap, entry.team);
-          if (teamStats) teamStats.finalFour += 1;
-        });
-
-        // Track processed game signatures per tournament to avoid counting duplicated/corrupt entries
-        const processedGames = new Set();
-        roundKeys.forEach(roundKey => {
-          const playedThisRound = new Set();
-          (tournament.rounds[roundKey] || []).forEach(game => {
-            if (!game || typeof game !== 'object') return;
-            // Build a stable signature for the game to detect duplicates
-            const sig = `${roundKey}|${game.seed1 ?? ''}|${game.seed2 ?? ''}|${game.team1 ?? ''}|${game.team2 ?? ''}|${game.score1 ?? ''}|${game.score2 ?? ''}`;
-            if (processedGames.has(sig)) return; // skip exact duplicate entries
-            processedGames.add(sig);
-
-            // Check for placeholder/duplicate teams in the same round
-            if (playedThisRound.has(game.team1) || playedThisRound.has(game.team2)) {
-              return; // Skip duplicate matchups in same round (placeholder data)
+        // --- Init ---
+        async function init() {
+            // Populate Year Selector
+            const select = document.getElementById('year-select');
+            for (let y = YEAR_END; y >= YEAR_START; y--) {
+                if (y === 2020) continue; // Cancelled
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                select.appendChild(opt);
             }
-            if (!game.team1 || !game.team2 || game.team1 === game.team2) return;
+
+            // Load Default Year (Latest available usually)
+            // We try 2024 as a safe default for now if 2025 isn't full
+            select.value = 2024;
+            loadTournament(2024);
+
+            // Fetch Live Data in background
+            fetchLiveData();
+        }
+
+        // --- History / Archive Logic ---
+        async function loadTournament(year) {
+            const container = document.getElementById('bracket-tree');
+            const summary = document.getElementById('tournament-summary');
             
-            playedThisRound.add(game.team1);
-            playedThisRound.add(game.team2);
+            // Basic Loading State
+            container.innerHTML = '<div class="m-auto text-slate-500 text-sm font-bold uppercase animate-pulse">Loading Archive...</div>';
+            summary.innerHTML = '';
+
+            try {
+                let data = tournaments[year];
+                if (!data) {
+                    const res = await fetch(`json/tournament-${year}.json`);
+                    if (!res.ok) throw new Error("Data not found");
+                    data = await res.json();
+                    tournaments[year] = data;
+                }
+                
+                currentYearData = data;
+                renderBracket(data);
+                
+                if (data.champion) {
+                    summary.innerHTML = `🏆 <span class="text-orange-400">${data.champion}</span> def. ${data.runnerUp}`;
+                }
+
+            } catch (e) {
+                container.innerHTML = '<div class="m-auto text-red-500 text-sm font-bold uppercase">Tournament Data Unavailable</div>';
+            }
+        }
+
+        function renderBracket(data) {
+            const container = document.getElementById('bracket-tree');
+            container.innerHTML = '';
+
+            // We need to flatten the structure for a tree view
+            // Standard order: R64 -> R32 -> S16 -> E8 -> F4 -> Champ
+            const rounds = [
+                { id: 'round1', name: 'Round of 64', count: 32 },
+                { id: 'round2', name: 'Round of 32', count: 16 },
+                { id: 'sweet16', name: 'Sweet 16', count: 8 },
+                { id: 'elite8', name: 'Elite 8', count: 4 },
+                { id: 'finalFour', name: 'Final 4', count: 2 },
+                { id: 'championship', name: 'Champ', count: 1 }
+            ];
+
+            rounds.forEach((r, idx) => {
+                const col = document.createElement('div');
+                col.className = 'flex flex-col justify-around relative';
+                col.style.minWidth = '160px'; // Fixed width for cards
+
+                // Header
+                const header = document.createElement('div');
+                header.className = 'text-center text-[10px] font-bold text-slate-500 uppercase mb-4 absolute -top-8 w-full';
+                header.textContent = r.name;
+                col.appendChild(header);
+
+                // Games
+                let gamesData = [];
+                if (r.id === 'championship') {
+                    if (data.rounds.championship) gamesData = [data.rounds.championship];
+                } else {
+                    gamesData = data.rounds[r.id] || [];
+                }
+
+                // Fill with empty slots if data missing (bracket builder logic later)
+                // For archive, we just show what we have
+                gamesData.forEach(game => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-800 border border-slate-700 rounded-lg p-2 text-[10px] mb-2 relative hover:border-orange-500 transition cursor-default shadow-lg';
+                    
+                    const winner = game.winner;
+                    
+                    // Team 1
+                    const t1Class = winner === game.team1 ? 'text-orange-400 font-bold' : 'text-slate-300';
+                    const t2Class = winner === game.team2 ? 'text-orange-400 font-bold' : 'text-slate-300';
+
+                    card.innerHTML = `
+                        <div class="flex justify-between mb-1 ${t1Class}">
+                            <span class="truncate w-24">${game.seed1 ?? ''} ${game.team1}</span>
+                            <span>${game.score1 ?? ''}</span>
+                        </div>
+                        <div class="flex justify-between ${t2Class}">
+                            <span class="truncate w-24">${game.seed2 ?? ''} ${game.team2}</span>
+                            <span>${game.score2 ?? ''}</span>
+                        </div>
+                    `;
+
+                    // Connector Lines (Right side)
+                    if (idx < rounds.length - 1) {
+                         // This is purely visual CSS logic, simplified for this purpose
+                         // Real bracket lines usually require calculating heights dynamically
+                         // We will omit complex lines for this "Glass" UI style and rely on column spacing
+                    }
+
+                    col.appendChild(card);
+                });
+
+                container.appendChild(col);
+            });
+        }
+
+        // --- Live Data Logic ---
+        async function fetchLiveData() {
+            try {
+                // Fetch Rankings
+                const rankRes = await fetch(LIVE_API_RANKINGS);
+                const rankData = await rankRes.json();
+                
+                const rankingsList = document.getElementById('rankings-list');
+                rankingsList.innerHTML = '';
+
+                if (rankData.rankings && rankData.rankings.length > 0) {
+                    const poll = rankData.rankings[0]; // AP Poll usually first
+                    poll.ranks.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-white/5';
+                        div.innerHTML = `
+                            <div class="font-black text-xl text-slate-500 w-8 text-center">${r.current}</div>
+                            <div class="flex items-center gap-3">
+                                <img src="${r.team.logo}" class="w-8 h-8 object-contain">
+                                <div>
+                                    <div class="text-sm font-bold text-white leading-tight">${r.team.nickname}</div>
+                                    <div class="text-[10px] text-slate-400 font-bold uppercase">${r.recordSummary} • ${r.points} PTS</div>
+                                </div>
+                            </div>
+                        `;
+                        rankingsList.appendChild(div);
+                    });
+                } else {
+                    rankingsList.innerHTML = '<div class="col-span-full text-center text-slate-500">No active rankings available.</div>';
+                }
+
+                // Fetch Teams for Conferences (simplified)
+                // This might be heavy, so we might skip or limit
+                const teamRes = await fetch(LIVE_API_TEAMS);
+                const teamData = await teamRes.json();
+                // Organize by conference locally or display a few key ones
+                // For brevity, we'll just show a "Loaded" message or key teams
+                const confList = document.getElementById('conferences-list');
+                confList.innerHTML = '';
+                
+                if (teamData.sports && teamData.sports[0].leagues[0].teams) {
+                     allTeams = teamData.sports[0].leagues[0].teams.map(t => t.team);
+                     // Display a few random teams as "Active Teams" since API doesn't give standings easily here
+                     allTeams.slice(0, 20).forEach(t => {
+                         const d = document.createElement('div');
+                         d.className = 'flex items-center gap-2 p-2 hover:bg-white/5 rounded transition';
+                         d.innerHTML = `
+                            <img src="${t.logos[0].href}" class="w-6 h-6">
+                            <span class="text-xs text-slate-300 font-bold">${t.displayName}</span>
+                         `;
+                         confList.appendChild(d);
+                     });
+                }
+
+            } catch (e) {
+                console.error("Live fetch failed", e);
+                document.getElementById('rankings-list').innerHTML = '<div class="col-span-full text-center text-red-400 text-xs">Live data unavailable. Check connection.</div>';
+            }
+        }
+
+        // --- Predictor Logic ---
+        function generateBracket(mode) {
+            if (!currentYearData || !currentYearData.rounds || !currentYearData.rounds.round1) {
+                alert("Please load a historical tournament first to use as a base field.");
+                return;
+            }
+
+            // Simulation Helper
+            const simulateGame = (team1, seed1, team2, seed2) => {
+                const s1 = seed1 || 16;
+                const s2 = seed2 || 16;
+
+                if (mode === 'chalk') return s1 < s2 ? team1 : team2;
+                if (mode === 'random') return Math.random() > 0.5 ? team1 : team2;
+                
+                if (mode === 'chaos') {
+                    const diff = Math.abs(s1 - s2);
+                    const upsetChance = 0.3 + (diff * 0.02); 
+                    return Math.random() < upsetChance ? (s1 > s2 ? team1 : team2) : (s1 < s2 ? team1 : team2);
+                }
+
+                if (mode === 'weighted') {
+                    // Standard weighted: Better seed has higher weight
+                    // Use inverted seed value (1 -> 16 weight, 16 -> 1 weight)
+                    const s1Weight = Math.pow(17 - s1, 1.5); 
+                    const s2Weight = Math.pow(17 - s2, 1.5);
+                    const total = s1Weight + s2Weight;
+                    return Math.random() < (s1Weight / total) ? team1 : team2;
+                }
+                
+                return team1;
+            };
+
+            // 1. Initialize Teams from Round 1
+            // Round 1 has 32 games. The winners become the 32 teams for Round 2.
+            let currentRoundTeams = [];
             
-            registerRoundGame(seedRoundMap, teamMap, roundKey, game, tournament.year);
-            registerMatchup(matchupMap, game);
-          });
-        });
-        
-        const final = tournament.rounds.championship;
-        if (final && final.team1 && final.team2 && final.team1 !== final.team2) {
-          registerChampionship(seedRoundMap, matchupMap, teamMap, final, tournament.year);
+            // The JSON structure is just a list of games, not strictly ordered by bracket region flow usually
+            // but usually grouped by region. We will trust the JSON order for simulation flow.
+            currentYearData.rounds.round1.forEach(g => {
+                const winnerName = simulateGame(g.team1, g.seed1, g.team2, g.seed2);
+                const winnerSeed = winnerName === g.team1 ? g.seed1 : g.seed2;
+                currentRoundTeams.push({ team: winnerName, seed: winnerSeed });
+            });
+
+            // currentRoundTeams now has 32 teams.
+            // We simulate rounds until we have 1 team.
+            
+            const roundHistory = [currentRoundTeams]; // Store history to find F4
+            
+            while (currentRoundTeams.length > 1) {
+                const nextRound = [];
+                for (let i = 0; i < currentRoundTeams.length; i += 2) {
+                    // Matchup: Team i vs Team i+1
+                    // If odd number (shouldn't happen in full bracket), bye
+                    if (i + 1 >= currentRoundTeams.length) {
+                        nextRound.push(currentRoundTeams[i]);
+                        break;
+                    }
+
+                    const t1 = currentRoundTeams[i];
+                    const t2 = currentRoundTeams[i+1];
+                    
+                    const winnerName = simulateGame(t1.team, t1.seed, t2.team, t2.seed);
+                    const winnerObj = winnerName === t1.team ? t1 : t2;
+                    
+                    nextRound.push(winnerObj);
+                }
+                currentRoundTeams = nextRound;
+                roundHistory.push(currentRoundTeams);
+            }
+
+            const champion = currentRoundTeams[0].team;
+            
+            // Find Final Four
+            // Round History:
+            // 0: 32 teams (Winners of R64) -> R32 Field
+            // 1: 16 teams (Winners of R32) -> S16 Field
+            // 2: 8 teams (Winners of S16) -> E8 Field
+            // 3: 4 teams (Winners of E8) -> Final Four Field
+            // 4: 2 teams (Winners of F4) -> Championship Field
+            // 5: 1 team (Winner)
+            
+            const f4Field = roundHistory[3] || []; // Should be 4 teams
+            
+            // Render Result
+            const resDiv = document.getElementById('prediction-result');
+            const f4Div = document.getElementById('predicted-f4');
+            const champDiv = document.getElementById('predicted-champ');
+
+            resDiv.classList.remove('hidden');
+            resDiv.scrollIntoView({ behavior: 'smooth' });
+
+            if (f4Field.length === 4) {
+                 f4Div.innerHTML = f4Field.map(t => 
+                     `<div class="bg-black/20 p-2 rounded text-center text-xs text-slate-300 font-bold">${t.seed} ${t.team}</div>`
+                 ).join('');
+            } else {
+                 f4Div.innerHTML = '<div class="col-span-2 text-center text-xs text-slate-500">Sim error</div>';
+            }
+            
+            champDiv.textContent = champion;
         }
-      });
 
-      state.aggregated = {
-        teamHistory: teamMap,
-        seedRounds: seedRoundMap,
-        matchups: matchupMap,
-        totalSeasons: tournaments.length,
-      };
-      
-      // Build historical teams list for random scrambler
-      state.allHistoricalTeams = Array.from(teamMap.keys());
-    }
-
-    function ensureTeam(map, teamName) {
-      if (!teamName) return null;
-      const normalized = normalizeTeamName(teamName);
-      if (!map.has(normalized)) {
-        map.set(normalized, { titles: 0, runnerUp: 0, finalFour: 0, wins: 0, losses: 0, games: [] });
-      }
-      return map.get(normalized);
-    }
-
-    function registerRoundGame(seedRoundMap, teamMap, roundKey, game, year) {
-      if (!game) return;
-      updateSeedRound(seedRoundMap, roundKey, game.seed1, game.winner === game.team1);
-      updateSeedRound(seedRoundMap, roundKey, game.seed2, game.winner === game.team2);
-      recordTeamResult(teamMap, year, roundKey, game);
-    }
-
-    function registerChampionship(seedRoundMap, matchupMap, teamMap, final, year) {
-      if (!final) return;
-      registerRoundGame(seedRoundMap, teamMap, 'championship', {
-        team1: final.team1,
-        seed1: final.seed1,
-        team2: final.team2,
-        seed2: final.seed2,
-        winner: final.winner,
-        score1: final.score1,
-        score2: final.score2,
-      }, year);
-      registerMatchup(matchupMap, {
-        seed1: final.seed1,
-        seed2: final.seed2,
-        team1: final.team1,
-        team2: final.team2,
-        winner: final.winner,
-      });
-    }
-
-    function recordTeamResult(teamMap, year, roundKey, game) {
-      const { team1, team2, winner, seed1, seed2, score1, score2 } = game;
-      if (!team1 || !team2 || team1 === team2) return;
-      const stats1 = ensureTeam(teamMap, team1);
-      const stats2 = ensureTeam(teamMap, team2);
-      if (!stats1 || !stats2) return;
-      const roundLabel = friendlyRound(roundKey);
-      const team1Win = winner === team1;
-      const team2Win = winner === team2;
-      if (team1Win) {
-        stats1.wins += 1;
-        stats2.losses += 1;
-      } else if (team2Win) {
-        stats2.wins += 1;
-        stats1.losses += 1;
-      }
-
-      stats1.games.push({
-        year,
-        roundKey,
-        round: roundLabel,
-        opponent: team2,
-        teamSeed: seed1 ?? null,
-        opponentSeed: seed2 ?? null,
-        result: team1Win ? 'W' : 'L',
-        teamScore: typeof score1 === 'number' ? score1 : null,
-        opponentScore: typeof score2 === 'number' ? score2 : null,
-      });
-
-      stats2.games.push({
-        year,
-        roundKey,
-        round: roundLabel,
-        opponent: team1,
-        teamSeed: seed2 ?? null,
-        opponentSeed: seed1 ?? null,
-        result: team2Win ? 'W' : 'L',
-        teamScore: typeof score2 === 'number' ? score2 : null,
-        opponentScore: typeof score1 === 'number' ? score1 : null,
-      });
-    }
-
-    function updateSeedRound(seedRoundMap, roundKey, seed, isWinner) {
-      if (typeof seed !== 'number') return;
-      if (!seedRoundMap.has(roundKey)) seedRoundMap.set(roundKey, new Map());
-      const roundMap = seedRoundMap.get(roundKey);
-      if (!roundMap.has(seed)) roundMap.set(seed, { games: 0, wins: 0 });
-      const entry = roundMap.get(seed);
-      entry.games += 1;
-      if (isWinner) entry.wins += 1;
-    }
-
-    function registerMatchup(matchupMap, game) {
-      if (typeof game.seed1 !== 'number' || typeof game.seed2 !== 'number') return;
-      const lowerSeed = Math.min(game.seed1, game.seed2);
-      const higherSeed = Math.max(game.seed1, game.seed2);
-      const key = `${lowerSeed}-${higherSeed}`;
-      if (!matchupMap.has(key)) {
-        matchupMap.set(key, { lowerSeed, higherSeed, games: 0, lowerWins: 0, higherWins: 0 });
-      }
-      const entry = matchupMap.get(key);
-      entry.games += 1;
-      if (resolveWinnerSeed(game) === lowerSeed) {
-        entry.lowerWins += 1;
-      } else {
-        entry.higherWins += 1;
-      }
-    }
-
-    function hydrateInsights() {
-      if (!state.aggregated) return;
-      renderTeamHistory();
-      renderSeedRounds();
-      renderSeedMatchups();
-    }
-
-    function renderTeamHistory() {
-      const { teamHistory } = state.aggregated;
-      const rows = Array.from(teamHistory.entries()).map(([team, stats]) => {
-        const totalGames = stats.wins + stats.losses;
-        const winPctValue = totalGames ? stats.wins / totalGames : 0;
-        return {
-          team,
-          titles: stats.titles,
-          runnerUp: stats.runnerUp,
-          finalFour: stats.finalFour,
-          wins: stats.wins,
-          losses: stats.losses,
-          winPct: winPctValue,
-        };
-      });
-
-      const direction = state.teamSort.direction === 'asc' ? 1 : -1;
-      rows.sort((a, b) => {
-        const key = state.teamSort.key;
-        if (key === 'team') {
-          return a.team.localeCompare(b.team) * direction;
+        // --- Tabs ---
+        function switchTab(tab) {
+            ['history', 'live', 'predict'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`nav-${t}`);
+                if (t === tab) {
+                    el.classList.remove('hidden');
+                    btn.classList.remove('text-slate-400', 'hover:text-white');
+                    btn.classList.add('bg-orange-600', 'text-white', 'shadow-lg');
+                } else {
+                    el.classList.add('hidden');
+                    btn.classList.add('text-slate-400', 'hover:text-white');
+                    btn.classList.remove('bg-orange-600', 'text-white', 'shadow-lg');
+                }
+            });
         }
-        const valA = a[key] ?? 0;
-        const valB = b[key] ?? 0;
-        if (valA === valB) {
-          return a.team.localeCompare(b.team) * direction;
-        }
-        return (valA > valB ? 1 : -1) * direction;
-      });
 
-      const tbody = document.getElementById('teamHistoryTable');
-      tbody.innerHTML = '';
-      rows.forEach(entry => {
-        const row = document.createElement('tr');
-        const totalGames = entry.wins + entry.losses;
-        const winPct = totalGames ? (entry.winPct * 100).toFixed(0) : '0';
-        row.dataset.team = entry.team;
-        row.classList.add('clickable-row');
-        const logo = getTeamLogoUrl(entry.team);
-        row.innerHTML = `
-          <td>${logo ? `<img src="${logo}" alt="${entry.team} logo" class="team-logo small" onerror="this.style.display='none'"> ` : ''}${entry.team}</td>
-          <td>${entry.titles || '-'}</td>
-          <td>${entry.wins}</td>
-          <td>${entry.losses}</td>
-          <td><div class="win-bar"><div class="win-bar-fill" style="width:${Math.min(winPct, 100) * 0.4}px"></div>${winPct}%</div></td>
-        `;
-        tbody.appendChild(row);
-      });
-      document.getElementById('teamHistorySummary').textContent = `${teamHistory.size} teams · Tap to view history`;
-      updateTeamSortIndicators();
-    }
+        // Start
+        init();
 
-    function renderSeedRounds() {
-      const container = document.getElementById('seedRoundGrid');
-      container.innerHTML = '';
-      const order = ['round1', 'round2', 'sweet16', 'elite8', 'finalFour', 'championship'];
-      const labels = {
-        round1: 'R64',
-        round2: 'R32',
-        sweet16: 'S16',
-        elite8: 'E8',
-        finalFour: 'F4',
-        championship: 'Final',
-      };
-      order.forEach(roundKey => {
-        const roundMap = state.aggregated.seedRounds.get(roundKey);
-        if (!roundMap) return;
-        const card = document.createElement('section');
-        card.className = 'seed-card';
-        const heading = document.createElement('h4');
-        heading.textContent = labels[roundKey];
-        heading.style.fontSize = '0.85rem';
-        heading.style.marginBottom = '8px';
-        card.appendChild(heading);
-        const list = document.createElement('div');
-        list.style.display = 'grid';
-        list.style.gridTemplateColumns = 'repeat(2, 1fr)';
-        list.style.gap = '4px';
-        list.style.fontSize = '0.7rem';
-        const seeds = Array.from(roundMap.entries()).sort((a, b) => a[0] - b[0]);
-        seeds.forEach(([seed, record]) => {
-          const winRate = record.games ? ((record.wins / record.games) * 100).toFixed(0) : '0';
-          const entry = document.createElement('div');
-          entry.style.color = 'var(--muted)';
-          entry.innerHTML = `<span style="color:var(--text)">${seed}:</span> ${winRate}%`;
-          list.appendChild(entry);
-        });
-        card.appendChild(list);
-        container.appendChild(card);
-      });
-    }
-
-    function renderSeedMatchups() {
-      const table = document.getElementById('seedMatchupTable');
-      table.innerHTML = '';
-      const records = Array.from(state.aggregated.matchups.values())
-        .filter(entry => entry.games >= 2)
-        .sort((a, b) => b.games - a.games);
-      records.forEach(entry => {
-        const row = document.createElement('tr');
-        const lowerRate = entry.games ? ((entry.lowerWins / entry.games) * 100).toFixed(0) : '0';
-        const higherRate = entry.games ? ((entry.higherWins / entry.games) * 100).toFixed(0) : '0';
-        const barWidth = Math.round(parseFloat(lowerRate) * 0.5);
-        row.innerHTML = `
-          <td>${entry.lowerSeed}v${entry.higherSeed}</td>
-          <td>${entry.games}</td>
-          <td><div class="win-bar"><div class="win-bar-fill" style="width:${barWidth}px"></div>${lowerRate}%</div></td>
-          <td>${higherRate}%</td>
-        `;
-        table.appendChild(row);
-      });
-    }
-
-    function setupTeamTableInteractions() {
-      const table = document.querySelector('[data-team-table]');
-      if (!table || table.dataset.enhanced) return;
-      table.dataset.enhanced = 'true';
-      const thead = table.querySelector('thead');
-      const tbody = table.querySelector('tbody');
-      if (thead) {
-        thead.addEventListener('click', event => {
-          const target = event.target.closest('[data-sort]');
-          if (!target) return;
-          const sortKey = target.dataset.sort;
-          if (!sortKey) return;
-          if (state.teamSort.key === sortKey) {
-            state.teamSort.direction = state.teamSort.direction === 'asc' ? 'desc' : 'asc';
-          } else {
-            state.teamSort.key = sortKey;
-            state.teamSort.direction = sortKey === 'team' ? 'asc' : 'desc';
-          }
-          if (state.aggregated) renderTeamHistory();
-        });
-      }
-      if (tbody) {
-        tbody.addEventListener('click', event => {
-          const row = event.target.closest('tr[data-team]');
-          if (!row) return;
-          openTeamModal(row.dataset.team);
-        });
-      }
-    }
-
-    function updateTeamSortIndicators() {
-      document.querySelectorAll('[data-sort]').forEach(th => {
-        th.classList.remove('active-asc', 'active-desc');
-        if (th.dataset.sort === state.teamSort.key) {
-          th.classList.add(state.teamSort.direction === 'asc' ? 'active-asc' : 'active-desc');
-        }
-      });
-    }
-
-    function setupModalControls() {
-      const overlay = document.getElementById('teamModal');
-      if (!overlay || overlay.dataset.enhanced) return;
-      overlay.dataset.enhanced = 'true';
-      const closeBtn = document.getElementById('teamModalClose');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', closeTeamModal);
-      }
-      overlay.addEventListener('click', event => {
-        if (event.target === overlay) closeTeamModal();
-      });
-      document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && !overlay.hasAttribute('hidden')) {
-          closeTeamModal();
-        }
-      });
-    }
-
-    function openTeamModal(teamName) {
-      if (!teamName || !state.aggregated) return;
-      const overlay = document.getElementById('teamModal');
-      if (!overlay) return;
-      
-      // Try normalized name first, then original
-      let stats = state.aggregated.teamHistory.get(normalizeTeamName(teamName));
-      if (!stats) stats = state.aggregated.teamHistory.get(teamName);
-      if (!stats) return;
-      
-      const title = document.getElementById('teamModalTitle');
-      const subtitle = document.getElementById('teamModalSubtitle');
-      const statsRow = document.getElementById('teamModalStats');
-      const list = document.getElementById('teamModalList');
-      
-      const logoUrl = getTeamLogoUrl(teamName);
-      if (title) {
-        title.innerHTML = logoUrl 
-          ? `<img src="${logoUrl}" alt="${teamName}" class="modal-team-logo" onerror="this.style.display='none'">${teamName}`
-          : teamName;
-        title.style.display = 'flex';
-        title.style.alignItems = 'center';
-        title.style.gap = '12px';
-      }
-      const totalGames = stats.wins + stats.losses;
-      const winPct = totalGames ? ((stats.wins / totalGames) * 100).toFixed(1) : '0.0';
-      const uniqueYears = new Set(stats.games.map(g => g.year)).size;
-      
-      if (subtitle) subtitle.textContent = `${uniqueYears} tournaments since ${YEAR_START}`;
-      
-      // Render stats row
-      if (statsRow) {
-        statsRow.innerHTML = `
-          <div class="modal-stat">
-            <div class="modal-stat-value">${stats.titles}</div>
-            <div class="modal-stat-label">Titles</div>
-          </div>
-          <div class="modal-stat">
-            <div class="modal-stat-value">${stats.finalFour}</div>
-            <div class="modal-stat-label">Final 4s</div>
-          </div>
-          <div class="modal-stat">
-            <div class="modal-stat-value">${stats.wins}</div>
-            <div class="modal-stat-label">Wins</div>
-          </div>
-          <div class="modal-stat">
-            <div class="modal-stat-value">${stats.losses}</div>
-            <div class="modal-stat-label">Losses</div>
-          </div>
-          <div class="modal-stat">
-            <div class="modal-stat-value">${winPct}%</div>
-            <div class="modal-stat-label">Win %</div>
-          </div>
-        `;
-      }
-      
-      if (list) {
-        list.innerHTML = '';
-        const history = stats.games.slice().sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          const indexA = ROUND_SEQUENCE.indexOf(a.roundKey);
-          const indexB = ROUND_SEQUENCE.indexOf(b.roundKey);
-          const safeA = indexA === -1 ? ROUND_SEQUENCE.length : indexA;
-          const safeB = indexB === -1 ? ROUND_SEQUENCE.length : indexB;
-          if (safeA === safeB) {
-            return a.opponent.localeCompare(b.opponent);
-          }
-          return safeA - safeB;
-        });
-        if (!history.length) {
-          const empty = document.createElement('li');
-          empty.className = 'game-history-item';
-          empty.textContent = 'No recorded games for this program.';
-          list.appendChild(empty);
-        } else {
-          history.forEach(item => {
-            const li = document.createElement('li');
-            li.className = `game-history-item ${item.result === 'W' ? 'win' : 'loss'}`;
-            const scoreLine = (item.teamScore !== null && item.opponentScore !== null)
-              ? `${item.teamScore}-${item.opponentScore}`
-              : '';
-            const opponentLogo = getTeamLogoUrl(item.opponent);
-            li.innerHTML = `
-              <div class="game-history-header">
-                <span class="game-history-year">${item.year}</span>
-                <span class="game-history-round">${item.round}</span>
-              </div>
-              <div class="game-history-matchup">
-                ${item.result === 'W' ? 'W' : 'L'} vs ${opponentLogo ? ('<img src="' + opponentLogo + '" class="team-logo small" onerror="this.style.display=\'none\'"> ') : ''}<strong>${item.opponent}</strong> ${scoreLine}
-              </div>
-              <div class="game-history-detail">
-                ${item.teamSeed ? `#${item.teamSeed}` : ''} vs ${item.opponentSeed ? `#${item.opponentSeed}` : ''}
-              </div>
-            `;
-            list.appendChild(li);
-          });
-        }
-      }
-      overlay.removeAttribute('hidden');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeTeamModal() {
-      const overlay = document.getElementById('teamModal');
-      if (!overlay || overlay.hasAttribute('hidden')) return;
-      overlay.setAttribute('hidden', '');
-      document.body.style.overflow = '';
-    }
-
-    function runSimulation() {
-      if (!state.loaded || !state.aggregated) {
-        alert('Datasets still loading. Try again in a moment.');
-        return;
-      }
-      const yearSelect = document.getElementById('simYearSelect');
-      const year = Number(yearSelect.value);
-      const mode = document.getElementById('simModeSelect').value;
-      
-      if (!state.tournaments.has(year)) return;
-      const baseRounds = state.tournaments.get(year).rounds;
-      const bracket = simulateBracket(baseRounds, mode);
-      const accuracy = calculateBracketAccuracy(bracket, state.tournaments.get(year).rounds);
-      
-      renderSimulation(bracket, mode, accuracy);
-    }
-
-    function buildCustomRound1(teams) {
-      const regions = ['East', 'West', 'Midwest', 'South'];
-      const round1 = [];
-      const seeds = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15];
-      
-      for (let r = 0; r < 4; r++) {
-        const region = regions[r];
-        for (let s = 0; s < 16; s += 2) {
-          const s1 = seeds[s];
-          const s2 = seeds[s+1];
-          const idx1 = r * 16 + s; // This is a simple linear map, logic can be tuned
-          const idx2 = r * 16 + s + 1;
-          round1.push({
-            region,
-            team1: teams[idx1] || `Team ${idx1+1}`, 
-            seed1: s1,
-            team2: teams[idx2] || `Team ${idx2+1}`, 
-            seed2: s2
-          });
-        }
-      }
-      return round1;
-    }
-
-    function calculateBracketAccuracy(simulated, actual) {
-      let matches = 0;
-      let totalGames = 0;
-      const keys = ['round1', 'round2', 'sweet16', 'elite8', 'finalFour'];
-      
-      keys.forEach(k => {
-        if (!simulated[k] || !actual[k]) return;
-        simulated[k].forEach((game, i) => {
-          if (actual[k][i] && game.winner === actual[k][i].winner) {
-            matches++;
-          }
-          totalGames++;
-        });
-      });
-
-      if (simulated.championship && actual.championship) {
-        if (simulated.championship.winner === actual.championship.winner) {
-          matches++;
-        }
-        totalGames++;
-      }
-
-      return totalGames > 0 ? (matches / totalGames * 100).toFixed(1) : 0;
-    }
-
-    function simulateBracket(rounds, mode) {
-      const simulated = {};
-      const baseRound = Array.isArray(rounds.round1) ? rounds.round1.map(game => ({ ...game })) : [];
-      simulated.round1 = simulateRound(baseRound, mode);
-
-      let previousRound = simulated.round1;
-      ['round2', 'sweet16', 'elite8', 'finalFour'].forEach(key => {
-        const nextMatchups = buildNextRound(previousRound);
-        const simulatedRound = simulateRound(nextMatchups, mode);
-        simulated[key] = simulatedRound;
-        previousRound = simulatedRound;
-      });
-
-      simulated.championship = simulateChampionship(buildChampionship(simulated.finalFour), mode);
-      return simulated;
-    }
-
-    function simulateRound(matchups, mode) {
-      return matchups.map(game => ({
-        team1: game.team1,
-        team2: game.team2,
-        seed1: game.seed1,
-        seed2: game.seed2,
-        region: game.region ?? null,
-        winner: pickWinner(game, mode),
-      }));
-    }
-
-    function buildNextRound(previousRoundGames) {
-      const matchups = [];
-      for (let i = 0; i < previousRoundGames.length; i += 2) {
-        const gameA = previousRoundGames[i];
-        const gameB = previousRoundGames[i + 1];
-        if (!gameA || !gameB || !gameA.winner || !gameB.winner) continue;
-        matchups.push({
-          team1: gameA.winner,
-          seed1: resolveWinnerSeed(gameA),
-          team2: gameB.winner,
-          seed2: resolveWinnerSeed(gameB),
-          region: gameA.region === gameB.region ? gameA.region : gameA.region || gameB.region || null,
-        });
-      }
-      return matchups;
-    }
-
-    function buildChampionship(finalFourGames) {
-      if (!finalFourGames || finalFourGames.length < 2) return null;
-      const [eastWest, midSouth] = finalFourGames;
-      if (!eastWest?.winner || !midSouth?.winner) return null;
-      return {
-        team1: eastWest.winner,
-        seed1: resolveWinnerSeed(eastWest),
-        team2: midSouth.winner,
-        seed2: resolveWinnerSeed(midSouth),
-      };
-    }
-
-    function simulateChampionship(matchup, mode) {
-      if (!matchup) return null;
-      return {
-        ...matchup,
-        winner: pickWinner(matchup, mode),
-      };
-    }
-
-    function pickWinner(game, mode) {
-      const seed1 = game.seed1 ?? resolveSeedFromPreviousRound(game.team1);
-      const seed2 = game.seed2 ?? resolveSeedFromPreviousRound(game.team2);
-      const stats1 = state.aggregated?.teamHistory.get(game.team1);
-      const stats2 = state.aggregated?.teamHistory.get(game.team2);
-
-      switch (mode) {
-        case 'random':
-          return coinFlip(game.team1, game.team2);
-        case 'legacy': {
-          const score1 = legacyScore(game.team1);
-          const score2 = legacyScore(game.team2);
-          if (score1 === score2) return coinFlip(game.team1, game.team2);
-          return score1 >= score2 ? game.team1 : game.team2;
-        }
-        case 'team-win-pct': {
-          const pct1 = computeWinPct(stats1);
-          const pct2 = computeWinPct(stats2);
-          if (pct1 === null && pct2 === null) return coinFlip(game.team1, game.team2);
-          if (pct1 === null) return game.team2;
-          if (pct2 === null) return game.team1;
-          if (pct1 === pct2) return coinFlip(game.team1, game.team2);
-          return pct1 > pct2 ? game.team1 : game.team2;
-        }
-        case 'team-total-wins': {
-          const wins1 = stats1?.wins ?? null;
-          const wins2 = stats2?.wins ?? null;
-          if (wins1 === null && wins2 === null) return coinFlip(game.team1, game.team2);
-          if (wins1 === null) return game.team2;
-          if (wins2 === null) return game.team1;
-          if (wins1 === wins2) return coinFlip(game.team1, game.team2);
-          return wins1 > wins2 ? game.team1 : game.team2;
-        }
-        case 'team-titles': {
-          const titles1 = stats1?.titles ?? null;
-          const titles2 = stats2?.titles ?? null;
-          if (titles1 === null && titles2 === null) return coinFlip(game.team1, game.team2);
-          if (titles1 === null) return game.team2;
-          if (titles2 === null) return game.team1;
-          if (titles1 === titles2) return coinFlip(game.team1, game.team2);
-          return titles1 > titles2 ? game.team1 : game.team2;
-        }
-        case 'seed-weighted':
-          return seedWeightedPick(game.team1, seed1, game.team2, seed2);
-        case 'seed-record':
-        default: {
-          const probability = seedMatchupProbability(seed1, seed2);
-          if (probability !== null) {
-            return Math.random() <= probability ? game.team1 : game.team2;
-          }
-          if (!Number.isFinite(seed1) || !Number.isFinite(seed2)) {
-            return coinFlip(game.team1, game.team2);
-          }
-          if (seed1 === seed2) return coinFlip(game.team1, game.team2);
-          return seed1 < seed2 ? game.team1 : game.team2;
-        }
-      }
-    }
-
-    function resolveSeedFromPreviousRound(team) {
-      if (!state.currentYear) return null;
-      const rounds = state.tournaments.get(state.currentYear)?.rounds;
-      if (!rounds) return null;
-      const allRounds = ['round1', 'round2', 'sweet16', 'elite8', 'finalFour', 'championship'];
-      for (const roundKey of allRounds) {
-        const games = Array.isArray(rounds[roundKey]) ? rounds[roundKey] : [rounds[roundKey]];
-        for (const game of games) {
-          if (!game) continue;
-          if (game.team1 === team) return game.seed1;
-          if (game.team2 === team) return game.seed2;
-          if (game.winner === team) return resolveWinnerSeed(game);
-        }
-      }
-      return null;
-    }
-
-    function legacyScore(team) {
-      if (!team || !state.aggregated) return 0;
-      const stats = state.aggregated.teamHistory.get(team);
-      if (!stats) return 0;
-      return stats.titles * 5 + stats.finalFour * 2 + stats.runnerUp;
-    }
-
-    function computeWinPct(stats) {
-      if (!stats) return null;
-      const total = stats.wins + stats.losses;
-      if (!total) return null;
-      return Number((stats.wins / total).toFixed(4));
-    }
-
-    function seedMatchupProbability(seed1, seed2) {
-      if (typeof seed1 !== 'number' || typeof seed2 !== 'number' || !state.aggregated) return null;
-      const lowerSeed = Math.min(seed1, seed2);
-      const higherSeed = Math.max(seed1, seed2);
-      const key = `${lowerSeed}-${higherSeed}`;
-      const record = state.aggregated.matchups.get(key);
-      if (!record || record.games < 3) return null;
-      const lowerWinRate = record.lowerWins / record.games;
-      return seed1 === lowerSeed ? lowerWinRate : 1 - lowerWinRate;
-    }
-
-    function renderSimulation(simulatedRounds, mode, accuracy = null) {
-      const summary = document.getElementById('simSummary');
-      const stats = document.getElementById('simStats');
-      const treeContainer = document.getElementById('simTreeView');
-      const listContainer = document.getElementById('simListView');
-      const champion = simulatedRounds.championship?.winner;
-      
-      if (accuracy !== null) {
-        stats.style.display = 'inline-flex';
-        stats.textContent = `${accuracy}% match`;
-      } else {
-        stats.style.display = 'none';
-      }
-
-      summary.textContent = champion ? `🏆 ${champion}` : 'Incomplete';
-      
-      // Render tree view
-      treeContainer.innerHTML = '';
-      treeContainer.appendChild(createSimTreeElement(simulatedRounds));
-      
-      // Render list view - match format of bracket list
-      listContainer.innerHTML = '';
-      const roundOrder = [
-        { key: 'round1', label: 'Round of 64' },
-        { key: 'round2', label: 'Round of 32' },
-        { key: 'sweet16', label: 'Sweet 16' },
-        { key: 'elite8', label: 'Elite Eight' },
-        { key: 'finalFour', label: 'Final Four' },
-        { key: 'championship', label: 'Championship' },
-      ];
-      
-      roundOrder.forEach(round => {
-        const section = document.createElement('div');
-        section.style.marginBottom = '16px';
-        
-        const header = document.createElement('h3');
-        header.style.cssText = 'font-size:0.85rem; color:var(--accent); margin:0 0 8px; padding:0 4px;';
-        header.textContent = round.label;
-        section.appendChild(header);
-        
-        const gamesContainer = document.createElement('div');
-        gamesContainer.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px;';
-        
-        if (round.key === 'championship') {
-          if (simulatedRounds.championship) {
-            gamesContainer.appendChild(renderListGame(simulatedRounds.championship, true));
-          }
-        } else {
-          (simulatedRounds[round.key] || []).forEach(game => {
-            gamesContainer.appendChild(renderListGame(game, round.key === 'finalFour'));
-          });
-        }
-        
-        section.appendChild(gamesContainer);
-        listContainer.appendChild(section);
-      });
-    }
-    
-    function createSimTreeElement(simulatedRounds) {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'bracket-container';
-      
-      const roundOrder = [
-        { key: 'round1', label: 'R64' },
-        { key: 'round2', label: 'R32' },
-        { key: 'sweet16', label: 'Sweet 16' },
-        { key: 'elite8', label: 'Elite 8' },
-        { key: 'finalFour', label: 'Final 4' },
-        { key: 'championship', label: 'Champion' },
-      ];
-      
-      roundOrder.forEach((round, roundIndex) => {
-        const col = document.createElement('div');
-        col.className = 'bracket-round';
-        
-        const header = document.createElement('div');
-        header.className = 'bracket-round-header';
-        header.textContent = round.label;
-        col.appendChild(header);
-        
-        const gamesDiv = document.createElement('div');
-        gamesDiv.className = 'bracket-games';
-        
-        if (round.key === 'championship') {
-          if (simulatedRounds.championship) {
-            gamesDiv.appendChild(createBracketGame(simulatedRounds.championship, true));
-          }
-        } else {
-          const games = simulatedRounds[round.key] || [];
-          games.forEach(game => {
-            gamesDiv.appendChild(createBracketGame(game, false));
-          });
-        }
-        
-        col.appendChild(gamesDiv);
-        wrapper.appendChild(col);
-        
-        // Add connector column between rounds
-        if (roundIndex < roundOrder.length - 1) {
-          const connector = document.createElement('div');
-          connector.className = 'bracket-connector';
-          wrapper.appendChild(connector);
-        }
-      });
-      
-      return wrapper;
-    }
-
-    function modeLabel(mode) {
-      switch (mode) {
-        case 'seed-record':
-          return 'seed-performance';
-        case 'legacy':
-          return 'legacy-weighted';
-        case 'team-win-pct':
-          return 'team win percentage';
-        case 'team-total-wins':
-          return 'historical win leader';
-        case 'team-titles':
-          return 'championship priority';
-        case 'seed-weighted':
-          return 'seed-weighted draw';
-        default:
-          return 'random draw';
-      }
-    }
-
-    function seedWeightedPick(team1, seed1, team2, seed2) {
-      if (!Number.isFinite(seed1) || !Number.isFinite(seed2)) {
-        return coinFlip(team1, team2);
-      }
-      const total = seed1 + seed2;
-      if (total <= 0) return coinFlip(team1, team2);
-      const weight1 = Math.max(1, total - seed1);
-      const weight2 = Math.max(1, total - seed2);
-      const roll = Math.floor(Math.random() * (weight1 + weight2)) + 1;
-      return roll <= weight1 ? team1 : team2;
-    }
-
-    function coinFlip(team1, team2) {
-      return Math.random() < 0.5 ? team1 : team2;
-    }
-
-    function friendlyRound(roundKey) {
-      switch (roundKey) {
-        case 'round1': return 'R64';
-        case 'round2': return 'R32';
-        case 'sweet16': return 'S16';
-        case 'elite8': return 'E8';
-        case 'finalFour': return 'F4';
-        default: return roundKey;
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
