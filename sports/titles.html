@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>League Legends | Title & Drought Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #020617; 
+            color: #f8fafc; 
+            min-height: 100vh;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .drought-high { color: #f87171; } /* Red */
+        .drought-med { color: #fb923c; }  /* Orange */
+        .drought-low { color: #4ade80; }  /* Green */
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        tr:hover td { background: rgba(255,255,255,0.03); }
+        .sort-icon::after { content: ' ↕'; opacity: 0.2; font-size: 0.8em; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-3xl shadow-xl shadow-blue-500/20">🏆</div>
+                <div>
+                    <h1 class="text-3xl font-black tracking-tighter uppercase italic">League Legends</h1>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-[0.2em]">Title Counts • Droughts • Playoff History</p>
+                </div>
+            </div>
+
+            <!-- League Switcher -->
+            <div id="leagueSwitcher" class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-white/5 shadow-2xl">
+                <button onclick="switchLeague('NFL')" class="league-btn px-6 py-2.5 rounded-xl text-sm font-black transition-all bg-blue-600 text-white">NFL</button>
+                <button onclick="switchLeague('NBA')" class="league-btn px-6 py-2.5 rounded-xl text-sm font-black transition-all text-slate-400 hover:text-white">NBA</button>
+                <button onclick="switchLeague('MLB')" class="league-btn px-6 py-2.5 rounded-xl text-sm font-black transition-all text-slate-400 hover:text-white">MLB</button>
+                <button onclick="switchLeague('NHL')" class="league-btn px-6 py-2.5 rounded-xl text-sm font-black transition-all text-slate-400 hover:text-white">NHL</button>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="glass-panel rounded-3xl p-6">
+                <div class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Most Titles</div>
+                <div id="topTitles" class="text-2xl font-black text-blue-400 italic">--</div>
+            </div>
+            <div class="glass-panel rounded-3xl p-6 border-l-4 border-l-red-500/50">
+                <div class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Longest Title Drought</div>
+                <div id="topDrought" class="text-2xl font-black text-red-400 italic">--</div>
+            </div>
+            <div class="glass-panel rounded-3xl p-6">
+                <div class="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Average Wait</div>
+                <div id="avgWait" class="text-2xl font-black text-emerald-400 italic">--</div>
+            </div>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="mb-6 relative">
+            <input type="text" id="teamSearch" onkeyup="filterTeams()" placeholder="Search team or city..." 
+                   class="w-full bg-slate-900/50 border border-white/10 rounded-2xl py-4 px-12 text-sm font-semibold focus:outline-none focus:border-blue-500/50 transition-all">
+            <span class="absolute left-4 top-4 opacity-30">🔍</span>
+        </div>
+
+        <!-- Data Table -->
+        <div class="glass-panel rounded-3xl overflow-hidden shadow-2xl">
+            <div class="overflow-x-auto no-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/50 border-b border-white/5">
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer" onclick="sortTable('name')">Team <span class="sort-icon"></span></th>
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer text-center" onclick="sortTable('titles')">Titles <span class="sort-icon"></span></th>
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer text-center" onclick="sortTable('lastTitle')">Last Title <span class="sort-icon"></span></th>
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer text-center" onclick="sortTable('titleDrought')">Title Wait <span class="sort-icon"></span></th>
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer text-center" onclick="sortTable('lastPlayoff')">Last Playoff <span class="sort-icon"></span></th>
+                            <th class="p-5 text-[10px] font-black uppercase text-slate-500 tracking-widest cursor-pointer text-center" onclick="sortTable('playoffDrought')">PO Wait <span class="sort-icon"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="teamBody">
+                        <!-- Injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data derived from historical records up to 2025/2026
+        const DATA = {
+            NFL: [
+                { name: "Green Bay Packers", titles: 13, lastTitle: 2010, lastPlayoff: 2024, espnId: "gb" },
+                { name: "Chicago Bears", titles: 9, lastTitle: 1985, lastPlayoff: 2020, espnId: "chi" },
+                { name: "New York Giants", titles: 8, lastTitle: 2011, lastPlayoff: 2022, espnId: "nyg" },
+                { name: "Pittsburgh Steelers", titles: 6, lastTitle: 2008, lastPlayoff: 2024, espnId: "pit" },
+                { name: "New England Patriots", titles: 6, lastTitle: 2018, lastPlayoff: 2021, espnId: "ne" },
+                { name: "Dallas Cowboys", titles: 5, lastTitle: 1995, lastPlayoff: 2023, espnId: "dal" },
+                { name: "San Francisco 49ers", titles: 5, lastTitle: 1994, lastPlayoff: 2024, espnId: "sf" },
+                { name: "Kansas City Chiefs", titles: 4, lastTitle: 2024, lastPlayoff: 2024, espnId: "kc" },
+                { name: "Washington Commanders", titles: 3, lastTitle: 1991, lastPlayoff: 2020, espnId: "wsh" },
+                { name: "Denver Broncos", titles: 3, lastTitle: 2015, lastPlayoff: 2015, espnId: "den" },
+                { name: "Las Vegas Raiders", titles: 3, lastTitle: 1983, lastPlayoff: 2021, espnId: "lv" },
+                { name: "Miami Dolphins", titles: 2, lastTitle: 1973, lastPlayoff: 2023, espnId: "mia" },
+                { name: "Indianapolis Colts", titles: 2, lastTitle: 2006, lastPlayoff: 2020, espnId: "ind" },
+                { name: "Los Angeles Rams", titles: 2, lastTitle: 2021, lastPlayoff: 2023, espnId: "lar" },
+                { name: "Baltimore Ravens", titles: 2, lastTitle: 2012, lastPlayoff: 2024, espnId: "bal" },
+                { name: "Tampa Bay Buccaneers", titles: 2, lastTitle: 2020, lastPlayoff: 2024, espnId: "tb" },
+                { name: "Philadelphia Eagles", titles: 4, lastTitle: 2017, lastPlayoff: 2024, espnId: "phi" },
+                { name: "Detroit Lions", titles: 4, lastTitle: 1957, lastPlayoff: 2024, espnId: "det" },
+                { name: "Cleveland Browns", titles: 8, lastTitle: 1964, lastPlayoff: 2023, espnId: "cle" },
+                { name: "Buffalo Bills", titles: 2, lastTitle: 1965, lastPlayoff: 2024, espnId: "buf" },
+                { name: "New York Jets", titles: 1, lastTitle: 1968, lastPlayoff: 2010, espnId: "nyj" },
+                { name: "New Orleans Saints", titles: 1, lastTitle: 2009, lastPlayoff: 2020, espnId: "no" },
+                { name: "Seattle Seahawks", titles: 1, lastTitle: 2013, lastPlayoff: 2022, espnId: "sea" },
+                { name: "Arizona Cardinals", titles: 2, lastTitle: 1947, lastPlayoff: 2021, espnId: "ari" },
+                { name: "Minnesota Vikings", titles: 0, lastTitle: 0, lastPlayoff: 2022, espnId: "min" },
+                { name: "Atlanta Falcons", titles: 0, lastTitle: 0, lastPlayoff: 2017, espnId: "atl" },
+                { name: "Cincinnati Bengals", titles: 0, lastTitle: 0, lastPlayoff: 2022, espnId: "cin" },
+                { name: "Carolina Panthers", titles: 0, lastTitle: 0, lastPlayoff: 2017, espnId: "car" },
+                { name: "Jacksonville Jaguars", titles: 0, lastTitle: 0, lastPlayoff: 2022, espnId: "jax" },
+                { name: "Houston Texans", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "hou" },
+                { name: "Tennessee Titans", titles: 2, lastTitle: 1961, lastPlayoff: 2021, espnId: "ten" },
+                { name: "Los Angeles Chargers", titles: 1, lastTitle: 1963, lastPlayoff: 2022, espnId: "lac" }
+            ],
+            NBA: [
+                { name: "Boston Celtics", titles: 18, lastTitle: 2024, lastPlayoff: 2024, espnId: "bos" },
+                { name: "Los Angeles Lakers", titles: 17, lastTitle: 2020, lastPlayoff: 2024, espnId: "lal" },
+                { name: "Golden State Warriors", titles: 7, lastTitle: 2022, lastPlayoff: 2023, espnId: "gs" },
+                { name: "Chicago Bulls", titles: 6, lastTitle: 1998, lastPlayoff: 2022, espnId: "chi" },
+                { name: "San Antonio Spurs", titles: 5, lastTitle: 2014, lastPlayoff: 2019, espnId: "sas" },
+                { name: "Philadelphia 76ers", titles: 3, lastTitle: 1983, lastPlayoff: 2024, espnId: "phi" },
+                { name: "Miami Heat", titles: 3, lastTitle: 2013, lastPlayoff: 2024, espnId: "mia" },
+                { name: "Detroit Pistons", titles: 3, lastTitle: 2004, lastPlayoff: 2019, espnId: "det" },
+                { name: "Milwaukee Bucks", titles: 2, lastTitle: 2021, lastPlayoff: 2024, espnId: "mil" },
+                { name: "Houston Rockets", titles: 2, lastTitle: 1995, lastPlayoff: 2020, espnId: "hou" },
+                { name: "New York Knicks", titles: 2, lastTitle: 1973, lastPlayoff: 2024, espnId: "ny" },
+                { name: "Cleveland Cavaliers", titles: 1, lastTitle: 2016, lastPlayoff: 2024, espnId: "cle" },
+                { name: "Dallas Mavericks", titles: 1, lastTitle: 2011, lastPlayoff: 2024, espnId: "dal" },
+                { name: "Toronto Raptors", titles: 1, lastTitle: 2019, lastPlayoff: 2022, espnId: "tor" },
+                { name: "Denver Nuggets", titles: 1, lastTitle: 2023, lastPlayoff: 2024, espnId: "den" },
+                { name: "Atlanta Hawks", titles: 1, lastTitle: 1958, lastPlayoff: 2023, espnId: "atl" },
+                { name: "Sacramento Kings", titles: 1, lastTitle: 1951, lastPlayoff: 2023, espnId: "sac" },
+                { name: "Oklahoma City Thunder", titles: 1, lastTitle: 1979, lastPlayoff: 2024, espnId: "okc" },
+                { name: "Portland Trail Blazers", titles: 1, lastTitle: 1977, lastPlayoff: 2021, espnId: "por" },
+                { name: "Washington Wizards", titles: 1, lastTitle: 1978, lastPlayoff: 2021, espnId: "was" },
+                { name: "Phoenix Suns", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "phx" },
+                { name: "Utah Jazz", titles: 0, lastTitle: 0, lastPlayoff: 2022, espnId: "uta" },
+                { name: "Brooklyn Nets", titles: 2, lastTitle: 1976, lastPlayoff: 2023, espnId: "bkn" },
+                { name: "Indiana Pacers", titles: 3, lastTitle: 1973, lastPlayoff: 2024, espnId: "ind" },
+                { name: "Orlando Magic", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "orl" },
+                { name: "Minnesota Timberwolves", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "min" },
+                { name: "Charlotte Hornets", titles: 0, lastTitle: 0, lastPlayoff: 2016, espnId: "cha" },
+                { name: "Memphis Grizzlies", titles: 0, lastTitle: 0, lastPlayoff: 2023, espnId: "mem" },
+                { name: "New Orleans Pelicans", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "no" },
+                { name: "Los Angeles Clippers", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "lac" }
+            ],
+            MLB: [
+                { name: "New York Yankees", titles: 27, lastTitle: 2009, lastPlayoff: 2024, espnId: "nyy" },
+                { name: "St. Louis Cardinals", titles: 11, lastTitle: 2011, lastPlayoff: 2022, espnId: "stl" },
+                { name: "Oakland Athletics", titles: 9, lastTitle: 1989, lastPlayoff: 2020, espnId: "oak" },
+                { name: "Boston Red Sox", titles: 9, lastTitle: 2018, lastPlayoff: 2021, espnId: "bos" },
+                { name: "San Francisco Giants", titles: 8, lastTitle: 2014, lastPlayoff: 2021, espnId: "sf" },
+                { name: "Los Angeles Dodgers", titles: 8, lastTitle: 2024, lastPlayoff: 2024, espnId: "lad" },
+                { name: "Cincinnati Reds", titles: 5, lastTitle: 1990, lastPlayoff: 2020, espnId: "cin" },
+                { name: "Pittsburgh Pirates", titles: 5, lastTitle: 1979, lastPlayoff: 2015, espnId: "pit" },
+                { name: "Detroit Tigers", titles: 4, lastTitle: 1984, lastPlayoff: 2024, espnId: "det" },
+                { name: "Atlanta Braves", titles: 4, lastTitle: 2021, lastPlayoff: 2024, espnId: "atl" },
+                { name: "Chicago Cubs", titles: 3, lastTitle: 2016, lastPlayoff: 2020, espnId: "chc" },
+                { name: "Baltimore Orioles", titles: 3, lastTitle: 1983, lastPlayoff: 2024, espnId: "bal" },
+                { name: "Minnesota Twins", titles: 3, lastTitle: 1991, lastPlayoff: 2023, espnId: "min" },
+                { name: "Chicago White Sox", titles: 3, lastTitle: 2005, lastPlayoff: 2021, espnId: "chw" },
+                { name: "Philadelphia Phillies", titles: 2, lastTitle: 2008, lastPlayoff: 2024, espnId: "phi" },
+                { name: "Cleveland Guardians", titles: 2, lastTitle: 1948, lastPlayoff: 2024, espnId: "cle" },
+                { name: "New York Mets", titles: 2, lastTitle: 1986, lastPlayoff: 2024, espnId: "nym" },
+                { name: "Kansas City Royals", titles: 2, lastTitle: 2015, lastPlayoff: 2024, espnId: "kc" },
+                { name: "Toronto Blue Jays", titles: 2, lastTitle: 1993, lastPlayoff: 2023, espnId: "tor" },
+                { name: "Miami Marlins", titles: 2, lastTitle: 2003, lastPlayoff: 2023, espnId: "mia" },
+                { name: "Houston Astros", titles: 2, lastTitle: 2022, lastPlayoff: 2024, espnId: "hou" },
+                { name: "Texas Rangers", titles: 1, lastTitle: 2023, lastPlayoff: 2023, espnId: "tex" },
+                { name: "Arizona Diamondbacks", titles: 1, lastTitle: 2001, lastPlayoff: 2023, espnId: "ari" },
+                { name: "Los Angeles Angels", titles: 1, lastTitle: 2002, lastPlayoff: 2014, espnId: "ana" },
+                { name: "Washington Nationals", titles: 1, lastTitle: 2019, lastPlayoff: 2019, espnId: "wsh" },
+                { name: "San Diego Padres", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "sd" },
+                { name: "Milwaukee Brewers", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "mil" },
+                { name: "Seattle Mariners", titles: 0, lastTitle: 0, lastPlayoff: 2022, espnId: "sea" },
+                { name: "Colorado Rockies", titles: 0, lastTitle: 0, lastPlayoff: 2018, espnId: "col" },
+                { name: "Tampa Bay Rays", titles: 0, lastTitle: 0, lastPlayoff: 2023, espnId: "tb" }
+            ],
+            NHL: [
+                { name: "Montreal Canadiens", titles: 24, lastTitle: 1993, lastPlayoff: 2021, espnId: "mtl" },
+                { name: "Toronto Maple Leafs", titles: 13, lastTitle: 1967, lastPlayoff: 2024, espnId: "tor" },
+                { name: "Detroit Red Wings", titles: 11, lastTitle: 2008, lastPlayoff: 2016, espnId: "det" },
+                { name: "Boston Bruins", titles: 6, lastTitle: 2011, lastPlayoff: 2024, espnId: "bos" },
+                { name: "Chicago Blackhawks", titles: 6, lastTitle: 2015, lastPlayoff: 2020, espnId: "chi" },
+                { name: "Pittsburgh Penguins", titles: 5, lastTitle: 2017, lastPlayoff: 2022, espnId: "pit" },
+                { name: "Edmonton Oilers", titles: 5, lastTitle: 1990, lastPlayoff: 2024, espnId: "edm" },
+                { name: "New York Rangers", titles: 4, lastTitle: 1994, lastPlayoff: 2024, espnId: "nyr" },
+                { name: "New York Islanders", titles: 4, lastTitle: 1983, lastPlayoff: 2024, espnId: "nyi" },
+                { name: "New Jersey Devils", titles: 3, lastTitle: 2003, lastPlayoff: 2023, espnId: "nj" },
+                { name: "Tampa Bay Lightning", titles: 3, lastTitle: 2021, lastPlayoff: 2024, espnId: "tb" },
+                { name: "Colorado Avalanche", titles: 3, lastTitle: 2022, lastPlayoff: 2024, espnId: "col" },
+                { name: "Philadelphia Flyers", titles: 2, lastTitle: 1975, lastPlayoff: 2020, espnId: "phi" },
+                { name: "Los Angeles Kings", titles: 2, lastTitle: 2014, lastPlayoff: 2024, espnId: "lak" },
+                { name: "Dallas Stars", titles: 1, lastTitle: 1999, lastPlayoff: 2024, espnId: "dal" },
+                { name: "St. Louis Blues", titles: 1, lastTitle: 2019, lastPlayoff: 2022, espnId: "stl" },
+                { name: "Calgary Flames", titles: 1, lastTitle: 1989, lastPlayoff: 2022, espnId: "cgy" },
+                { name: "Carolina Hurricanes", titles: 1, lastTitle: 2006, lastPlayoff: 2024, espnId: "car" },
+                { name: "Anaheim Ducks", titles: 1, lastTitle: 2007, lastPlayoff: 2018, espnId: "ana" },
+                { name: "Washington Capitals", titles: 1, lastTitle: 2018, lastPlayoff: 2024, espnId: "wsh" },
+                { name: "Vegas Golden Knights", titles: 1, lastTitle: 2023, lastPlayoff: 2024, espnId: "vgs" },
+                { name: "Florida Panthers", titles: 1, lastTitle: 2024, lastPlayoff: 2024, espnId: "fla" },
+                { name: "Vancouver Canucks", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "van" },
+                { name: "Buffalo Sabres", titles: 0, lastTitle: 0, lastPlayoff: 2011, espnId: "buf" },
+                { name: "Ottawa Senators", titles: 0, lastTitle: 0, lastPlayoff: 2017, espnId: "ott" },
+                { name: "San Jose Sharks", titles: 0, lastTitle: 0, lastPlayoff: 2019, espnId: "sjs" },
+                { name: "Winnipeg Jets", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "wpg" },
+                { name: "Nashville Predators", titles: 0, lastTitle: 0, lastPlayoff: 2024, espnId: "nsh" },
+                { name: "Columbus Blue Jackets", titles: 0, lastTitle: 0, lastPlayoff: 2020, espnId: "cbj" },
+                { name: "Minnesota Wild", titles: 0, lastTitle: 0, lastPlayoff: 2023, espnId: "min" },
+                { name: "Seattle Kraken", titles: 0, lastTitle: 0, lastPlayoff: 2023, espnId: "sea" },
+                { name: "Utah Hockey Club", titles: 0, lastTitle: 0, lastPlayoff: 0, espnId: "uta" }
+            ]
+        };
+
+        let currentLeague = 'NFL';
+        let currentSort = { key: 'titles', dir: 'desc' };
+        const CURRENT_YEAR = 2026;
+
+        function switchLeague(l) {
+            currentLeague = l;
+            document.querySelectorAll('.league-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-400');
+                if(btn.innerText === l) {
+                    btn.classList.add('bg-blue-600', 'text-white');
+                    btn.classList.remove('text-slate-400');
+                }
+            });
+            render();
+        }
+
+        function render() {
+            let teams = [...DATA[currentLeague]];
+            const search = document.getElementById('teamSearch').value.toLowerCase();
+            
+            // Enrich Data
+            teams = teams.map(t => {
+                const titleDrought = t.lastTitle === 0 ? (CURRENT_YEAR - 1900) : (CURRENT_YEAR - t.lastTitle);
+                const playoffDrought = t.lastPlayoff === 0 ? (CURRENT_YEAR - 1900) : (CURRENT_YEAR - t.lastPlayoff);
+                return { ...t, titleDrought, playoffDrought };
+            });
+
+            // Filter
+            if(search) {
+                teams = teams.filter(t => t.name.toLowerCase().includes(search));
+            }
+
+            // Sort
+            teams.sort((a, b) => {
+                let vA = a[currentSort.key];
+                let vB = b[currentSort.key];
+                if (currentSort.dir === 'asc') return vA > vB ? 1 : -1;
+                return vA < vB ? 1 : -1;
+            });
+
+            // UI Components
+            const topTitles = [...teams].sort((a,b)=>b.titles - a.titles)[0];
+            const longestDrought = [...teams].sort((a,b)=>b.titleDrought - a.titleDrought)[0];
+            const avgDrought = Math.round(teams.reduce((acc, t)=>acc + t.titleDrought, 0) / teams.length);
+
+            document.getElementById('topTitles').innerText = `${topTitles.name} (${topTitles.titles})`;
+            document.getElementById('topDrought').innerText = `${longestDrought.name} (${longestDrought.titleDrought}y)`;
+            document.getElementById('avgWait').innerText = `${avgDrought} Years`;
+
+            // Table Body
+            const body = document.getElementById('teamBody');
+            body.innerHTML = teams.map(t => {
+                const droughtClass = t.titleDrought > 40 ? 'drought-high' : (t.titleDrought > 20 ? 'drought-med' : 'drought-low');
+                const poDroughtClass = t.playoffDrought > 10 ? 'drought-high' : (t.playoffDrought > 5 ? 'drought-med' : 'drought-low');
+                const logoUrl = getLogo(t.espnId);
+
+                return `
+                    <tr class="border-b border-white/5 transition-colors">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <img src="${logoUrl}" class="w-8 h-8 object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
+                                <span class="font-bold text-sm text-white">${t.name}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-center font-black text-blue-400 text-lg">${t.titles}</td>
+                        <td class="p-4 text-center font-bold text-slate-400 text-sm">${t.lastTitle || 'Never'}</td>
+                        <td class="p-4 text-center font-black ${droughtClass} text-lg">${t.titleDrought}y</td>
+                        <td class="p-4 text-center font-bold text-slate-400 text-sm">${t.lastPlayoff || 'Never'}</td>
+                        <td class="p-4 text-center font-black ${poDroughtClass} text-lg">${t.playoffDrought}y</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getLogo(id) {
+            const leagueMap = { NFL: 'nfl', NBA: 'nba', MLB: 'mlb', NHL: 'nhl' };
+            return `https://a.espncdn.com/i/teamlogos/${leagueMap[currentLeague]}/500/${id}.png`;
+        }
+
+        function sortTable(key) {
+            if(currentSort.key === key) {
+                currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.key = key;
+                currentSort.dir = 'desc';
+            }
+            render();
+        }
+
+        function filterTeams() { render(); }
+
+        // Initial Render
+        render();
+    </script>
+</body>
+</html>

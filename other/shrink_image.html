@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Downgrader</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            padding: 40px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: border 0.3s;
+        }
+        .drop-zone:hover { border-color: var(--primary); }
+        input[type="file"] { display: none; }
+        #preview {
+            max-width: 100%;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .stats {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #059669;
+        }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Image Downgrader</h1>
+    <p>Target: Under 1MB</p>
+    
+    <label class="drop-zone" id="dropZone">
+        <span>Click or Drop Penguin Image Here</span>
+        <input type="file" id="fileInput" accept="image/*">
+    </label>
+
+    <img id="preview" alt="Preview">
+    <div id="stats" class="stats"></div>
+    <a id="downloadBtn" class="btn">Download < 1MB Version</a>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const stats = document.getElementById('stats');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Downgrade resolution slightly for mobile compatibility
+                const scale = 0.8; 
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // Use JPEG with 0.6 quality to ensure it's well under 1MB
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                
+                preview.src = dataUrl;
+                preview.style.display = 'block';
+                
+                // Calculate size
+                const sizeInBytes = Math.round((dataUrl.length * 3) / 4);
+                const sizeInMb = (sizeInBytes / 1048576).toFixed(2);
+                
+                stats.innerText = `New Size: ${sizeInMb} MB`;
+                downloadBtn.href = dataUrl;
+                downloadBtn.download = "downgraded-penguin.jpg";
+                downloadBtn.style.display = 'inline-block';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
+
+</body>
+</html>
