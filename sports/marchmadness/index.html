@@ -63,6 +63,43 @@
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Stats Specific Styles */
+        .table-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        table { border-collapse: separate; border-spacing: 0; width: 100%; }
+        th { 
+            position: sticky; top: 0; z-index: 30; background: #1e293b; 
+            padding: 14px 12px; font-size: 10px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;
+            border-bottom: 2px solid #334155; white-space: nowrap; cursor: pointer;
+        }
+        td { 
+            padding: 12px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            white-space: nowrap;
+        }
+        .sticky-col-idx {
+            position: sticky; left: 0; z-index: 20; background: #1e293b;
+            width: 40px; text-align: center; font-weight: 900; color: #475569;
+            border-right: 1px solid #334155;
+        }
+        .sticky-col-team {
+            position: sticky; left: 40px; z-index: 20; background: #1e293b;
+            border-right: 2px solid #334155; min-width: 50px; text-align: center;
+        }
+        @media (min-width: 768px) { .sticky-col-team { min-width: 180px; text-align: left; } }
+        tr:hover td { background-color: rgba(56, 189, 248, 0.05) !important; }
+        .loading-bar-container { height: 4px; width: 100%; background: #1e293b; overflow: hidden; border-radius: 2px; }
+        .loading-bar-fill { height: 100%; background: #f97316; transition: width 0.3s ease; }
+        .sort-icon::after { content: ' ↕'; opacity: 0.3; font-size: 10px; }
+        .sort-active-desc::after { content: ' ↓'; opacity: 1; color: #f97316; }
+        .sort-active-asc::after { content: ' ↑'; opacity: 1; color: #f97316; }
     </style>
 </head>
 <body class="p-4 md:p-6 lg:p-8">
@@ -75,7 +112,7 @@
             </div>
             <div>
                 <h1 class="text-2xl font-black uppercase tracking-tighter italic">March Madness Vault</h1>
-                <p class="text-[10px] text-orange-400 font-bold uppercase tracking-widest">History • Live • Bracketology</p>
+                <p class="text-[10px] text-orange-400 font-bold uppercase tracking-widest">History • Live • Stats</p>
             </div>
         </div>
 
@@ -85,6 +122,9 @@
             <div class="flex bg-slate-800 p-1 rounded-xl">
                 <button id="nav-history" onclick="switchTab('history')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-orange-600 text-white shadow-lg">
                     Archive
+                </button>
+                <button id="nav-stats" onclick="switchTab('stats')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
+                    Master Stats
                 </button>
                 <button id="nav-live" onclick="switchTab('live')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
                     Live Intel
@@ -118,6 +158,47 @@
                 <div id="bracket-tree" class="flex gap-8 min-w-max p-4">
                     <!-- Rounds injected here -->
                 </div>
+            </div>
+        </div>
+
+        <!-- TAB: MASTER STATS -->
+        <div id="tab-stats" class="view-section hidden flex flex-col gap-6 h-full">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/50 p-4 rounded-2xl border border-white/5">
+                <div class="flex items-center gap-4 flex-1 w-full sm:w-auto">
+                    <div class="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center shadow-lg">
+                        <span id="yearIcon" class="text-white font-black text-xs">26</span>
+                    </div>
+                    <div class="flex-1 max-w-xs relative">
+                        <input type="text" id="teamSearch" placeholder="Search team..." class="w-full bg-slate-800 border border-slate-700 rounded-xl py-2 pl-9 pr-4 text-xs font-medium focus:border-orange-500 transition-all outline-none text-white">
+                        <svg class="w-4 h-4 absolute left-3 top-2 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="3"/></svg>
+                    </div>
+                    <select id="seasonSelector" class="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-[10px] font-black text-white outline-none focus:border-orange-500"></select>
+                </div>
+                <div id="statusText" class="text-[10px] font-bold text-orange-400 uppercase bg-orange-400/10 px-3 py-1.5 rounded-full border border-orange-400/20">Ready</div>
+            </div>
+            
+            <div id="progressContainer" class="hidden">
+                <div class="loading-bar-container"><div id="progressBar" class="loading-bar-fill" style="width: 0%"></div></div>
+            </div>
+
+            <div class="table-container shadow-2xl">
+                <table id="statsTable">
+                    <thead>
+                        <tr>
+                            <th class="sticky-col-idx">#</th>
+                            <th class="sticky-col-team" onclick="handleSort('displayName')">Team <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('rank')">Rank <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('pollPoints')">Points <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('avgPoints')">PPG <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('oppAvgPoints')">Opp PPG <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('fieldGoalPct')">FG% <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('threePointFieldGoalPct')">3P% <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('avgRebounds')">REB <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('avgAssists')">AST <span class="sort-icon"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
             </div>
         </div>
 
@@ -185,49 +266,75 @@
 
     </main>
 
+    <!-- Modal for Stats Details -->
+    <div id="statsModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="bg-slate-900 border border-white/10 w-full max-w-xl relative transform rounded-3xl overflow-hidden shadow-2xl">
+            <div id="modalContent" class="p-8 max-h-[70vh] overflow-y-auto"></div>
+            <div class="p-6 bg-slate-800/50 border-t border-white/5">
+                <button onclick="closeModal()" class="w-full py-4 bg-orange-600 hover:bg-orange-500 text-white rounded-2xl font-black uppercase tracking-widest transition-colors shadow-lg active:scale-95">Close Analysis</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- Config ---
         const YEAR_START = 1985;
         const YEAR_END = 2025;
-        const LIVE_API_RANKINGS = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings';
-        const LIVE_API_TEAMS = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams?limit=400';
+        const API_BASE = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball";
+        const CORE_API_BASE = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/mens-college-basketball";
+        const LIVE_API_RANKINGS = `${API_BASE}/rankings`;
+        const LIVE_API_TEAMS = `${API_BASE}/teams?limit=500`;
 
         // --- State ---
         let tournaments = {};
         let currentYearData = null;
-        let liveRankings = [];
         let allTeams = [];
+        let statsData = new Map();
+        let selectedSeason = "2026";
+        let currentSort = { key: 'avgPoints', direction: 'desc' };
+        let abortController = null;
+        let rankingsMap = new Map();
 
         // --- Init ---
         async function init() {
-            // Populate Year Selector
-            const select = document.getElementById('year-select');
+            // Populate Archive Year Selector
+            const archiveSelect = document.getElementById('year-select');
             for (let y = YEAR_END; y >= YEAR_START; y--) {
-                if (y === 2020) continue; // Cancelled
+                if (y === 2020) continue;
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y;
-                select.appendChild(opt);
+                archiveSelect.appendChild(opt);
             }
-
-            // Load Default Year (Latest available usually)
-            // We try 2024 as a safe default for now if 2025 isn't full
-            select.value = 2024;
+            archiveSelect.value = 2024;
             loadTournament(2024);
 
-            // Fetch Live Data in background
+            // Setup Stats Season Selector
+            setupSeasonDropdown();
+            
+            // Fetch Teams & Live Data
+            await fetchTeams();
             fetchLiveData();
+
+            // Stats Event Listeners
+            document.getElementById('teamSearch').addEventListener('input', renderTable);
+            document.getElementById('seasonSelector').addEventListener('change', (e) => {
+                selectedSeason = e.target.value;
+                document.getElementById('yearIcon').innerText = selectedSeason.slice(-2);
+                autoSync();
+            });
+
+            // Initial Stats Sync (Hidden)
+            autoSync();
         }
 
         // --- History / Archive Logic ---
         async function loadTournament(year) {
             const container = document.getElementById('bracket-tree');
             const summary = document.getElementById('tournament-summary');
-            
-            // Basic Loading State
             container.innerHTML = '<div class="m-auto text-slate-500 text-sm font-bold uppercase animate-pulse">Loading Archive...</div>';
             summary.innerHTML = '';
-
             try {
                 let data = tournaments[year];
                 if (!data) {
@@ -236,83 +343,43 @@
                     data = await res.json();
                     tournaments[year] = data;
                 }
-                
                 currentYearData = data;
                 renderBracket(data);
-                
                 if (data.champion) {
                     summary.innerHTML = `🏆 <span class="text-orange-400">${data.champion}</span> def. ${data.runnerUp}`;
                 }
-
             } catch (e) {
                 console.error(e);
-                if (window.location.protocol === 'file:') {
-                    container.innerHTML = `
-                        <div class="m-auto text-center p-6 bg-red-900/20 border border-red-500/50 rounded-xl max-w-md">
-                            <h3 class="text-red-500 font-bold uppercase mb-2">Security Restriction</h3>
-                            <p class="text-slate-300 text-xs mb-4">
-                                Browsers block local data files when opening HTML directly. This is a security feature, not a bug.
-                            </p>
-                            <div class="bg-black/50 p-3 rounded text-left mb-4">
-                                <p class="text-[10px] text-slate-500 uppercase mb-1">To fix, run this command in your folder:</p>
-                                <code class="text-green-400 text-xs font-mono select-all">python -m http.server 8000</code>
-                            </div>
-                            <p class="text-slate-400 text-[10px]">Then open <a href="http://localhost:8000/marchmadness/index.html" class="text-blue-400 underline hover:text-blue-300">http://localhost:8000/marchmadness/index.html</a></p>
-                            <p class="text-slate-500 text-[10px] mt-2 italic">Note: This app will work automatically once uploaded to GitHub.</p>
-                        </div>
-                    `;
-                } else {
-                    container.innerHTML = '<div class="m-auto text-red-500 text-sm font-bold uppercase">Tournament Data Unavailable</div>';
-                }
+                container.innerHTML = '<div class="m-auto text-red-500 text-sm font-bold uppercase">Tournament Data Unavailable</div>';
             }
         }
 
         function renderBracket(data) {
             const container = document.getElementById('bracket-tree');
             container.innerHTML = '';
-
-            // We need to flatten the structure for a tree view
-            // Standard order: R64 -> R32 -> S16 -> E8 -> F4 -> Champ
             const rounds = [
-                { id: 'round1', name: 'Round of 64', count: 32 },
-                { id: 'round2', name: 'Round of 32', count: 16 },
-                { id: 'sweet16', name: 'Sweet 16', count: 8 },
-                { id: 'elite8', name: 'Elite 8', count: 4 },
-                { id: 'finalFour', name: 'Final 4', count: 2 },
-                { id: 'championship', name: 'Champ', count: 1 }
+                { id: 'round1', name: 'Round of 64' },
+                { id: 'round2', name: 'Round of 32' },
+                { id: 'sweet16', name: 'Sweet 16' },
+                { id: 'elite8', name: 'Elite 8' },
+                { id: 'finalFour', name: 'Final 4' },
+                { id: 'championship', name: 'Champ' }
             ];
-
             rounds.forEach((r, idx) => {
                 const col = document.createElement('div');
                 col.className = 'flex flex-col justify-around relative';
-                col.style.minWidth = '160px'; // Fixed width for cards
-
-                // Header
+                col.style.minWidth = '160px';
                 const header = document.createElement('div');
                 header.className = 'text-center text-[10px] font-bold text-slate-500 uppercase mb-4 absolute -top-8 w-full';
                 header.textContent = r.name;
                 col.appendChild(header);
-
-                // Games
-                let gamesData = [];
-                if (r.id === 'championship') {
-                    if (data.rounds.championship) gamesData = [data.rounds.championship];
-                } else {
-                    gamesData = data.rounds[r.id] || [];
-                }
-
-                // Fill with empty slots if data missing (bracket builder logic later)
-                // For archive, we just show what we have
+                let gamesData = (r.id === 'championship') ? [data.rounds.championship] : (data.rounds[r.id] || []);
                 gamesData.forEach(game => {
                     const card = document.createElement('div');
                     card.className = 'bg-slate-800 border border-slate-700 rounded-lg p-2 text-[10px] mb-2 relative hover:border-orange-500 transition cursor-default shadow-lg';
-                    
                     const winner = game.winner;
-                    
-                    // Team 1
                     const t1Class = winner === game.team1 ? 'text-orange-400 font-bold' : 'text-slate-300';
                     const t2Class = winner === game.team2 ? 'text-orange-400 font-bold' : 'text-slate-300';
-
                     card.innerHTML = `
                         <div class="flex justify-between mb-1 ${t1Class}">
                             <span class="truncate w-24">${game.seed1 ?? ''} ${game.team1}</span>
@@ -323,17 +390,8 @@
                             <span>${game.score2 ?? ''}</span>
                         </div>
                     `;
-
-                    // Connector Lines (Right side)
-                    if (idx < rounds.length - 1) {
-                         // This is purely visual CSS logic, simplified for this purpose
-                         // Real bracket lines usually require calculating heights dynamically
-                         // We will omit complex lines for this "Glass" UI style and rely on column spacing
-                    }
-
                     col.appendChild(card);
                 });
-
                 container.appendChild(col);
             });
         }
@@ -341,15 +399,12 @@
         // --- Live Data Logic ---
         async function fetchLiveData() {
             try {
-                // Fetch Rankings
                 const rankRes = await fetch(LIVE_API_RANKINGS);
                 const rankData = await rankRes.json();
-                
                 const rankingsList = document.getElementById('rankings-list');
                 rankingsList.innerHTML = '';
-
                 if (rankData.rankings && rankData.rankings.length > 0) {
-                    const poll = rankData.rankings[0]; // AP Poll usually first
+                    const poll = rankData.rankings[0];
                     poll.ranks.forEach(r => {
                         const div = document.createElement('div');
                         div.className = 'flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-white/5';
@@ -365,146 +420,186 @@
                         `;
                         rankingsList.appendChild(div);
                     });
-                } else {
-                    rankingsList.innerHTML = '<div class="col-span-full text-center text-slate-500">No active rankings available.</div>';
                 }
-
-                // Fetch Teams for Conferences (simplified)
-                // This might be heavy, so we might skip or limit
-                const teamRes = await fetch(LIVE_API_TEAMS);
-                const teamData = await teamRes.json();
-                // Organize by conference locally or display a few key ones
-                // For brevity, we'll just show a "Loaded" message or key teams
                 const confList = document.getElementById('conferences-list');
                 confList.innerHTML = '';
-                
-                if (teamData.sports && teamData.sports[0].leagues[0].teams) {
-                     allTeams = teamData.sports[0].leagues[0].teams.map(t => t.team);
-                     // Display a few random teams as "Active Teams" since API doesn't give standings easily here
-                     allTeams.slice(0, 20).forEach(t => {
+                if (allTeams.length > 0) {
+                     allTeams.slice(0, 30).forEach(t => {
                          const d = document.createElement('div');
                          d.className = 'flex items-center gap-2 p-2 hover:bg-white/5 rounded transition';
-                         d.innerHTML = `
-                            <img src="${t.logos[0].href}" class="w-6 h-6">
-                            <span class="text-xs text-slate-300 font-bold">${t.displayName}</span>
-                         `;
+                         d.innerHTML = `<img src="${t.logo}" class="w-6 h-6 object-contain"><span class="text-xs text-slate-300 font-bold">${t.displayName}</span>`;
                          confList.appendChild(d);
                      });
                 }
+            } catch (e) { console.error("Live fetch failed", e); }
+        }
 
-            } catch (e) {
-                console.error("Live fetch failed", e);
-                document.getElementById('rankings-list').innerHTML = '<div class="col-span-full text-center text-red-400 text-xs">Live data unavailable. Check connection.</div>';
+        // --- Master Stats Logic ---
+        function setupSeasonDropdown() {
+            const selector = document.getElementById('seasonSelector');
+            for (let year = 2026; year >= 2002; year--) {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.innerText = `${year} SEASON`;
+                selector.appendChild(opt);
             }
         }
 
-        // --- Predictor Logic ---
-        function generateBracket(mode) {
-            if (!currentYearData || !currentYearData.rounds || !currentYearData.rounds.round1) {
-                alert("Please load a historical tournament first to use as a base field.");
-                return;
+        async function fetchTeams() {
+            try {
+                const res = await fetch(LIVE_API_TEAMS);
+                const data = await res.json();
+                allTeams = data.sports[0].leagues[0].teams.map(t => ({
+                    id: t.team.id,
+                    displayName: t.team.displayName,
+                    logo: t.team.logos?.[0]?.href
+                }));
+            } catch (e) { console.error("[Teams] Fetch failed", e); }
+        }
+
+        async function fetchRankings(year) {
+            try {
+                rankingsMap.clear();
+                const weeksUrl = `${CORE_API_BASE}/seasons/${year}/types/2/weeks`;
+                const weeksRes = await fetch(weeksUrl);
+                const weeksData = await weeksRes.json();
+                let maxWeek = (weeksData.items && weeksData.items.length > 0) ? weeksData.items.length : 1;
+                const coreRankUrl = `${CORE_API_BASE}/seasons/${year}/types/2/weeks/${maxWeek}/rankings/1?lang=en&region=us`;
+                const res = await fetch(coreRankUrl);
+                const data = await res.json();
+                if (data.ranks) {
+                    data.ranks.forEach(r => {
+                        const teamId = r.team?.$ref?.split('/teams/')?.[1]?.split('?')?.[0];
+                        if (teamId) rankingsMap.set(teamId, { rank: parseInt(r.current), points: parseInt(r.points) || 0 });
+                    });
+                }
+            } catch (e) { console.error(`[Rankings] Error:`, e); }
+        }
+
+        async function autoSync() {
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+            statsData.clear();
+            renderTable();
+            const prog = document.getElementById('progressContainer');
+            const bar = document.getElementById('progressBar');
+            const status = document.getElementById('statusText');
+            prog.classList.remove('hidden');
+            status.innerText = `Syncing...`;
+            await fetchRankings(selectedSeason);
+            const batchSize = 45;
+            for (let i = 0; i < allTeams.length; i += batchSize) {
+                const batch = allTeams.slice(i, i + batchSize);
+                await Promise.all(batch.map(async (team) => {
+                    try {
+                        const res = await fetch(`${CORE_API_BASE}/seasons/${selectedSeason}/types/2/teams/${team.id}/statistics`, { signal: abortController.signal });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        const pollInfo = rankingsMap.get(team.id) || { rank: 999, points: 0 };
+                        const flat = { displayName: team.displayName, logo: team.logo, id: team.id, rank: pollInfo.rank, pollPoints: pollInfo.points };
+                        data.splits.categories.forEach(cat => { cat.stats.forEach(s => { flat[s.name] = { val: parseFloat(s.displayValue) || 0, display: s.displayValue }; }); });
+                        statsData.set(team.id, flat);
+                    } catch(e) {}
+                }));
+                const percent = Math.round((statsData.size / allTeams.length) * 100);
+                bar.style.width = `${percent}%`;
+                status.innerText = `Syncing ${selectedSeason}: ${statsData.size}/${allTeams.length}`;
+                if (i % 90 === 0) renderTable();
             }
+            prog.classList.add('hidden');
+            status.innerText = `${selectedSeason} Season Ready`;
+            renderTable();
+        }
 
-            // Simulation Helper
-            const simulateGame = (team1, seed1, team2, seed2) => {
-                const s1 = seed1 || 16;
-                const s2 = seed2 || 16;
-
-                if (mode === 'chalk') return s1 < s2 ? team1 : team2;
-                if (mode === 'random') return Math.random() > 0.5 ? team1 : team2;
-                
-                if (mode === 'chaos') {
-                    const diff = Math.abs(s1 - s2);
-                    const upsetChance = 0.3 + (diff * 0.02); 
-                    return Math.random() < upsetChance ? (s1 > s2 ? team1 : team2) : (s1 < s2 ? team1 : team2);
-                }
-
-                if (mode === 'weighted') {
-                    // Standard weighted: Better seed has higher weight
-                    // Use inverted seed value (1 -> 16 weight, 16 -> 1 weight)
-                    const s1Weight = Math.pow(17 - s1, 1.5); 
-                    const s2Weight = Math.pow(17 - s2, 1.5);
-                    const total = s1Weight + s2Weight;
-                    return Math.random() < (s1Weight / total) ? team1 : team2;
-                }
-                
-                return team1;
-            };
-
-            // 1. Initialize Teams from Round 1
-            // Round 1 has 32 games. The winners become the 32 teams for Round 2.
-            let currentRoundTeams = [];
-            
-            // The JSON structure is just a list of games, not strictly ordered by bracket region flow usually
-            // but usually grouped by region. We will trust the JSON order for simulation flow.
-            currentYearData.rounds.round1.forEach(g => {
-                const winnerName = simulateGame(g.team1, g.seed1, g.team2, g.seed2);
-                const winnerSeed = winnerName === g.team1 ? g.seed1 : g.seed2;
-                currentRoundTeams.push({ team: winnerName, seed: winnerSeed });
-            });
-
-            // currentRoundTeams now has 32 teams.
-            // We simulate rounds until we have 1 team.
-            
-            const roundHistory = [currentRoundTeams]; // Store history to find F4
-            
-            while (currentRoundTeams.length > 1) {
-                const nextRound = [];
-                for (let i = 0; i < currentRoundTeams.length; i += 2) {
-                    // Matchup: Team i vs Team i+1
-                    // If odd number (shouldn't happen in full bracket), bye
-                    if (i + 1 >= currentRoundTeams.length) {
-                        nextRound.push(currentRoundTeams[i]);
-                        break;
-                    }
-
-                    const t1 = currentRoundTeams[i];
-                    const t2 = currentRoundTeams[i+1];
-                    
-                    const winnerName = simulateGame(t1.team, t1.seed, t2.team, t2.seed);
-                    const winnerObj = winnerName === t1.team ? t1 : t2;
-                    
-                    nextRound.push(winnerObj);
-                }
-                currentRoundTeams = nextRound;
-                roundHistory.push(currentRoundTeams);
-            }
-
-            const champion = currentRoundTeams[0].team;
-            
-            // Find Final Four
-            // Round History:
-            // 0: 32 teams (Winners of R64) -> R32 Field
-            // 1: 16 teams (Winners of R32) -> S16 Field
-            // 2: 8 teams (Winners of S16) -> E8 Field
-            // 3: 4 teams (Winners of E8) -> Final Four Field
-            // 4: 2 teams (Winners of F4) -> Championship Field
-            // 5: 1 team (Winner)
-            
-            const f4Field = roundHistory[3] || []; // Should be 4 teams
-            
-            // Render Result
-            const resDiv = document.getElementById('prediction-result');
-            const f4Div = document.getElementById('predicted-f4');
-            const champDiv = document.getElementById('predicted-champ');
-
-            resDiv.classList.remove('hidden');
-            resDiv.scrollIntoView({ behavior: 'smooth' });
-
-            if (f4Field.length === 4) {
-                 f4Div.innerHTML = f4Field.map(t => 
-                     `<div class="bg-black/20 p-2 rounded text-center text-xs text-slate-300 font-bold">${t.seed} ${t.team}</div>`
-                 ).join('');
+        function handleSort(key) {
+            if (currentSort.key === key) {
+                currentSort.direction = currentSort.direction === 'desc' ? 'asc' : 'desc';
             } else {
-                 f4Div.innerHTML = '<div class="col-span-2 text-center text-xs text-slate-500">Sim error</div>';
+                currentSort.key = key;
+                currentSort.direction = (key === 'oppAvgPoints' || key === 'rank') ? 'asc' : 'desc';
             }
-            
-            champDiv.textContent = champion;
+            updateSortIcons();
+            renderTable();
         }
+
+        function updateSortIcons() {
+            document.querySelectorAll('th').forEach(th => {
+                const icon = th.querySelector('.sort-icon');
+                if (!icon) return;
+                th.className = th.className.replace(/sort-active-(asc|desc)/g, '').trim();
+                const key = th.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+                if (key === currentSort.key) th.classList.add(`sort-active-${currentSort.direction}`);
+            });
+        }
+
+        function renderTable() {
+            const body = document.getElementById('tableBody');
+            const search = document.getElementById('teamSearch').value.toLowerCase();
+            const dataArray = Array.from(statsData.values()).filter(t => t.displayName.toLowerCase().includes(search));
+            dataArray.sort((a, b) => {
+                let vA = currentSort.key === 'displayName' ? a.displayName : (a[currentSort.key]?.val ?? a[currentSort.key] ?? (currentSort.direction === 'asc' ? 999999 : -999999));
+                let vB = currentSort.key === 'displayName' ? b.displayName : (b[currentSort.key]?.val ?? b[currentSort.key] ?? (currentSort.direction === 'asc' ? 999999 : -999999));
+                if (vA < vB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (vA > vB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            body.innerHTML = dataArray.map((t, i) => {
+                const rankText = t.rank <= 25 ? t.rank : '--';
+                const rankColor = t.rank <= 25 ? 'text-red-500 font-black' : 'text-slate-500';
+                return `<tr onclick="showDetails('${t.id}')" class="cursor-pointer">
+                    <td class="sticky-col-idx text-[10px] font-mono">${i + 1}</td>
+                    <td class="sticky-col-team">
+                        <div class="flex items-center gap-2">
+                            <img src="${t.logo}" class="w-6 h-6 object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/default-team-logo-500.png'">
+                            <span class="truncate font-bold">${t.displayName}</span>
+                        </div>
+                    </td>
+                    <td class="text-center font-bold ${rankColor}">${rankText}</td>
+                    <td class="text-center font-mono text-slate-400">${t.pollPoints || '--'}</td>
+                    <td class="text-center font-black text-orange-400">${t.avgPoints?.display || '--'}</td>
+                    <td class="text-center font-black text-blue-400">${t.oppAvgPoints?.display || '--'}</td>
+                    <td class="text-center font-mono">${t.fieldGoalPct?.display || '--'}</td>
+                    <td class="text-center font-mono">${t.threePointFieldGoalPct?.display || '--'}</td>
+                    <td class="text-center font-mono">${t.avgRebounds?.display || '--'}</td>
+                    <td class="text-center font-mono">${t.avgAssists?.display || '--'}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function showDetails(teamId) {
+            const modal = document.getElementById('statsModal');
+            const content = document.getElementById('modalContent');
+            const team = statsData.get(teamId);
+            modal.classList.remove('hidden');
+            content.innerHTML = `<div class="p-10 text-center font-bold text-slate-400 animate-pulse uppercase tracking-widest">Loading Analytics...</div>`;
+            try {
+                const res = await fetch(`${CORE_API_BASE}/seasons/${selectedSeason}/types/2/teams/${teamId}/statistics`);
+                const data = await res.json();
+                let html = `
+                    <div class="flex items-center gap-6 mb-8">
+                        <img src="${team.logo}" class="w-20 h-20 object-contain shadow-2xl">
+                        <div>
+                            <h2 class="text-3xl font-black italic uppercase">${team.displayName}</h2>
+                            <p class="text-xs font-black text-orange-500 uppercase tracking-widest mt-1">${selectedSeason} Season • AP #${team.rank <= 25 ? team.rank : 'Unranked'}</p>
+                        </div>
+                    </div>`;
+                data.splits.categories.forEach(cat => {
+                    html += `<div class="mb-8 last:mb-0">
+                        <h3 class="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] border-b border-white/5 pb-2 mb-4">${cat.displayName}</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${cat.stats.map(s => `<div class="bg-slate-800/50 p-3 rounded-2xl border border-white/5 flex justify-between items-center"><p class="text-[9px] font-bold text-slate-400 uppercase">${s.displayName}</p><p class="text-sm font-black text-white">${s.displayValue}</p></div>`).join('')}
+                        </div>
+                    </div>`;
+                });
+                content.innerHTML = html;
+            } catch (e) { content.innerHTML = `<p class="text-center p-10 font-bold text-red-500">Error loading details.</p>`; }
+        }
+
+        function closeModal() { document.getElementById('statsModal').classList.add('hidden'); }
 
         // --- Tabs ---
         function switchTab(tab) {
-            ['history', 'live', 'predict'].forEach(t => {
+            ['history', 'stats', 'live', 'predict'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const btn = document.getElementById(`nav-${t}`);
                 if (t === tab) {
