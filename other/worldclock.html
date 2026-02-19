@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Pulse | World Clock</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --card: rgba(15, 23, 42, 0.6);
+            --accent: #38bdf8;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 40%), 
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 40%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        .glass-card {
+            background: var(--card);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.3s ease;
+        }
+        .clock-face {
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+        }
+        @keyframes pulse-slow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        .pulse { animation: pulse-slow 3s infinite; }
+    </style>
+</head>
+<body class="p-4 md:p-8 lg:p-12 max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <header class="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+        <div class="flex items-center gap-5">
+            <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-2xl border border-white/10">
+                🌐
+            </div>
+            <div>
+                <h1 class="text-3xl font-black uppercase tracking-tighter">Global Pulse</h1>
+                <p class="text-[10px] font-bold text-blue-400 uppercase tracking-[0.3em]">World Clock • Real-time Sync</p>
+            </div>
+        </div>
+
+        <div class="flex items-center bg-slate-900/50 p-1.5 rounded-2xl border border-white/5">
+            <button onclick="setView('list')" id="btn-list" class="px-5 py-2 rounded-xl text-xs font-bold uppercase transition-all bg-blue-600 text-white shadow-lg">List</button>
+            <button onclick="setView('map')" id="btn-map" class="px-5 py-2 rounded-xl text-xs font-bold uppercase transition-all text-slate-400 hover:text-white">Map</button>
+            <div class="w-px h-4 bg-slate-700 mx-2"></div>
+            <button onclick="toggleFormat()" id="btn-format" class="px-5 py-2 rounded-xl text-xs font-bold uppercase transition-all text-slate-400 hover:text-white">24H</button>
+        </div>
+    </header>
+
+    <!-- Main Display -->
+    <main id="clock-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Clocks injected here -->
+    </main>
+
+    <!-- Map View (Hidden by default) -->
+    <div id="map-container" class="hidden glass-card rounded-[2.5rem] p-8 aspect-video relative overflow-hidden bg-slate-900/20 border border-white/5">
+        <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <!-- SVG World Map Placeholder -->
+            <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" class="w-full h-full fill-white">
+                <path d="M150,100 Q200,50 300,100 T500,150 T700,100 T850,200 L850,400 Q700,450 500,400 T200,450 Z" /> <!-- Very abstract map shape -->
+            </svg>
+        </div>
+        <div id="map-markers" class="relative w-full h-full">
+            <!-- Map points injected here -->
+        </div>
+    </div>
+
+    <script>
+        const locations = [
+            { city: 'New York', tz: 'America/New_York', x: 25, y: 35 },
+            { city: 'London', tz: 'Europe/London', x: 48, y: 25 },
+            { city: 'Tokyo', tz: 'Asia/Tokyo', x: 85, y: 38 },
+            { city: 'Sydney', tz: 'Australia/Sydney', x: 88, y: 75 },
+            { city: 'Dubai', tz: 'Asia/Dubai', x: 62, y: 42 },
+            { city: 'Paris', tz: 'Europe/Paris', x: 50, y: 28 },
+            { city: 'Los Angeles', tz: 'America/Los_Angeles', x: 15, y: 38 },
+            { city: 'Hong Kong', tz: 'Asia/Hong_Kong', x: 80, y: 45 }
+        ];
+
+        let is24Hour = false;
+        let currentView = 'list';
+
+        function updateClocks() {
+            if (currentView === 'list') renderList();
+            else renderMap();
+        }
+
+        function formatTime(tz) {
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: !is24Hour
+            }).format(new Date());
+        }
+
+        function formatDate(tz) {
+            return new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+            }).format(new Date());
+        }
+
+        function renderList() {
+            const container = document.getElementById('clock-container');
+            container.innerHTML = locations.map(loc => `
+                <div class="glass-card rounded-[2rem] p-8 flex flex-col items-center justify-center text-center group hover:scale-[1.02] transition-transform">
+                    <p class="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em] mb-2">${loc.city}</p>
+                    <h2 class="text-4xl font-black tabular-nums text-white mb-1">${formatTime(loc.tz)}</h2>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase">${formatDate(loc.tz)}</p>
+                    <div class="mt-6 w-full h-1 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500/50 pulse w-full"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderMap() {
+            const container = document.getElementById('map-markers');
+            container.innerHTML = locations.map(loc => `
+                <div class="absolute group" style="left: ${loc.x}%; top: ${loc.y}%">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(56,189,248,0.5)] cursor-pointer"></div>
+                    <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 hidden group-hover:block z-50">
+                        <div class="glass-card px-4 py-2 rounded-xl whitespace-nowrap border border-blue-500/30">
+                            <p class="text-[8px] font-black text-blue-400 uppercase">${loc.city}</p>
+                            <p class="text-sm font-black text-white">${formatTime(loc.tz)}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function setView(view) {
+            currentView = view;
+            const clockGrid = document.getElementById('clock-container');
+            const mapBox = document.getElementById('map-container');
+            const btnList = document.getElementById('btn-list');
+            const btnMap = document.getElementById('btn-map');
+
+            if (view === 'list') {
+                clockGrid.classList.remove('hidden');
+                clockGrid.classList.add('grid');
+                mapBox.classList.add('hidden');
+                btnList.classList.add('bg-blue-600', 'text-white');
+                btnList.classList.remove('text-slate-400');
+                btnMap.classList.remove('bg-blue-600', 'text-white');
+                btnMap.classList.add('text-slate-400');
+            } else {
+                clockGrid.classList.add('hidden');
+                clockGrid.classList.remove('grid');
+                mapBox.classList.remove('hidden');
+                btnMap.classList.add('bg-blue-600', 'text-white');
+                btnMap.classList.remove('text-slate-400');
+                btnList.classList.remove('bg-blue-600', 'text-white');
+                btnList.classList.add('text-slate-400');
+            }
+            updateClocks();
+        }
+
+        function toggleFormat() {
+            is24Hour = !is24Hour;
+            document.getElementById('btn-format').innerText = is24Hour ? '12H' : '24H';
+            updateClocks();
+        }
+
+        setInterval(updateClocks, 1000);
+        init();
+
+        function init() {
+            renderList();
+        }
+    </script>
+</body>
+</html>
