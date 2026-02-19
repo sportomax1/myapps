@@ -24,7 +24,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .progress-bar { transition: width 0.1s linear; }
         .grid-rows-layout { grid-template-rows: repeat(2, minmax(0, 1fr)); }
-        .clock-text { font-size: clamp(3rem, 8vw, 6rem); }
+        .clock-text { font-size: clamp(4rem, 8vw, 6rem); }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col p-2 md:p-4 gap-4 overflow-hidden">
@@ -63,13 +63,11 @@
         <!-- 3. WEATHER -->
         <div id="tileWeather" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
             <div id="weather" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4 text-center">Loading weather...</div>
-            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="weatherSlider" class="h-full bg-blue-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 4. FORECAST -->
         <div id="tileForecast" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
             <div id="forecast" class="flex-grow flex flex-col w-full h-full p-4 overflow-hidden">Loading forecast...</div>
-            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="forecastSlider" class="h-full bg-indigo-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 5. CALENDAR (Full Info Restored) -->
@@ -182,45 +180,46 @@ async function rotateSpeedTile(){
 testSpeed(); rotateSpeedTile(); setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs); setInterval(testSpeed,300000);
 
 /* ========== WEATHER ========== */
-let forecastData=[]; let weatherViews=[]; let weatherIndex=0;
+let forecastData=[]; 
 async function loadWeather(){
   try{
     const lat=39.5186, lon=-104.7614;
-    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
+    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,weathercode,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
     const d=await res.json();
     sunriseTime=new Date(d.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     sunsetTime=new Date(d.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     const cw=d.current_weather;
     document.getElementById("currentWeather").innerHTML=`🌡️ ${Math.round(d.daily.temperature_2m_max[0])}/${Math.round(d.daily.temperature_2m_min[0])}° &bull; UV ${Math.round(d.daily.uv_index_max[0])}`;
     updateClock();
-    weatherViews=[
-      `<div class="flex flex-col items-center justify-center h-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-2">Current Conditions</div><div class="text-4xl font-black text-white mb-1">${Math.round(cw.windspeed)} <span class="text-lg text-slate-500">mph</span></div><div class="text-xs font-bold text-blue-300">Wind Speed</div></div>`,
-      `<div class="flex flex-col items-center justify-center h-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-2">Today's Forecast</div><div class="text-4xl font-black text-white mb-1">${Math.round(d.daily.temperature_2m_max[0])}°</div><div class="text-xs font-bold text-orange-300">High Temp</div></div>`
-    ];
-    forecastData=d.daily; renderForecast(); rotateWeatherTile();
-  }catch(e){}
+
+    // Render 12-hour forecast for Tile 3
+    const hourlyContainer = document.getElementById('weather');
+    hourlyContainer.innerHTML = `
+        <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full">12-Hour Forecast</div>
+        <div class="flex-grow grid grid-cols-4 md:grid-cols-6 gap-1 p-1 overflow-hidden">
+            ${d.hourly.time.slice(0,12).map((time,i) => {
+                const hour = new Date(time).getHours();
+                const temp = Math.round(d.hourly.temperature_2m[i]);
+                const weatherCode = d.hourly.weathercode[i];
+                const pop = d.hourly.precipitation_probability[i];
+                return `
+                    <div class="flex flex-col items-center justify-center p-1 rounded-lg bg-white/5 text-[9px] font-bold">
+                        <span class="text-slate-400">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
+                        <span class="text-base">${getWeatherIcon(weatherCode)}</span>
+                        <span class="text-white">${temp}°</span>
+                        ${pop > 10 ? `<span class="text-blue-300">${pop}%</span>` : ''}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    forecastData=d.daily; renderForecast(); 
+  }catch(e){console.error("Weather load failed:", e);}
 }
-function rotateWeatherTile(){ if(!pauseStates.weather && weatherViews.length){ document.getElementById("weather").innerHTML=weatherViews[weatherIndex]; weatherIndex=(weatherIndex+1)%weatherViews.length; startTileSlider("weatherSlider",CONFIG.rotateIntervalMs); }}
-loadWeather(); setInterval(rotateWeatherTile,CONFIG.rotateIntervalMs); setInterval(loadWeather,1800000);
+loadWeather(); setInterval(loadWeather,1800000);
 
 function getWeatherIcon(c){if(c===0)return"☀️";else if(c<=3)return"⛅";else if(c>=61&&c<=63)return"🌧️";else if(c>=71)return"❄️";else return"☁️";}
-let fViewIdx=0;
-function renderForecast(){
-  if(!forecastData.time) return;
-  const c=document.getElementById("forecast"); c.innerHTML="";
-  const days=fViewIdx===0?3:5;
-  c.appendChild(Object.assign(document.createElement("div"),{className:"text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full",innerText:`${days}-Day Outlook`}));
-  const l=document.createElement("div"); l.className="flex flex-col gap-1.5 w-full";
-  for(let i=0; i<days; i++){
-      const d=new Date(forecastData.time[i]);
-      const row=document.createElement("div"); row.className="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold";
-      row.innerHTML=`<span class="w-10 text-slate-400">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span><span class="text-base">${getWeatherIcon(forecastData.weathercode[i])}</span><span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[10px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>`;
-      l.appendChild(row);
-  }
-  c.appendChild(l); startTileSlider("forecastSlider", CONFIG.rotateIntervalMs);
-}
-function rotateForecastView(){ if(!pauseStates.forecast){ fViewIdx=(fViewIdx+1)%2; renderForecast(); }}
-setInterval(rotateForecastView,CONFIG.rotateIntervalMs);
+
 
 /* ========== CALENDAR (Restored Info) ========== */
 function renderCalendar(){
