@@ -245,7 +245,25 @@
                 }
 
             } catch (e) {
-                container.innerHTML = '<div class="m-auto text-red-500 text-sm font-bold uppercase">Tournament Data Unavailable</div>';
+                console.error(e);
+                if (window.location.protocol === 'file:') {
+                    container.innerHTML = `
+                        <div class="m-auto text-center p-6 bg-red-900/20 border border-red-500/50 rounded-xl max-w-md">
+                            <h3 class="text-red-500 font-bold uppercase mb-2">Security Restriction</h3>
+                            <p class="text-slate-300 text-xs mb-4">
+                                Browsers block local data files when opening HTML directly. This is a security feature, not a bug.
+                            </p>
+                            <div class="bg-black/50 p-3 rounded text-left mb-4">
+                                <p class="text-[10px] text-slate-500 uppercase mb-1">To fix, run this command in your folder:</p>
+                                <code class="text-green-400 text-xs font-mono select-all">python -m http.server 8000</code>
+                            </div>
+                            <p class="text-slate-400 text-[10px]">Then open <a href="http://localhost:8000/marchmadness/index.html" class="text-blue-400 underline hover:text-blue-300">http://localhost:8000/marchmadness/index.html</a></p>
+                            <p class="text-slate-500 text-[10px] mt-2 italic">Note: This app will work automatically once uploaded to GitHub.</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = '<div class="m-auto text-red-500 text-sm font-bold uppercase">Tournament Data Unavailable</div>';
+                }
             }
         }
 

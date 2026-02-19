@@ -1,18 +1,15 @@
 import os
 import sys
 import json
+from collections import defaultdict
 
 def generate_index_html(apps_source_directory, output_index_directory="."):
     """
     Scans the apps_source_directory and its subfolders for HTML files and generates a dynamic index.html
     in the output_index_directory with a modern, professional, and responsive app choosing screen.
-    
-    Args:
-        apps_source_directory (str): The directory containing the HTML app files (e.g., "localonly").
-        output_index_directory (str): The directory where the index.html should be written (e.g., "." for repo root).
     """
     
-    app_files_with_paths = [] # List of (full_relative_path_to_app, subfolder_name)
+    apps_by_group = defaultdict(list)
     
     # Ensure source directory exists and is accessible
     if not os.path.isdir(apps_source_directory):
@@ -27,9 +24,9 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
         # Calculate relative path from the apps_source_directory
         relative_root_from_source = os.path.relpath(root, apps_source_directory)
         if relative_root_from_source == '.':
-            subfolder_name = "" # Root of the apps_source_directory
+            subfolder_name = "General"
         else:
-            subfolder_name = relative_root_from_source.replace('\\', '/') # Normalize path separators
+            subfolder_name = relative_root_from_source.replace('\\', '/').title()
 
         for filename in files:
             if filename.endswith(".html"):
@@ -41,47 +38,45 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
                 if app_href == "index.html" or app_href == "./index.html":
                     continue
                 
-                app_files_with_paths.append((app_href, subfolder_name))
+                apps_by_group[subfolder_name].append({
+                    "href": app_href,
+                    "name": filename.replace('.html', '').replace('-', ' ').title(),
+                    "path": app_href
+                })
 
-    app_files_with_paths.sort(key=lambda x: x[0].lower()) # Sort by path for consistent order
+    # Sort groups and apps within groups
+    sorted_groups = sorted(apps_by_group.keys())
+    total_apps = 0
+    
+    app_data_json = []
 
-    app_cards_html = []
-    for file_path, subfolder_name in app_files_with_paths:
-        # Extract base filename for naming
-        base_filename = os.path.basename(file_path)
-        name_parts = []
-        if subfolder_name:
-            name_parts.append(subfolder_name.upper()) # Display subfolder name
-        name_parts.append(base_filename.replace('.html', '').replace('-', ' ').upper())
-        
-        display_name = " / ".join(name_parts)
-        
-        # Determine icon based on name keywords (for flair)
-        icon = '📄'
-        if 'NBA' in display_name or 'BASKETBALL' in display_name or 'MARCH' in display_name: icon = '🏀'
-        elif 'NFL' in display_name or 'FOOTBALL' in display_name: icon = '🏈'
-        elif 'MLB' in display_name or 'BASEBALL' in display_name: icon = '⚾'
-        elif 'WEATHER' in display_name or 'TEMP' in display_name: icon = '🌦️'
-        elif 'GAME' in display_name or 'FLIP' in display_name or 'QWINGO' in display_name or 'DICE' in display_name: icon = '🎲'
-        elif 'MAP' in display_name: icon = '🗺️'
-        elif 'PHOTO' in display_name or 'GALLERY' in display_name: icon = '📸'
-        elif 'PANEL' in display_name or 'DASHBOARD' in display_name: icon = '🖥️'
-        elif 'API' in display_name: icon = '🔌'
-        elif 'AIRPORT' in display_name or 'FLIGHT' in display_name: icon = '✈️'
-        elif 'RECEIPT' in display_name or 'INVOICE' in display_name: icon = '🧾'
-        elif 'SPORTS' in display_name or 'STATS' in display_name or 'SCHEDULE' in display_name: icon = '🏆'
-        elif 'NEWS' in display_name: icon = '📰'
-        elif 'CHART' in display_name or 'GRAPH' in display_name: icon = '📊'
-        
-        card_html = f"""
-            <a href="{file_path}" class="glass-tile rounded-2xl p-6 flex flex-col items-center justify-center gap-4 text-center group h-40">
-                <div class="text-4xl group-hover:scale-110 transition-transform duration-300 drop-shadow-2xl filter">{icon}</div>
-                <div class="w-full">
-                    <div class="text-xs font-black text-white tracking-wider truncate w-full group-hover:text-blue-400 transition-colors">{display_name}</div>
-                </div>
-            </a>
-        """
-        app_cards_html.append(card_html)
+    for group in sorted_groups:
+        apps_by_group[group].sort(key=lambda x: x['name'].lower())
+        for app in apps_by_group[group]:
+            total_apps += 1
+            # Determine icon
+            display_name = f"{group} / {app['name']}".upper()
+            icon = '📄'
+            if 'NBA' in display_name or 'BASKETBALL' in display_name or 'MARCH' in display_name: icon = '🏀'
+            elif 'NFL' in display_name or 'FOOTBALL' in display_name: icon = '🏈'
+            elif 'MLB' in display_name or 'BASEBALL' in display_name: icon = '⚾'
+            elif 'NHL' in display_name or 'HOCKEY' in display_name: icon = '🏒'
+            elif 'WEATHER' in display_name or 'TEMP' in display_name: icon = '🌦️'
+            elif 'GAME' in display_name or 'FLIP' in display_name or 'QWINGO' in display_name or 'DICE' in display_name: icon = '🎲'
+            elif 'LOGOMAP' in display_name: icon = '🏟️' # Stadium/Sports map icon
+            elif 'MAP' in display_name: icon = '🗺️'
+            elif 'PHOTO' in display_name or 'GALLERY' in display_name: icon = '📸'
+            elif 'PANEL' in display_name or 'DASHBOARD' in display_name: icon = '🖥️'
+            elif 'API' in display_name: icon = '🔌'
+            elif 'AIRPORT' in display_name or 'FLIGHT' in display_name: icon = '✈️'
+            elif 'RECEIPT' in display_name or 'INVOICE' in display_name: icon = '🧾'
+            elif 'SPORTS' in display_name or 'STATS' in display_name or 'SCHEDULE' in display_name: icon = '🏆'
+            elif 'NEWS' in display_name: icon = '📰'
+            elif 'CHART' in display_name or 'GRAPH' in display_name: icon = '📊'
+            
+            app['icon'] = icon
+            app['group'] = group
+            app_data_json.append(app)
 
     full_html_content = f"""
 <!DOCTYPE html>
@@ -91,53 +86,205 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>App Launcher (pi)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        :root {{
+            --bg-color: #020617;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --card-hover: rgba(30, 41, 59, 0.8);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.3);
+        }}
+        
         body {{ 
             font-family: 'Inter', sans-serif; 
-            background-color: #020617; 
+            background-color: var(--bg-color); 
             background-image: 
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
-                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 40%), 
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 40%),
+                radial-gradient(at 50% 50%, rgba(15, 23, 42, 1) 0px, transparent 100%);
             color: #f8fafc; 
             min-height: 100vh;
+            background-attachment: fixed;
         }}
         
-        .glass-tile {{
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        .glass-card {{
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }}
         
-        .glass-tile:hover {{
-            background: rgba(30, 41, 59, 0.7);
-            border-color: rgba(56, 189, 248, 0.3);
-            transform: translateY(-4px);
-            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+        .glass-card:hover {{
+            background: var(--card-hover);
+            border-color: rgba(56, 189, 248, 0.4);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 20px -5px var(--accent-glow);
+        }}
+
+        .search-container input {{
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }}
+
+        .search-container input:focus {{
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1), inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }}
+
+        .group-header {{
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
+            padding: 1rem 0;
+            margin-top: -1rem;
+        }}
+
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(10px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+
+        .app-card {{
+            animation: fadeIn 0.5s ease forwards;
+        }}
+
+        ::-webkit-scrollbar {{
+            width: 10px;
+        }}
+        ::-webkit-scrollbar-track {{
+            background: #020617;
+        }}
+        ::-webkit-scrollbar-thumb {{
+            background: #1e293b;
+            border-radius: 10px;
+            border: 2px solid #020617;
+        }}
+        ::-webkit-scrollbar-thumb:hover {{
+            background: #334155;
         }}
     </style>
 </head>
-<body class="p-6 md:p-12 flex flex-col gap-8">
+<body class="p-6 md:p-12 max-w-7xl mx-auto pb-24">
 
-    <!-- Header -->
-    <header class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-blue-400 font-black text-2xl shadow-xl border border-slate-700">
-                🚀
+    <!-- Header & Search -->
+    <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-8 mb-16">
+        <div class="flex items-center gap-6">
+            <div class="relative">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
+                <div class="relative w-20 h-20 bg-slate-900 rounded-3xl flex items-center justify-center text-white text-4xl shadow-2xl border border-white/10 overflow-hidden">
+                    <span class="relative z-10">🚀</span>
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent"></div>
+                </div>
             </div>
             <div>
-                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">App Launcher (pi)</h1>
-                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Repository Index</p>
+                <h1 class="text-5xl font-black uppercase tracking-tight text-white leading-none mb-2">Launcher</h1>
+                <div class="flex items-center gap-3">
+                    <span class="px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-bold text-blue-400 uppercase tracking-widest">v2.0 Professional</span>
+                    <span class="w-1 h-1 rounded-full bg-slate-700"></span>
+                    <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest">{total_apps} Apps Indexed</p>
+                </div>
             </div>
         </div>
-        <div class="text-xs font-mono text-slate-500">{len(app_files_with_paths)} Apps Detected</div>
+        
+        <div class="search-container relative group w-full lg:w-96">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="h-5 w-5 text-slate-500 group-focus-within:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+            <input type="text" id="search" placeholder="Search applications or categories..." 
+                class="block w-full pl-12 pr-4 py-4 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all duration-300 text-sm font-medium backdrop-blur-xl">
+            <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                <kbd class="hidden sm:inline-block px-2 py-1 text-[10px] font-semibold text-slate-500 bg-slate-800 border border-slate-700 rounded-md">/</kbd>
+            </div>
+        </div>
     </header>
 
-    <!-- App Grid -->
-    <main id="app-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {"".join(app_cards_html)}
-    </main>
+    <!-- App Content -->
+    <div id="content" class="space-y-16">
+        <!-- Groups will be rendered here -->
+    </div>
+
+    <script>
+        const apps = {json.dumps(app_data_json)};
+        const content = document.getElementById('content');
+        const searchInput = document.getElementById('search');
+
+        function renderApps(filter = '') {{
+            content.innerHTML = '';
+            const filteredApps = apps.filter(app => 
+                app.name.toLowerCase().includes(filter.toLowerCase()) || 
+                app.group.toLowerCase().includes(filter.toLowerCase())
+            );
+
+            const groups = {{}};
+            filteredApps.forEach(app => {{
+                if (!groups[app.group]) groups[app.group] = [];
+                groups[app.group].push(app);
+            }});
+
+            const sortedGroupNames = Object.keys(groups).sort();
+
+            if (sortedGroupNames.length === 0) {{
+                content.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-32 text-slate-500">
+                        <div class="text-7xl mb-6 opacity-20">🔍</div>
+                        <p class="text-xl font-semibold text-slate-400">No applications matched your search</p>
+                        <p class="text-sm text-slate-600 mt-2">Try searching for a category like "Sports" or "Games"</p>
+                        <button onclick="searchInput.value=''; renderApps(); searchInput.focus();" class="mt-8 px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-bold transition-colors">Clear Search</button>
+                    </div>
+                `;
+                return;
+            }}
+
+            sortedGroupNames.forEach(groupName => {{
+                const groupSection = document.createElement('section');
+                groupSection.className = 'relative';
+                
+                groupSection.innerHTML = `
+                    <div class="group-header flex items-center gap-4 mb-8">
+                        <h2 class="text-sm font-black uppercase tracking-[0.3em] text-blue-500/80">${{groupName}}</h2>
+                        <div class="h-[1px] flex-grow bg-gradient-to-r from-blue-500/20 to-transparent"></div>
+                        <span class="text-[10px] font-bold text-slate-500 bg-slate-900/50 px-2.5 py-1 rounded-lg border border-slate-800/50">${{groups[groupName].length}}</span>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                        ${{groups[groupName].map((app, index) => `
+                            <a href="${{app.href}}" class="app-card glass-card rounded-[2rem] p-8 flex flex-col items-center justify-center gap-6 text-center group h-48 relative overflow-hidden" style="animation-delay: ${{index * 50}}ms">
+                                <div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-2 -translate-y-2 group-hover:translate-x-0 group-hover:translate-y-0">
+                                    <div class="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="text-6xl group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl relative z-10 filter grayscale-[0.2] group-hover:grayscale-0">${{app.icon}}</div>
+                                <div class="w-full relative z-10">
+                                    <div class="text-[12px] font-bold text-slate-200 tracking-wide uppercase truncate group-hover:text-blue-400 transition-colors leading-tight">
+                                        ${{app.name}}
+                                    </div>
+                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                <div class="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700"></div>
+                            </a>
+                        `).join('')}}
+                    </div>
+                `;
+                content.appendChild(groupSection);
+            }});
+        }}
+
+        searchInput.addEventListener('input', (e) => renderApps(e.target.value));
+        
+        document.addEventListener('keydown', (e) => {{
+            if (e.key === '/' && document.activeElement !== searchInput) {{
+                e.preventDefault();
+                searchInput.focus();
+            }}
+        }});
+
+        renderApps();
+    </script>
 
 </body>
 </html>
@@ -147,10 +294,9 @@ def generate_index_html(apps_source_directory, output_index_directory="."):
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(full_html_content)
     
-    print(f"Generated index.html with {len(app_files_with_paths)} apps in {output_path}")
+    print(f"Generated index.html with {total_apps} apps in {output_path}")
 
 if __name__ == "__main__":
-    # Ensure a directory is provided as an argument
     if len(sys.argv) < 3:
         print("Usage: python generate_index.py <apps_source_directory> <output_index_directory>")
         sys.exit(1)
