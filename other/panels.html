@@ -41,23 +41,23 @@
         <div id="tileClock" class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
             <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
-            <div id="militaryTime" class="text-base font-bold text-slate-500 mt-1 z-10">--:--</div>
-            <div class="mt-4 w-full grid grid-cols-2 gap-2 z-10">
-                <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
-                    <div id="sunTimes" class="text-sm font-bold text-orange-300 whitespace-pre-line leading-tight">--</div>
+            <div id="militaryTime" class="text-2xl font-bold text-slate-400 mt-2 z-10">--:--</div>
+            <div class="mt-6 w-full grid grid-cols-2 gap-4 z-10">
+                <div class="bg-slate-900/50 rounded-2xl p-4 flex flex-col justify-center border border-white/5">
+                    <div id="sunTimes" class="text-xl font-black text-orange-300 whitespace-pre-line leading-tight">--</div>
                 </div>
-                <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
-                    <div id="moonPhase" class="text-sm font-bold text-purple-300">--</div>
-                    <div id="moonDates" class="text-xs text-slate-500 leading-tight mt-1">--</div>
+                <div class="bg-slate-900/50 rounded-2xl p-4 flex flex-col justify-center border border-white/5">
+                    <div id="moonPhase" class="text-xl font-black text-purple-300">--</div>
+                    <div id="moonDates" class="text-sm text-slate-500 leading-tight mt-1">--</div>
                 </div>
             </div>
-            <div id="currentWeather" class="mt-3 text-sm font-semibold text-blue-200 z-10">Loading...</div>
+            <div id="currentWeather" class="mt-6 text-2xl font-black text-blue-200 z-10">Loading...</div>
         </div>
 
         <!-- 2. SPEED/STOCKS/GAS -->
         <div id="tileSpeed" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
-            <div id="speed" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4">Loading data...</div>
-            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="speedSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
+            <div id="speed" class="flex-grow flex flex-col justify-center items-center w-full h-full p-6">Loading data...</div>
+            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="speedSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 3. WEATHER -->
@@ -98,13 +98,12 @@
             <div id="sportsContent" class="flex-grow flex flex-col w-full h-full p-0 overflow-hidden relative">
                 <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-500">Loading teams...</div>
             </div>
-            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="sportsSlider" class="h-full bg-red-500 w-0 progress-bar"></div></div>
+            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="sportsSlider" class="h-full bg-red-500 w-0 progress-bar"></div></div>
         </div>
 
     </main>
 
 <script>
-// Force Git to recognize changes - Temporary comment (2026-02-19)
 const CONFIG={rotateIntervalMs:10000};
 const pauseStates={speed:false,weather:false,forecast:false,bgg:false,fun:false,sports:false};
 
@@ -143,7 +142,7 @@ function updateClock(){
   
   const moon = calculateMoonPhase(now);
   const dates = findFullMoonDates();
-  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-xs text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
+  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-sm text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
   document.getElementById("moonDates").innerHTML = `Last: ${dates.lastFull}<br>Next: ${dates.nextFull}`;
 }
 function calculateMoonPhase(date){
@@ -172,10 +171,10 @@ async function rotateSpeedTile(){
   if(pauseStates.speed) return;
   const el=document.getElementById("speed"); const view=speedViews[speedIndex];
   if(view==="speed"){
-    el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-[10px] font-black uppercase text-slate-500 mb-3">Network Status</div><div class="flex gap-6 mb-2"><div class="text-center"><div class="text-2xl font-black text-emerald-400">${speedData.download}</div><div class="text-[8px] font-bold text-slate-500 uppercase">Down</div></div><div class="text-center"><div class="text-2xl font-black text-blue-400">12.5</div><div class="text-[8px] font-bold text-slate-500 uppercase">Up</div></div></div><div class="text-[9px] text-slate-600 font-mono">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
-  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Market Indices</div><div class="space-y-3"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="font-black text-white">6,920.93</div><div class="text-[10px] font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="font-black text-white">23,584.27</div><div class="text-[10px] font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
-  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-3 mt-2"><div class="bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-lg text-center"><div class="text-[9px] text-emerald-400 font-bold uppercase">Costco</div><div class="text-xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-2 rounded-lg text-center"><div class="text-[9px] text-slate-400 font-bold uppercase">Avg</div><div class="text-xl font-black text-white">$2.41</div></div></div></div>`;
-  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center"><div class="text-[10px] font-black uppercase text-slate-500 mb-2 border-b border-slate-700 pb-1">Mortgage Rates</div><div class="space-y-3 mt-1"><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400">30-Yr Fixed</span><span class="text-sm font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-xs font-bold text-slate-400">15-Yr Fixed</span><span class="text-sm font-black text-blue-300">6.25%</span></div></div></div>`;
+    el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-xl font-black uppercase text-slate-500 mb-6">Network Status</div><div class="flex gap-12 mb-4"><div class="text-center"><div class="text-6xl font-black text-emerald-400">${speedData.download}</div><div class="text-lg font-bold text-slate-500 uppercase mt-2">Down</div></div><div class="text-center"><div class="text-6xl font-black text-blue-400">12.5</div><div class="text-lg font-bold text-slate-500 uppercase mt-2">Up</div></div></div><div class="text-sm text-slate-600 font-mono mt-4">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
+  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Market Indices</div><div class="space-y-6"><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="text-3xl font-black text-white">6,920.93</div><div class="text-xl font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="text-3xl font-black text-white">23,584.27</div><div class="text-xl font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
+  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-6 mt-2"><div class="bg-emerald-900/20 border border-emerald-500/20 p-4 rounded-2xl text-center"><div class="text-sm text-emerald-400 font-bold uppercase mb-1">Costco</div><div class="text-4xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-4 rounded-2xl text-center"><div class="text-sm text-slate-400 font-bold uppercase mb-1">Avg</div><div class="text-4xl font-black text-white">$2.41</div></div></div></div>`;
+  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Mortgage Rates</div><div class="space-y-6 mt-1"><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-400">30-Yr Fixed</span><span class="text-3xl font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-400">15-Yr Fixed</span><span class="text-3xl font-black text-blue-300">6.25%</span></div></div></div>`;
   speedIndex=(speedIndex+1)%speedViews.length; startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
 }
 testSpeed(); rotateSpeedTile(); setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs); setInterval(testSpeed,300000);
@@ -394,19 +393,19 @@ async function loadSportsTeam(){
         return;
     }
 
-    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId)?.team.logos[0].href;
+    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId)?.team.logos[0].href;
 
     let html = `
-        <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
-            <div class="flex items-center gap-2">
-                <img src="${teamLogo}" class="w-6 h-6 object-contain">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-4 mb-4 p-4">
+            <div class="flex items-center gap-4">
+                <img src="${teamLogo}" class="w-12 h-12 object-contain">
                 <div>
-                    <div class="text-xs font-black text-white uppercase tracking-wider">${team.id}</div>
-                    <div class="text-[8px] font-bold text-slate-500 uppercase">Upcoming Schedule</div>
+                    <div class="text-3xl font-black text-white uppercase tracking-wider">${team.id}</div>
+                    <div class="text-sm font-bold text-slate-500 uppercase">Upcoming Schedule</div>
                 </div>
             </div>
         </div>
-        <div class="space-y-1 overflow-y-auto no-scrollbar">
+        <div class="space-y-2 overflow-y-auto no-scrollbar px-4 pb-4">
     `;
 
     upcomingGames.forEach(evt => {
@@ -416,10 +415,10 @@ async function loadSportsTeam(){
         const vs = comp.competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId);
         
         html += `
-            <div class="flex justify-between items-center bg-slate-800/50 p-1.5 rounded text-[10px]">
-                <div class="flex items-center gap-2">
-                    <span class="font-bold text-slate-400 w-8">vs ${vs.team.abbreviation}</span>
-                    <img src="${vs.team.logos?.[0]?.href}" class="w-4 h-4 object-contain">
+            <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl text-lg border border-white/5">
+                <div class="flex items-center gap-4">
+                    <span class="font-black text-slate-400 text-xl">vs ${vs.team.abbreviation}</span>
+                    <img src="${vs.team.logos?.[0]?.href}" class="w-8 h-8 object-contain">
                 </div>
                 <span class="font-black text-white">${dateStr}</span>
             </div>
