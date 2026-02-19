@@ -189,6 +189,7 @@
                             <th class="sticky-col-team" onclick="handleSort('displayName')">Team <span class="sort-icon"></span></th>
                             <th onclick="handleSort('rank')">Rank <span class="sort-icon"></span></th>
                             <th onclick="handleSort('pollPoints')">Points <span class="sort-icon"></span></th>
+                            <th onclick="handleSort('isORV')">ORV <span class="sort-icon"></span></th>
                             <th onclick="handleSort('avgPoints')">PPG <span class="sort-icon"></span></th>
                             <th onclick="handleSort('oppAvgPoints')">Opp PPG <span class="sort-icon"></span></th>
                             <th onclick="handleSort('fieldGoalPct')">FG% <span class="sort-icon"></span></th>
@@ -290,6 +291,7 @@
         let tournaments = {};
         let currentYearData = null;
         let allTeams = [];
+        let historicalLogos = {};
         let statsData = new Map();
         let selectedSeason = "2026";
         let currentSort = { key: 'avgPoints', direction: 'desc' };
@@ -309,6 +311,13 @@
             }
             archiveSelect.value = 2024;
             loadTournament(2024);
+
+            // Fetch Historical Logos
+            try {
+                const logoRes = await fetch('team-logos.json');
+                const logoData = await logoRes.json();
+                historicalLogos = logoData.teamLogos || {};
+            } catch (e) { console.error("Failed to load historical logos", e); }
 
             // Setup Stats Season Selector
             setupSeasonDropdown();
@@ -380,13 +389,23 @@
                     const winner = game.winner;
                     const t1Class = winner === game.team1 ? 'text-orange-400 font-bold' : 'text-slate-300';
                     const t2Class = winner === game.team2 ? 'text-orange-400 font-bold' : 'text-slate-300';
+                    
+                    const t1Logo = historicalLogos[game.team1] || 'https://a.espncdn.com/i/teamlogos/default-team-logo-500.png';
+                    const t2Logo = historicalLogos[game.team2] || 'https://a.espncdn.com/i/teamlogos/default-team-logo-500.png';
+
                     card.innerHTML = `
-                        <div class="flex justify-between mb-1 ${t1Class}">
-                            <span class="truncate w-24">${game.seed1 ?? ''} ${game.team1}</span>
+                        <div class="flex justify-between items-center mb-1 ${t1Class}">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <img src="${t1Logo}" class="w-4 h-4 object-contain shrink-0 rounded-sm">
+                                <span class="truncate w-24">${game.seed1 ?? ''} ${game.team1}</span>
+                            </div>
                             <span>${game.score1 ?? ''}</span>
                         </div>
-                        <div class="flex justify-between ${t2Class}">
-                            <span class="truncate w-24">${game.seed2 ?? ''} ${game.team2}</span>
+                        <div class="flex justify-between items-center ${t2Class}">
+                            <div class="flex items-center gap-1.5 truncate">
+                                <img src="${t2Logo}" class="w-4 h-4 object-contain shrink-0 rounded-sm">
+                                <span class="truncate w-24">${game.seed2 ?? ''} ${game.team2}</span>
+                            </div>
                             <span>${game.score2 ?? ''}</span>
                         </div>
                     `;
@@ -460,17 +479,33 @@
         async function fetchRankings(year) {
             try {
                 rankingsMap.clear();
-                const weeksUrl = `${CORE_API_BASE}/seasons/${year}/types/2/weeks`;
-                const weeksRes = await fetch(weeksUrl);
-                const weeksData = await weeksRes.json();
-                let maxWeek = (weeksData.items && weeksData.items.length > 0) ? weeksData.items.length : 1;
-                const coreRankUrl = `${CORE_API_BASE}/seasons/${year}/types/2/weeks/${maxWeek}/rankings/1?lang=en&region=us`;
-                const res = await fetch(coreRankUrl);
+                const url = year === "2026" 
+                    ? `${API_BASE}/rankings` 
+                    : `${API_BASE}/rankings?season=${year}`;
+                
+                const res = await fetch(url);
                 const data = await res.json();
-                if (data.ranks) {
-                    data.ranks.forEach(r => {
-                        const teamId = r.team?.$ref?.split('/teams/')?.[1]?.split('?')?.[0];
-                        if (teamId) rankingsMap.set(teamId, { rank: parseInt(r.current), points: parseInt(r.points) || 0 });
+                
+                const apPoll = data.rankings?.find(r => r.name === 'ap' || r.shortName === 'AP');
+                const pollToUse = apPoll || data.rankings?.[0];
+                
+                if (pollToUse) {
+                    // Top 25
+                    pollToUse.ranks?.forEach(r => {
+                        rankingsMap.set(r.team.id, {
+                            rank: parseInt(r.current),
+                            points: parseInt(r.points) || 0,
+                            isORV: false
+                        });
+                    });
+                    
+                    // Others Receiving Votes
+                    pollToUse.others?.forEach(r => {
+                        rankingsMap.set(r.team.id, {
+                            rank: 999,
+                            points: parseInt(r.points) || 0,
+                            isORV: true
+                        });
                     });
                 }
             } catch (e) { console.error(`[Rankings] Error:`, e); }
@@ -495,8 +530,15 @@
                         const res = await fetch(`${CORE_API_BASE}/seasons/${selectedSeason}/types/2/teams/${team.id}/statistics`, { signal: abortController.signal });
                         if (!res.ok) return;
                         const data = await res.json();
-                        const pollInfo = rankingsMap.get(team.id) || { rank: 999, points: 0 };
-                        const flat = { displayName: team.displayName, logo: team.logo, id: team.id, rank: pollInfo.rank, pollPoints: pollInfo.points };
+                        const pollInfo = rankingsMap.get(team.id) || { rank: 999, points: 0, isORV: false };
+                        const flat = { 
+                            displayName: team.displayName, 
+                            logo: team.logo, 
+                            id: team.id, 
+                            rank: pollInfo.rank, 
+                            pollPoints: pollInfo.points,
+                            isORV: pollInfo.isORV
+                        };
                         data.splits.categories.forEach(cat => { cat.stats.forEach(s => { flat[s.name] = { val: parseFloat(s.displayValue) || 0, display: s.displayValue }; }); });
                         statsData.set(team.id, flat);
                     } catch(e) {}
@@ -556,6 +598,9 @@
                     </td>
                     <td class="text-center font-bold ${rankColor}">${rankText}</td>
                     <td class="text-center font-mono text-slate-400">${t.pollPoints || '--'}</td>
+                    <td class="text-center">
+                        ${t.isORV ? '<span class="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[9px] font-black rounded border border-blue-500/20">YES</span>' : '<span class="text-slate-600 text-[9px]">--</span>'}
+                    </td>
                     <td class="text-center font-black text-orange-400">${t.avgPoints?.display || '--'}</td>
                     <td class="text-center font-black text-blue-400">${t.oppAvgPoints?.display || '--'}</td>
                     <td class="text-center font-mono">${t.fieldGoalPct?.display || '--'}</td>
@@ -580,7 +625,8 @@
                         <img src="${team.logo}" class="w-20 h-20 object-contain shadow-2xl">
                         <div>
                             <h2 class="text-3xl font-black italic uppercase">${team.displayName}</h2>
-                            <p class="text-xs font-black text-orange-500 uppercase tracking-widest mt-1">${selectedSeason} Season • AP #${team.rank <= 25 ? team.rank : 'Unranked'}</p>
+                            <p class="text-xs font-black text-orange-500 uppercase tracking-widest mt-1">${selectedSeason} Season • AP Rank: ${team.rank <= 25 ? team.rank : (team.isORV ? 'ORV' : 'Unranked')}</p>
+                            ${team.pollPoints > 0 ? `<p class="text-[10px] text-slate-400 font-bold uppercase mt-1">Poll Points: ${team.pollPoints}</p>` : ''}
                         </div>
                     </div>`;
                 data.splits.categories.forEach(cat => {
