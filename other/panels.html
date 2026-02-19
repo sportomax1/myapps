@@ -41,17 +41,17 @@
         <div id="tileClock" class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
             <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
-            <div id="militaryTime" class="text-sm font-bold text-slate-500 mt-1 z-10">--:--</div>
+            <div id="militaryTime" class="text-base font-bold text-slate-500 mt-1 z-10">--:--</div>
             <div class="mt-4 w-full grid grid-cols-2 gap-2 z-10">
                 <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
-                    <div id="sunTimes" class="text-[10px] font-bold text-orange-300 whitespace-pre-line leading-tight">--</div>
+                    <div id="sunTimes" class="text-sm font-bold text-orange-300 whitespace-pre-line leading-tight">--</div>
                 </div>
                 <div class="bg-slate-900/50 rounded-xl p-2 flex flex-col justify-center">
-                    <div id="moonPhase" class="text-xs font-bold text-purple-300">--</div>
-                    <div id="moonDates" class="text-[8px] text-slate-500 leading-tight mt-1">--</div>
+                    <div id="moonPhase" class="text-sm font-bold text-purple-300">--</div>
+                    <div id="moonDates" class="text-xs text-slate-500 leading-tight mt-1">--</div>
                 </div>
             </div>
-            <div id="currentWeather" class="mt-3 text-xs font-semibold text-blue-200 z-10">Loading...</div>
+            <div id="currentWeather" class="mt-3 text-sm font-semibold text-blue-200 z-10">Loading...</div>
         </div>
 
         <!-- 2. SPEED/STOCKS/GAS -->
@@ -142,7 +142,7 @@ function updateClock(){
   
   const moon = calculateMoonPhase(now);
   const dates = findFullMoonDates();
-  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-[9px] text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
+  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-xs text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
   document.getElementById("moonDates").innerHTML = `Last: ${dates.lastFull}<br>Next: ${dates.nextFull}`;
 }
 function calculateMoonPhase(date){
@@ -184,7 +184,7 @@ let forecastData=[];
 async function loadWeather(){
   try{
     const lat=39.5186, lon=-104.7614;
-    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,weathercode,precipitation_probability&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
+    const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,weathercode,precipitation_probability,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
     const d=await res.json();
     sunriseTime=new Date(d.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     sunsetTime=new Date(d.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -196,18 +196,20 @@ async function loadWeather(){
     const hourlyContainer = document.getElementById('weather');
     hourlyContainer.innerHTML = `
         <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full">12-Hour Forecast</div>
-        <div class="flex-grow grid grid-cols-4 md:grid-cols-6 gap-1 p-1 overflow-hidden">
+        <div class="flex-grow flex flex-col gap-1.5 w-full overflow-y-auto no-scrollbar p-1">
             ${d.hourly.time.slice(0,12).map((time,i) => {
                 const hour = new Date(time).getHours();
                 const temp = Math.round(d.hourly.temperature_2m[i]);
                 const weatherCode = d.hourly.weathercode[i];
                 const pop = d.hourly.precipitation_probability[i];
+                const windSpeed = Math.round(d.hourly.windspeed_10m[i]);
                 return `
-                    <div class="flex flex-col items-center justify-center p-1 rounded-lg bg-white/5 text-[9px] font-bold">
-                        <span class="text-slate-400">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
+                    <div class="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold">
+                        <span class="w-10 text-slate-400">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
                         <span class="text-base">${getWeatherIcon(weatherCode)}</span>
                         <span class="text-white">${temp}°</span>
-                        ${pop > 10 ? `<span class="text-blue-300">${pop}%</span>` : ''}
+                        <span class="text-blue-300">${pop}%</span>
+                        <span class="text-emerald-300">${windSpeed}mph</span>
                     </div>
                 `;
             }).join('')}
@@ -219,6 +221,28 @@ async function loadWeather(){
 loadWeather(); setInterval(loadWeather,1800000);
 
 function getWeatherIcon(c){if(c===0)return"☀️";else if(c<=3)return"⛅";else if(c>=61&&c<=63)return"🌧️";else if(c>=71)return"❄️";else return"☁️";}
+
+function renderForecast(){
+  if(!forecastData.time) return;
+  const c=document.getElementById("forecast"); c.innerHTML="";
+  c.appendChild(Object.assign(document.createElement("div"),{className:"text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full",innerText:`7-Day Outlook`}));
+  const l=document.createElement("div"); l.className="flex flex-col gap-1.5 w-full";
+  for(let i=0; i<7; i++){
+      const d=new Date(forecastData.time[i]);
+      const pop = forecastData.precipitation_probability_max[i];
+      const windSpeed = Math.round(forecastData.windspeed_10m_max[i]);
+      const row=document.createElement("div"); row.className="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold";
+      row.innerHTML=`
+          <span class="w-10 text-slate-400">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span>
+          <span class="text-base">${getWeatherIcon(forecastData.weathercode[i])}</span>
+          <span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[10px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>
+          <span class="text-blue-300">${pop}%</span>
+          <span class="text-emerald-300">${windSpeed}mph</span>
+      `;
+      l.appendChild(row);
+  }
+  c.appendChild(l);
+}
 
 
 /* ========== CALENDAR (Restored Info) ========== */
@@ -260,7 +284,7 @@ function renderCalendar(){
 renderCalendar();
 
 /* ========== BGG ========== */
-const BGG_TOP_25=[{rank:1,name:'Brass: Birmingham',img:'https://cf.geekdo-images.com/ssLVxklP7smcAuch5NbZFQ__imagepage/img/WNrXV5hXiLz1M6dEPHw-Bwc3Y4E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3505132.jpg'},{rank:2,name:'Ark Nova',img:'https://cf.geekdo-images.com/zxeRjiKuU_0BY-gKQFjZIQ__imagepage/img/lHl-vDRPyALGK5mzjEyVkp-_S3I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6294115.jpg'},{rank:3,name:'Pandemic Legacy',img:'https://cf.geekdo-images.com/wndsKfZQcVIbKZ03nVbUJg__imagepage/img/XhpXHj0yKYXx3KeQ_63gMqLVBo8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2452841.jpg'},{rank:4,name:'Gloomhaven',img:'https://cf.geekdo-images.com/PrgvAVnDHJbHvFEaV1q1Iw__imagepage/img/tL-F1WhWaBUUK4DDFSX6CaL9EYk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2437871.jpg'},{rank:5,name:'Dune: Imperium',img:'https://cf.geekdo-images.com/TnUvRVDusVcROeDP73UC_A__imagepage/img/KHc8BHdXVfaYwVWUEPPNtqO6-Eg=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5666597.jpg'},{rank:6,name:'Twilight Imperium',img:'https://cf.geekdo-images.com/4h1QyC-jYMQzh0uaqy3a_w__imagepage/img/1z96cObVEsAfJ4A_VrAy7XBBwWw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3727516.jpg'},{rank:7,name:'Dune: Uprising',img:'https://cf.geekdo-images.com/Aj_D-5KzYgTMXn0TwOc7qA__imagepage/img/NMcNT9phwrCH3SDcQYJEPF5A63w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6718999.jpg'},{rank:8,name:'War of the Ring',img:'https://cf.geekdo-images.com/JMHcnvAjLHNdNxK7W7hJ1A__imagepage/img/5lVqB7xn3DG2rHj6M8lAqWzJqH8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5160037.jpg'},{rank:9,name:'Terraforming Mars',img:'https://cf.geekdo-images.com/oMtSjfzUlYYCnhk_OZr0dA__imagepage/img/Sm_FzQhKoX4-Trc5k7cbVuPhxhA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3398571.jpg'},{rank:10,name:'Star Wars: Rebellion',img:'https://cf.geekdo-images.com/_nHjbpKlGjCqEgbJtBzHsw__imagepage/img/EVKEeI5F2bBELq0-OFG7LE7Bvkk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2396598.jpg'},{rank:11,name:'Agricola',img:'https://cf.geekdo-images.com/F0hlyKnx5s0humaQysM9zA__imagepage/img/Oy3ggbXWdUnlHxV-5X0vWxZg-_E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5123242.jpg'},{rank:12,name:'Dominion',img:'https://cf.geekdo-images.com/iw7jLOq07Yd5Gte1d3VQOA__imagepage/img/hBNqiCQXYTGNNgV_8s-HCfJSKTw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic4697900.jpg'},{rank:13,name:'7 Wonders',img:'https://cf.geekdo-images.com/B0F4snJHZHhg8uHVknDViA__imagepage/img/0tPOvlqNH-jyb8qqxT5sKLm9yEA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic860217.jpg'},{rank:14,name:'Carcassonne',img:'https://cf.geekdo-images.com/rax5TCu77xiclqzqeHHfhw__imagepage/img/cZJbMB7pAg3kKDDEKuJ8nWGJ3J0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3122885.jpg'},{rank:15,name:'Power Grid',img:'https://cf.geekdo-images.com/B0i2eV3lzDSIJcYLtKjTeA__imagepage/img/nCSrGmZEAx9-L8E2HVGmJSN9JQE=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5155124.jpg'},{rank:16,name:'Innovation',img:'https://cf.geekdo-images.com/Vz4aXNyf3mXR9qATMx0J0A__imagepage/img/AkzrVCSp0uXmXt2hG4BxQaZmQ8w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1532154.jpg'},{rank:17,name:'Ticket to Ride',img:'https://cf.geekdo-images.com/A5rMG_yM_b-OMkM1tnnYbA__imagepage/img/9wQxBQaHp9IZGNBxiUzLeELt-T4=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5900549.jpg'},{rank:18,name:'Codenames',img:'https://cf.geekdo-images.com/D5VgarmHCd0SS03x4SHBYg__imagepage/img/w4VZQ4rKwP8CVJ3XnP08ZPwqg8Y=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2582706.jpg'},{rank:19,name:'Puerto Rico',img:'https://cf.geekdo-images.com/i3tB6KREKSmCGJEWyaVHJA__imagepage/img/EH3JiCqWWJL6pNQdGkQFCwfm-3o=/fit-in/900x600/filters:no_upscale():strip_icc()/pic1407726.jpg'},{rank:20,name:'Food Chain Magnate',img:'https://cf.geekdo-images.com/EYdCLvH0mD_N7-g5OLqELg__imagepage/img/Q0-5C6QLs4xXqwLGhgxVt71nfLc=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5316558.jpg'},{rank:21,name:'Splendor',img:'https://cf.geekdo-images.com/w6yKE37jZN7UjDHrDGr8Sw__imagepage/img/9H2_Yk6vX8Y3x3rJHYPQZz5h34g=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2449179.jpg'},{rank:22,name:'Imperial 2030',img:'https://cf.geekdo-images.com/UgGWzVBGP8N6JV3SUdDL0Q__imagepage/img/XJk1G0qTDGJcM2GCo-EE8fKIzG8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic414216.jpg'},{rank:23,name:'Castles of Burgundy',img:'https://cf.geekdo-images.com/RTx1E6BvzTEf8umdBUjXiA__imagepage/img/vFSg3lcMqHwNh9xpPHM5IYqjPt0=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3785264.jpg'},{rank:24,name:'Twilight Struggle',img:'https://cf.geekdo-images.com/I0-SEWmakM-8SmT0ZrDnzQ__imagepage/img/RIqqGnvA3I7xKf1J8mfWEz-_B0I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic486635.jpg'},{rank:25,name:'Azul',img:'https://cf.geekdo-images.com/aPjyaLg_CiHfQEwlqXJ4nA__imagepage/img/p_RgRZJHNcSDh7cYMm1a9j-sZ6w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3718275.jpg'}];
+const BGG_TOP_25=[{rank:1,name:'Brass: Birmingham',img:'https://cf.geekdo-images.com/ssLVxklP7smcAuch5NbZFQ__imagepage/img/WNrXV5hXiLz1M6dEPHw-Bwc3Y4E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3505132.jpg'},{rank:2,name:'Ark Nova',img:'https://cf.geekdo-images.com/zxeRjiKuU_0BY-gKQFjZIQ__imagepage/img/lHl-vDRPyALGK5mzjEyVkp-_S3I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6294115.jpg'},{rank:3,name:'Pandemic Legacy',img:'https://cf.geekdo-images.com/wndsKfZQcVIbKZ03nVbUJg__imagepage/img/XhpXHj0yKYXx3KeQ_63gMqLVBo8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2452841.jpg'},{rank:4,name:'Gloomhaven',img:'https://cf.geekdo-images.com/PrgvAVnDHJbHvFEaV1q1Iw__imagepage/img/tL-F1WhWaBUUK4DDFSX6CaL9EYk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2437871.jpg'},{rank:5,name:'Dune: Imperium',img:'https://cf.geekdo-images.com/TnUvRVDusVcROeDP73UC_A__imagepage/img/KHc8BHdXVfaYwVWUEPPNtqO6-Eg=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5666597.jpg'},{rank:6,name:'Twilight Imperium',img:'https://cf.geekdo-images.com/4h1QyC-jYMQzh0uaqy3a_w__imagepage/img/1z96cObVEsAfJ4A_VrAy7XBBwWw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3727516.jpg'},{rank:7,name:'Dune: Uprising',img:'https://cf.geekdo-images.com/Aj_D-5KzYgTMXn0TwOc7qA__imagepage/img/NMcNT9phwrCH3SDcQYJEPF5A63w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6718999.jpg'},{rank:8,name:'War of the Ring',img:'https://cf.geekdo-images.com/JMHcnvAjLHNdNxK7W7hJ1A__imagepage/img/5lVqB7xn3DG2rHj6M8lAqWzJqH8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5160037.jpg'},{rank:9,name:'Terraforming Mars',img:'https://cf.geekdo-images.com/oMtSjfzUlYYCnhk_OZr0dA__imagepage/img/Sm_FzQhKoX4-Trc5k7cbVuPhxhA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3398571.jpg'},{rank:10,name:'Star Wars: Rebellion',img:'https://cf.geekdo-images.com/_nHjbpKlGjCqEgbJtBzHsw__imagepage/img/EVKEeI5F2bBELq0-OFG7LE7Bvkk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2396598.jpg'},{rank:11,name:... [truncated]
 
 function renderBGGGrid(){
   const grid=document.getElementById('bggGrid'); grid.innerHTML='';
@@ -369,7 +393,7 @@ async function loadSportsTeam(){
         return;
     }
 
-    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId)?.team.logos[0].href;
+    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId)?.team.logos[0].href;
 
     let html = `
         <div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
