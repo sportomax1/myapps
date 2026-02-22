@@ -45,6 +45,65 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Draft Mode Styles */
+        .slot-machine-window {
+            height: 150px;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(to bottom, #000 0%, #1e293b 20%, #1e293b 80%, #000 100%);
+            border-radius: 1rem;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8), 0 0 15px rgba(239, 68, 68, 0.5);
+            border: 2px solid #ef4444;
+        }
+        
+        .slot-reel {
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.1s linear; /* Dynamic control via JS */
+        }
+        
+        .slot-item {
+            height: 150px; /* Must match window height */
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .slot-item img {
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
+        }
+
+        .draft-active-team {
+            box-shadow: 0 0 0 2px #22c55e;
+            transform: scale(1.02);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* Swim Lane Scrollbar Hide */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        .swim-lane {
+            min-width: 160px;
+            width: 160px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        .swim-lane.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -86,6 +145,9 @@
                 </button>
                 <button id="btn-view-number" onclick="switchView('number')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
                     Jersey #
+                </button>
+                <button id="btn-view-draft" onclick="switchView('draft')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
+                    Draft
                 </button>
             </div>
 
@@ -169,6 +231,110 @@
             </div>
             <div class="glass-panel flex-grow w-full h-[600px] bg-slate-800 rounded-2xl p-4">
                 <div id="map-container" class="w-full h-full"></div>
+            </div>
+        </div>
+
+        <!-- View 7: Draft View -->
+        <div id="draft-view" class="view-section hidden flex flex-col gap-6">
+            <!-- Draft Setup -->
+            <div id="draft-setup-panel" class="glass-panel p-8 max-w-3xl mx-auto w-full">
+                <h2 class="text-3xl font-black italic uppercase text-white mb-6">Draft Configuration</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Teams Count -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Number of Teams</label>
+                        <input type="number" id="draft-teams-count" min="1" max="32" value="2" class="bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold">
+                    </div>
+
+                    <!-- Pool -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Player Pool</label>
+                        <select id="draft-pool" class="bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase">
+                            <option value="all">Entire NFL</option>
+                            <option value="afc">AFC Only</option>
+                            <option value="nfc">NFC Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Format -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Draft Format</label>
+                        <select id="draft-format" class="bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase">
+                            <option value="snake">Snake Draft</option>
+                            <option value="standard">Standard (Fixed Order)</option>
+                            <option value="auction">Auction (Budget)</option>
+                        </select>
+                    </div>
+
+                    <!-- Mode -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase">Team Selection Mode</label>
+                        <select id="draft-mode" class="bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase">
+                            <option value="standard">Standard Selection</option>
+                            <option value="random">Random Logo Generator (Slot Machine)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Roster Settings -->
+                <div class="mb-8">
+                    <label class="text-xs font-bold text-slate-400 uppercase mb-3 block">Roster Positions (Comma Separated)</label>
+                    <input type="text" id="draft-positions" value="QB, WR, WR, RB, RB, TE, K, DST, HC" class="w-full bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase text-sm">
+                    <p class="text-[10px] text-slate-500 mt-2">Default: QB, WR, WR, RB, RB, TE, K, DST, HC</p>
+                </div>
+
+                <button onclick="startDraft()" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black uppercase tracking-widest text-lg transition shadow-lg shadow-green-900/50">
+                    Start Draft
+                </button>
+            </div>
+
+            <!-- Active Draft Board -->
+            <div id="draft-active-panel" class="hidden flex flex-col gap-6 h-full">
+                <!-- Status Bar -->
+                <div class="glass-panel p-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-800/80 sticky top-0 z-30 backdrop-blur-xl">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-red-600 rounded-lg flex items-center justify-center font-black text-white text-xl animate-pulse" id="draft-clock-icon">
+                            ⏳
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-black uppercase italic text-white" id="draft-status-text">Round 1 • Pick 1</h2>
+                            <p class="text-xs font-bold text-green-400 uppercase" id="draft-current-team">Team 1 On The Clock</p>
+                        </div>
+                    </div>
+                    
+                    <button onclick="endDraft()" class="px-4 py-2 bg-slate-700 hover:bg-red-600 rounded-lg text-xs font-bold uppercase text-white transition">Exit Draft</button>
+                </div>
+
+                <!-- Slot Machine (Hidden by default) -->
+                <div id="slot-machine-section" class="hidden max-w-xl mx-auto w-full">
+                    <div class="slot-machine-window mb-4">
+                        <div id="slot-reel" class="slot-reel">
+                            <!-- Logos injected here -->
+                        </div>
+                    </div>
+                    <button id="btn-spin-wheel" onclick="spinDraftWheel()" class="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-black uppercase rounded-xl text-xl shadow-lg shadow-yellow-500/20 transform transition active:scale-95">
+                        SPIN TEAM GENERATOR
+                    </button>
+                    <p id="slot-result-text" class="text-center text-xs font-bold text-slate-400 uppercase mt-2 h-4"></p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow min-h-0">
+                    <!-- Teams / Rosters Column -->
+                    <div class="lg:col-span-1 glass-panel p-4 overflow-y-auto max-h-[80vh] flex flex-col gap-4" id="draft-teams-list">
+                        <!-- Teams injected here -->
+                    </div>
+
+                    <!-- Player Pool Column -->
+                    <div class="lg:col-span-2 glass-panel p-4 flex flex-col gap-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="draft-player-search" oninput="filterDraftPool()" placeholder="Search Available Players..." class="flex-grow bg-slate-900 text-white p-2 rounded-lg text-xs font-bold uppercase border border-slate-700">
+                        </div>
+                        <div id="draft-pool-grid" class="flex flex-row overflow-x-auto gap-4 pb-4 no-scrollbar items-start h-full">
+                            <!-- Players injected here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -352,7 +518,11 @@
 
         function processStandings(data) {
             if (!data.children) return;
-            const traverse = (node) => {
+            const traverse = (node, conference = null) => {
+                let currentConf = conference;
+                if (node.name === 'American Football Conference') currentConf = 'AFC';
+                if (node.name === 'National Football Conference') currentConf = 'NFC';
+                
                 if (node.standings && node.standings.entries) {
                     node.standings.entries.forEach(entry => {
                         let record = "0-0";
@@ -363,14 +533,19 @@
                             winPct = entry.stats.find(s => s.name === 'winPercent')?.value || 0;
                             record = `${w}-${l}`;
                         }
-                        teamRecords[entry.team.id] = { record, winPct, wins: parseInt(record.split('-')[0]), losses: parseInt(record.split('-')[1]) };
+                        teamRecords[entry.team.id] = { 
+                            record, winPct, 
+                            wins: parseInt(record.split('-')[0]), 
+                            losses: parseInt(record.split('-')[1]),
+                            conference: currentConf 
+                        };
                     });
                 }
                 if (node.children) {
-                    node.children.forEach(traverse);
+                    node.children.forEach(child => traverse(child, currentConf));
                 }
             };
-            data.children.forEach(traverse);
+            data.children.forEach(child => traverse(child));
         }
 
         async function fetchAllRosters(teams) {
@@ -399,6 +574,7 @@
                         const recData = teamRecords[team.id] || { record: "0-0", winPct: 0 };
                         team.record = recData.record;
                         team.winPct = recData.winPct; 
+                        team.conference = recData.conference; 
                         nflTeams.push(team);
 
                         roster.forEach(p => {
@@ -892,12 +1068,13 @@
             const btnMap = document.getElementById('btn-view-map');
             const btnPos = document.getElementById('btn-view-position');
             const btnNum = document.getElementById('btn-view-number');
+            const btnDraft = document.getElementById('btn-view-draft');
             
             currentView = view;
             updateSortOptions();
 
             // Reset buttons
-            [btnNfl, btnCollege, btnMap, btnPos, btnNum].forEach(btn => 
+            [btnNfl, btnCollege, btnMap, btnPos, btnNum, btnDraft].forEach(btn => 
                 btn.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white"
             );
 
@@ -907,6 +1084,7 @@
             document.getElementById('map-view').classList.add('hidden');
             document.getElementById('position-view').classList.add('hidden');
             document.getElementById('number-view').classList.add('hidden');
+            document.getElementById('draft-view').classList.add('hidden');
 
             if (view === 'nfl') {
                 btnNfl.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-green-600 text-white shadow-lg";
@@ -934,6 +1112,9 @@
                 btnNum.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-purple-600 text-white shadow-lg";
                 document.getElementById('number-view').classList.remove('hidden');
                 renderNumberView();
+            } else if (view === 'draft') {
+                btnDraft.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-red-600 text-white shadow-lg";
+                document.getElementById('draft-view').classList.remove('hidden');
             }
         }
 
@@ -1004,6 +1185,434 @@
             if (name.includes("New York")) return "NY";
             if (name.includes("New Jersey")) return "NJ";
             return null;
+        }
+
+        // --- Draft Logic ---
+        let draftState = {
+            active: false,
+            teams: [],
+            round: 1,
+            pick: 1,
+            totalPicks: 0,
+            settings: {},
+            currentTeamIndex: 0,
+            generatedTeamId: null,
+            isSpinning: false
+        };
+
+        function startDraft() {
+            const teamCount = parseInt(document.getElementById('draft-teams-count').value);
+            const pool = document.getElementById('draft-pool').value;
+            const format = document.getElementById('draft-format').value;
+            const mode = document.getElementById('draft-mode').value;
+            const positions = document.getElementById('draft-positions').value.split(',').map(p => p.trim().toUpperCase()).filter(p => p);
+
+            draftState = {
+                active: true,
+                teams: Array.from({length: teamCount}, (_, i) => ({
+                    id: i + 1,
+                    name: `Team ${i + 1}`,
+                    roster: [],
+                    sourceTeamsUsed: new Set() 
+                })),
+                round: 1,
+                pick: 1,
+                totalPicks: 0,
+                currentTeamIndex: 0,
+                settings: { pool, format, mode, positions },
+                generatedTeamId: null,
+                isSpinning: false
+            };
+
+            document.getElementById('draft-setup-panel').classList.add('hidden');
+            document.getElementById('draft-active-panel').classList.remove('hidden');
+            
+            if (mode === 'random') {
+                document.getElementById('slot-machine-section').classList.remove('hidden');
+                // Auto-spin for first pick
+                setTimeout(spinDraftWheel, 500);
+            } else {
+                document.getElementById('slot-machine-section').classList.add('hidden');
+            }
+
+            updateDraftUI();
+        }
+
+        function endDraft() {
+            if(!confirm("End Draft? Progress will be lost.")) return;
+            document.getElementById('draft-setup-panel').classList.remove('hidden');
+            document.getElementById('draft-active-panel').classList.add('hidden');
+            draftState.active = false;
+        }
+
+        function updateDraftUI() {
+            if (!draftState.active) return;
+            
+            const currentTeam = draftState.teams[draftState.currentTeamIndex];
+            document.getElementById('draft-status-text').textContent = `Round ${draftState.round} • Pick ${draftState.pick} (Overall ${draftState.totalPicks + 1})`;
+            document.getElementById('draft-current-team').textContent = `${currentTeam.name} Selecting...`;
+            
+            // Render Teams List
+            const teamsList = document.getElementById('draft-teams-list');
+            teamsList.innerHTML = draftState.teams.map((t, idx) => {
+                const isActive = idx === draftState.currentTeamIndex;
+                const progress = (t.roster.length / draftState.settings.positions.length) * 100;
+                
+                return `
+                <div class="p-3 rounded-xl border ${isActive ? 'draft-active-team border-green-500 bg-green-900/30' : 'border-slate-700 bg-slate-800/50'} transition-all duration-300">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-black text-sm text-white uppercase tracking-wider">${t.name}</span>
+                        <span class="text-[10px] font-bold text-slate-400">${t.roster.length}/${draftState.settings.positions.length}</span>
+                    </div>
+                    
+                    <!-- Roster Grid -->
+                    <div class="flex flex-wrap gap-1 mb-2">
+                        ${t.roster.map(p => `
+                            <div class="w-8 h-8 rounded-lg overflow-hidden border border-slate-600 relative group/p cursor-help">
+                                <img src="${p.headshot?.href}" class="w-full h-full object-cover">
+                                <div class="absolute bottom-0 right-0 w-3 h-3 bg-black rounded-tl-sm flex items-center justify-center border-l border-t border-slate-600">
+                                    <img src="${p.currentTeam.logos[0].href}" class="w-2 h-2">
+                                </div>
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 bg-black text-white text-[9px] p-2 rounded hidden group-hover/p:block z-50 pointer-events-none">
+                                    ${p.displayName} (${p.position.abbreviation})
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${Array.from({length: Math.max(0, draftState.settings.positions.length - t.roster.length)}).map((_, i) => `
+                            <div class="w-8 h-8 rounded-lg border border-slate-700 bg-slate-900/50 flex items-center justify-center text-[8px] font-bold text-slate-600 uppercase">
+                                ${draftState.settings.positions[t.roster.length + i] || '?'}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `}).join('');
+
+            // If random mode and waiting for spin
+            if (draftState.settings.mode === 'random' && !draftState.generatedTeamId) {
+                document.getElementById('btn-spin-wheel').disabled = false;
+                document.getElementById('btn-spin-wheel').classList.remove('opacity-50', 'cursor-not-allowed');
+                document.getElementById('slot-result-text').textContent = "Spin to assign a team!";
+                document.getElementById('slot-result-text').className = "text-center text-xs font-bold text-yellow-400 uppercase mt-2 h-4 animate-pulse";
+            } else if (draftState.settings.mode === 'random' && draftState.generatedTeamId) {
+                document.getElementById('btn-spin-wheel').disabled = true;
+                document.getElementById('btn-spin-wheel').classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            filterDraftPool();
+        }
+
+        function initSlotMachineVisuals() {
+            const reel = document.getElementById('slot-reel');
+            // Initial random visual
+            reel.innerHTML = Array.from({length: 5}).map(() => {
+                const t = nflTeams[Math.floor(Math.random() * nflTeams.length)];
+                return `<div class="slot-item"><img src="${t.logos[0].href}" class="w-24 h-24 object-contain opacity-50"></div>`;
+            }).join('');
+        }
+
+        function spinDraftWheel() {
+            if (draftState.isSpinning) return;
+            draftState.isSpinning = true;
+            
+            const reel = document.getElementById('slot-reel');
+            const resultText = document.getElementById('slot-result-text');
+            const currentTeam = draftState.teams[draftState.currentTeamIndex];
+
+            // Valid teams: Not used by this team yet
+            const validTeams = nflTeams.filter(t => !currentTeam.sourceTeamsUsed.has(t.id));
+            
+            if(validTeams.length === 0) {
+                alert("No valid source teams remaining! (You have players from all 32 teams?)");
+                draftState.isSpinning = false;
+                return;
+            }
+
+            // Prepare animation
+            const winner = validTeams[Math.floor(Math.random() * validTeams.length)];
+            const spins = 30; // Number of logos in strip
+            const strip = [];
+            for(let i=0; i<spins; i++) strip.push(nflTeams[Math.floor(Math.random() * nflTeams.length)]); // Random fillers
+            strip.push(winner);
+
+            reel.innerHTML = strip.map(t => `
+                <div class="slot-item">
+                    <img src="${t.logos[0].href}" class="w-32 h-32 object-contain filter drop-shadow-xl">
+                </div>
+            `).join('');
+            
+            // Reset position
+            reel.style.transition = 'none';
+            reel.style.transform = 'translateY(0)';
+            
+            // Trigger animation
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const itemHeight = 150; 
+                    const totalHeight = (strip.length - 1) * itemHeight; // Scroll to last item
+                    reel.style.transition = 'transform 3s cubic-bezier(0.15, 0.9, 0.3, 1.0)';
+                    reel.style.transform = `translateY(-${totalHeight}px)`;
+                });
+            });
+
+            resultText.textContent = "SPINNING...";
+            resultText.className = "text-center text-xs font-bold text-slate-400 uppercase mt-2 h-4";
+
+            setTimeout(() => {
+                draftState.isSpinning = false;
+                draftState.generatedTeamId = winner.id;
+                
+                resultText.textContent = `MUST PICK: ${winner.displayName}`;
+                resultText.className = "text-center text-lg font-black text-green-400 uppercase mt-2 h-8 animate-bounce";
+                
+                updateDraftUI(); // Will trigger filter
+            }, 3050); // Match CSS transition duration + buffer
+        }
+
+        function filterDraftPool() {
+            if (!draftState.active) return;
+            
+            const search = document.getElementById('draft-player-search').value.toLowerCase();
+            const currentTeam = draftState.teams[draftState.currentTeamIndex];
+            
+            // 1. Determine Position Requirements
+            const positionCounts = {};
+            const positionLimits = {};
+            
+            // Calculate Limits from Settings
+            draftState.settings.positions.forEach(pos => {
+                positionLimits[pos] = (positionLimits[pos] || 0) + 1;
+            });
+
+            // Calculate Current Counts from Roster
+            currentTeam.roster.forEach(p => {
+                const pos = p.position.abbreviation;
+                positionCounts[pos] = (positionCounts[pos] || 0) + 1;
+            });
+
+            // unique positions needed
+            const uniquePositions = [...new Set(draftState.settings.positions)];
+            const groupedPlayers = {};
+
+            // 2. Populate Candidates for Each Position
+            uniquePositions.forEach(pos => {
+                let candidates = [];
+                
+                // DST and HC Special Handling (Teams as Players)
+                if (pos === 'DST' || pos === 'HC') {
+                    candidates = nflTeams.map(t => ({
+                        id: `${t.id}_${pos}`,
+                        displayName: pos === 'DST' ? `${t.displayName}` : `${t.displayName} HC`, // Simplified
+                        position: { abbreviation: pos },
+                        currentTeam: t,
+                        headshot: { href: t.logos[0].href }, // Use logo
+                        isTeamObject: true
+                    }));
+                } else {
+                    // Regular Players
+                    candidates = allPlayers.filter(p => p.position && p.position.abbreviation === pos);
+                }
+
+                // Apply Common Filters (Search, Pool, Source Team Rule)
+                candidates = candidates.filter(p => {
+                    // Search
+                    if (search && !p.displayName.toLowerCase().includes(search) && !p.currentTeam.displayName.toLowerCase().includes(search)) return false;
+
+                    // Pool (Conference)
+                    if (draftState.settings.pool === 'afc' && p.currentTeam.conference !== 'AFC') return false;
+                    if (draftState.settings.pool === 'nfc' && p.currentTeam.conference !== 'NFC') return false;
+
+                    // Source Team Rule (One per roster)
+                    // DST/HC check: If I pick Chiefs DST, I can't pick Mahomes. Correct.
+                    if (currentTeam.sourceTeamsUsed.has(p.currentTeam.id)) return false;
+
+                    // Random Mode Rule
+                    if (draftState.settings.mode === 'random' && draftState.generatedTeamId) {
+                        if (p.currentTeam.id !== draftState.generatedTeamId) return false;
+                    }
+
+                    return true;
+                });
+
+                // Sort
+                candidates.sort((a,b) => a.displayName.localeCompare(b.displayName));
+                
+                groupedPlayers[pos] = candidates;
+            });
+
+            renderDraftSwimLanes(groupedPlayers, positionCounts, positionLimits, uniquePositions);
+        }
+
+        function renderDraftSwimLanes(groupedPlayers, currentCounts, limits, uniquePositions) {
+            const container = document.getElementById('draft-pool-grid');
+            
+            // Switch container style for swim lanes
+            container.className = "flex flex-row overflow-x-auto gap-4 pb-4 no-scrollbar items-start h-full";
+            
+            if (uniquePositions.length === 0) {
+                container.innerHTML = '<div class="w-full text-center text-slate-500 py-10">Configuration Error.</div>';
+                return;
+            }
+
+            container.innerHTML = uniquePositions.map(pos => {
+                const count = currentCounts[pos] || 0;
+                const limit = limits[pos] || 0;
+                const isFull = count >= limit;
+                const players = groupedPlayers[pos] || [];
+                
+                return `
+                <div class="swim-lane glass-panel bg-slate-900/50 p-2 flex flex-col h-full rounded-xl border border-slate-700 ${isFull ? 'disabled opacity-50' : ''}">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center bg-slate-800 p-2 rounded-lg mb-2 sticky top-0 z-10">
+                        <span class="font-black text-white text-sm">${pos}</span>
+                        <span class="text-[10px] font-bold ${isFull ? 'text-green-500' : 'text-slate-400'}">${count}/${limit}</span>
+                    </div>
+
+                    <!-- List -->
+                    <div class="flex-col flex gap-2 overflow-y-auto no-scrollbar flex-grow">
+                        ${players.length === 0 && !isFull ? `<div class="text-[10px] text-slate-500 text-center py-4">No ${pos} Available</div>` : ''}
+                        ${players.slice(0, 50).map(p => `
+                            <div class="p-2 rounded bg-slate-800 hover:bg-slate-700 flex items-center gap-2 cursor-pointer group relative transition-all hover:scale-105 border border-transparent hover:border-green-500" onclick="draftPlayer('${p.id}')">
+                                <img src="${p.headshot?.href}" class="w-8 h-8 rounded bg-black object-contain">
+                                <div class="min-w-0 flex-grow">
+                                    <div class="text-[10px] font-bold text-white truncate">${p.displayName}</div>
+                                    <div class="text-[8px] text-slate-400 flex justify-between">
+                                        <span>${p.currentTeam.abbreviation}</span>
+                                        ${!p.isTeamObject ? `<span>#${p.jersey}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Renamed for clarity, but kept original signature usage in filterDraftPool
+        // NOTE: The previous renderDraftPoolGrid is replaced by logic inside filterDraftPool calling renderDraftSwimLanes
+        // I will keep a stub if needed or just remove it. I removed it in the replacement.
+
+        // Helper to handle synthesized IDs
+        function draftPlayer(playerId) {
+             if (draftState.isSpinning) return;
+             
+             // Find player in allPlayers OR construct from nflTeams if synthetic
+             let player = allPlayers.find(p => p.id === playerId);
+             
+             if (!player) {
+                 // Check if it's a synthetic ID (TeamId_DST or TeamId_HC)
+                 if (playerId.includes('_DST') || playerId.includes('_HC')) {
+                     const [tId, type] = playerId.split('_');
+                     const teamObj = nflTeams.find(t => t.id === tId);
+                     if (teamObj) {
+                         player = {
+                             id: playerId,
+                             displayName: type === 'DST' ? `${teamObj.displayName} Def` : `${teamObj.displayName} HC`,
+                             position: { abbreviation: type },
+                             currentTeam: teamObj,
+                             headshot: { href: teamObj.logos[0].href },
+                             isTeamObject: true
+                         };
+                     }
+                 }
+             }
+
+            if (!player) return;
+
+            const team = draftState.teams[draftState.currentTeamIndex];
+
+            // Double check constraints (client-side validation)
+            if (team.sourceTeamsUsed.has(player.currentTeam.id)) {
+                alert(`Constraint Violation: You already have a player/unit from ${player.currentTeam.displayName}.`);
+                return;
+            }
+            if (draftState.settings.mode === 'random' && player.currentTeam.id !== draftState.generatedTeamId) {
+                alert(`Constraint Violation: You must pick from ${nflTeams.find(t=>t.id===draftState.generatedTeamId)?.displayName}.`);
+                return;
+            }
+            
+            // Check position limit
+            const pos = player.position.abbreviation;
+            const currentCount = team.roster.filter(p => p.position.abbreviation === pos).length;
+            const limit = draftState.settings.positions.filter(p => p === pos).length;
+            
+            if (currentCount >= limit) {
+                alert(`Roster Full: You already have ${currentCount} ${pos}(s).`);
+                return;
+            }
+
+            // Execute Pick
+            team.roster.push(player);
+            team.sourceTeamsUsed.add(player.currentTeam.id);
+            
+            draftState.totalPicks++;
+            draftState.pick++;
+            draftState.generatedTeamId = null; // Reset slot machine constraint
+
+            // Check Draft Complete
+            const totalSlots = draftState.settings.positions.length;
+            const allFull = draftState.teams.every(t => t.roster.length >= totalSlots);
+
+            if (allFull) {
+                updateDraftUI();
+                setTimeout(() => {
+                    alert("Draft Complete! Great job.");
+                }, 100);
+                return;
+            }
+
+            // Advance Turn Logic
+            advanceTurn();
+            
+            updateDraftUI();
+
+            // Auto-Spin for next turn
+            if (draftState.settings.mode === 'random') {
+                setTimeout(spinDraftWheel, 500);
+            }
+        }
+
+        function advanceTurn() {
+            const teamCount = draftState.teams.length;
+            
+            if (draftState.settings.format === 'snake') {
+                // Snake Logic
+                // Round 1 (Odd): 0 -> 1 -> ... -> N-1
+                // Round 2 (Even): N-1 -> ... -> 1 -> 0
+                
+                if (draftState.round % 2 !== 0) { 
+                    // Odd Round (Forward)
+                    if (draftState.currentTeamIndex < teamCount - 1) {
+                        draftState.currentTeamIndex++;
+                    } else {
+                        // End of Odd Round -> Start Even Round (Stay on same team for wrap-around? usually yes)
+                        // Standard Snake: Team N picks last in Rd 1 and first in Rd 2.
+                        draftState.round++;
+                        // Index stays same (N-1)
+                    }
+                } else {
+                    // Even Round (Backward)
+                    if (draftState.currentTeamIndex > 0) {
+                        draftState.currentTeamIndex--;
+                    } else {
+                        // End of Even Round -> Start Odd Round (Team 0 picks last in Rd 2, first in Rd 3)
+                        draftState.round++;
+                        // Index stays same (0)
+                    }
+                }
+            } else {
+                // Standard Logic (Fixed Order)
+                // 0 -> 1 -> ... -> N-1 -> 0 (Next Round)
+                draftState.currentTeamIndex++;
+                if (draftState.currentTeamIndex >= teamCount) {
+                    draftState.currentTeamIndex = 0;
+                    draftState.round++;
+                }
+            }
+
+            // Reset pick number in round if needed, but simplistic "pick" counter just increments globally or per round.
+            // My UI shows "Pick X" as global pick in round? usually Pick is 1..N in round.
+            draftState.pick = (draftState.totalPicks % teamCount) + 1;
         }
 
         // Start
