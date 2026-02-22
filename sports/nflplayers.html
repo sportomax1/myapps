@@ -280,8 +280,8 @@
                 <!-- Roster Settings -->
                 <div class="mb-8">
                     <label class="text-xs font-bold text-slate-400 uppercase mb-3 block">Roster Positions (Comma Separated)</label>
-                    <input type="text" id="draft-positions" value="QB, WR, WR, RB, RB, TE, K, DST, HC" class="w-full bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase text-sm">
-                    <p class="text-[10px] text-slate-500 mt-2">Default: QB, WR, WR, RB, RB, TE, K, DST, HC</p>
+                    <input type="text" id="draft-positions" value="QB, WR, WR, RB, RB, TE, PK, DST, HC" class="w-full bg-slate-900 text-white p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500 font-bold uppercase text-sm">
+                    <p class="text-[10px] text-slate-500 mt-2">Default: QB, WR, WR, RB, RB, TE, PK, DST, HC</p>
                 </div>
 
                 <button onclick="startDraft()" class="w-full py-4 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black uppercase tracking-widest text-lg transition shadow-lg shadow-green-900/50">
@@ -371,7 +371,7 @@
                             <option value="DL">Defensive Line</option>
                             <option value="LB">Linebacker</option>
                             <option value="DB">Defensive Back</option>
-                            <option value="K">Kicker</option>
+                            <option value="PK">PK (Kicker)</option>
                             <option value="P">Punter</option>
                         </select>
                         <select id="sort-filter" onchange="applyFilters()" class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none focus:border-green-500">
@@ -394,10 +394,7 @@
     </main>
 
     <script>
-        // --- IMMEDIATE DEBUG ---
-        alert("NFL Vault Debug: JavaScript is executing!");
-        console.log("NFL Vault Debug: Script started.");
-        // --- END IMMEDIATE DEBUG ---
+        // Debug notices removed for production
 
         // --- API Config ---
         const TEAMS_API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams';
@@ -410,6 +407,13 @@
         let collegeMap = {}; 
         let hometownMap = {};
         let positionMap = {};
+
+        function normalizePositionAbbrev(abbrev) {
+            if (!abbrev) return abbrev;
+            const a = String(abbrev).toUpperCase();
+            if (a === 'K') return 'PK';
+            return a;
+        }
         let numberMap = {};
         let allPlayers = []; 
         let teamRecords = {};
@@ -647,7 +651,8 @@
             
             allPlayers.forEach(p => {
                 // Position
-                const pos = p.position ? p.position.abbreviation : 'N/A';
+                const rawPos = p.position ? p.position.abbreviation : 'N/A';
+                const pos = normalizePositionAbbrev(rawPos);
                 if (!positionMap[pos]) positionMap[pos] = { name: pos, players: [] };
                 positionMap[pos].players.push(p);
 
@@ -1205,7 +1210,9 @@
             const pool = document.getElementById('draft-pool').value;
             const format = document.getElementById('draft-format').value;
             const mode = document.getElementById('draft-mode').value;
-            const positions = document.getElementById('draft-positions').value.split(',').map(p => p.trim().toUpperCase()).filter(p => p);
+            const positions = document.getElementById('draft-positions').value.split(',')
+                .map(p => normalizePositionAbbrev(p.trim().toUpperCase()))
+                .filter(p => p);
 
             draftState = {
                 active: true,
@@ -1384,9 +1391,9 @@
                 positionLimits[pos] = (positionLimits[pos] || 0) + 1;
             });
 
-            // Calculate Current Counts from Roster
+            // Calculate Current Counts from Roster (normalize abbreviations)
             currentTeam.roster.forEach(p => {
-                const pos = p.position.abbreviation;
+                const pos = normalizePositionAbbrev(p.position && p.position.abbreviation);
                 positionCounts[pos] = (positionCounts[pos] || 0) + 1;
             });
 
@@ -1410,7 +1417,7 @@
                     }));
                 } else {
                     // Regular Players
-                    candidates = allPlayers.filter(p => p.position && p.position.abbreviation === pos);
+                    candidates = allPlayers.filter(p => p.position && normalizePositionAbbrev(p.position.abbreviation) === pos);
                 }
 
                 // Apply Common Filters (Search, Pool, Source Team Rule)
@@ -1532,8 +1539,8 @@
             }
             
             // Check position limit
-            const pos = player.position.abbreviation;
-            const currentCount = team.roster.filter(p => p.position.abbreviation === pos).length;
+            const pos = normalizePositionAbbrev(player.position && player.position.abbreviation);
+            const currentCount = team.roster.filter(p => normalizePositionAbbrev(p.position && p.position.abbreviation) === pos).length;
             const limit = draftState.settings.positions.filter(p => p === pos).length;
             
             if (currentCount >= limit) {
