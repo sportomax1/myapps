@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 300px;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .sheet-selector {
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .sheet-selector.active {
+            display: block;
+        }
+
+        .sheet-selector label {
+            margin-right: 10px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-size: 16px;
+            display: none;
+            margin: 20px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background-color: #fee;
+            border: 2px solid #f99;
+            color: #c33;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success {
+            background-color: #efe;
+            border: 2px solid #9f9;
+            color: #3c3;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success.active {
+            display: block;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            display: none;
+        }
+
+        .table-wrapper.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #ddd;
+        }
+
+        td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            color: #333;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tbody tr:hover {
+            background-color: #f0f0f0;
+            transition: background-color 0.2s;
+        }
+
+        .info {
+            color: #666;
+            font-size: 13px;
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button.secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 2px solid #ddd;
+        }
+
+        button.secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .saved-links-section {
+            background: #f9f9f9;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .saved-links-section.active {
+            display: block;
+        }
+
+        .saved-links-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .saved-links-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .saved-link-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .saved-link-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 3px 12px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .saved-link-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .saved-link-meta {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .saved-link-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: space-between;
+        }
+
+        .saved-link-actions button {
+            flex: 1;
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .saved-link-actions button.load {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .saved-link-actions button.delete {
+            background: #f0f0f0;
+            color: #c33;
+            border: 1px solid #ddd;
+        }
+
+        .saved-link-actions button.delete:hover {
+            background: #fee;
+            border-color: #f99;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 0;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-body label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .modal-body input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .modal-body input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal-hint {
+            font-size: 12px;
+            color: #999;
+            margin: 0;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid #ddd;
+            justify-content: flex-end;
+        }
+
+        .modal-footer button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .data-tools {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .filter-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .filter-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .filter-control {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-control label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .filter-control input,
+        .filter-control select {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .filter-control input:focus,
+        .filter-control select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .stats-section {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+        }
+
+        .stats-section h4 {
+            color: #333;
+            margin: 0 0 12px 0;
+            font-size: 14px;
+        }
+
+        .data-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            opacity: 0.9;
+        }
+
+        th:hover {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+        }
+
+        th.sortable::after {
+            content: ' ↕';
+            font-size: 12px;
+            opacity: 0.5;
+        }
+
+        th.sort-asc::after {
+            content: ' ↑';
+            opacity: 1;
+        }
+
+        th.sort-desc::after {
+            content: ' ↓';
+            opacity: 1;
+        }
+
+        .table-row-highlight {
+            background-color: #fff3cd !important;
+        }
+
+        .filtered-info {
+            font-size: 13px;
+            color: #667eea;
+            font-weight: 600;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f0f4ff;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .filtered-info.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Google Sheets Viewer</h1>
+        <p class="subtitle">Display data from any public Google Sheet in your browser</p>
+
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="sheetsUrl" 
+                placeholder="Paste Google Sheets URL (e.g., https://docs.google.com/spreadsheets/d/...)"
+                autocomplete="off"
+            >
+            <button onclick="loadSheet()">Load Sheet</button>
+            <button id="saveBtn" class="secondary" onclick="showSaveDialog()" style="display: none;">💾 Save Link</button>
+        </div>
+
+        <div id="savedLinksSection" class="saved-links-section">
+            <h3>📚 Saved Sheets</h3>
+            <div id="savedLinksList" class="saved-links-list"></div>
+        </div>
+
+        <div class="sheet-selector" id="sheetSelector">
+            <label for="sheetSelect">Select Sheet:</label>
+            <select id="sheetSelect" onchange="changeSheet()">
+                <option value="">-- Select a sheet --</option>
+            </select>
+        </div>
+
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading data...</p>
+        </div>
+
+        <div class="controls" id="controls" style="display: none;">
+            <button class="secondary" onclick="downloadCSV()">⬇️ Download as CSV</button>
+            <button class="secondary" onclick="exportFiltered()">⬇️ Export Filtered</button>
+            <button class="secondary" onclick="resetFilters()">🔄 Reset</button>
+            <button class="secondary" onclick="clearSheet()">🗑️ Clear</button>
+        </div>
+
+        <div class="data-tools" id="dataTools" style="display: none;">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="🔍 Search all columns..."
+                    onkeyup="applyFilters()"
+                >
+            </div>
+
+            <div class="filter-section">
+                <h4>📊 Column Filters</h4>
+                <div id="filterControls" class="filter-controls"></div>
+            </div>
+
+            <div class="stats-section" id="statsSection">
+                <h4>📈 Data Summary</h4>
+                <div id="dataStats" class="data-stats"></div>
+            </div>
+        </div>
+
+        <div class="table-wrapper" id="tableWrapper">
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="info" id="info"></div>
+    </div>
+
+    <!-- Save Dialog Modal -->
+    <div id="saveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Save Sheet Link</h2>
+                <span class="close-btn" onclick="closeSaveDialog()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <label for="saveName">Sheet Name:</label>
+                <input 
+                    type="text" 
+                    id="saveName" 
+                    placeholder="e.g., Sales Data Q1, Customer List"
+                    autocomplete="off"
+                >
+                <p class="modal-hint">Give this sheet a memorable name for easy reference</p>
+            </div>
+            <div class="modal-footer">
+                <button class="secondary" onclick="closeSaveDialog()">Cancel</button>
+                <button onclick="saveLink()">💾 Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSheetId = '';
+        let currentGid = '';
+        let sheetsData = {};
+        let currentSheetName = '';
+        let allData = [];
+        let filteredData = [];
+        let sortColumn = -1;
+        let sortDirection = 'asc';
+        let columnFilters = {};
+
+        function loadSheet() {
+            const url = document.getElementById('sheetsUrl').value.trim();
+            if (!url) {
+                showError('Please enter a Google Sheets URL');
+                return;
+            }
+
+            const sheetIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+            if (!sheetIdMatch) {
+                showError('Invalid Google Sheets URL. Please check the URL format.');
+                return;
+            }
+
+            currentSheetId = sheetIdMatch[1];
+            fetchSheetMetadata();
+        }
+
+        function fetchSheetMetadata() {
+            showLoading(true);
+            clearError();
+            clearSuccess();
+
+            const url = `https://docs.google.com/spreadsheets/d/${currentSheetId}/edit?usp=sharing`;
+            const exportUrl = `https://docs.google.com/spreadsheets/d/${currentSheetId}/export?format=json`;
+
+            fetch(exportUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch sheet');
+                    return response.json();
+                })
+                .then(data => {
+                    processSheetMetadata(data);
+                })
+                .catch(error => {
+                    // Try loading with default gid=0 if metadata fails
+                    const exportUrlCSV = `https://docs.google.com/spreadsheets/d/${currentSheetId}/export?format=csv&gid=0`;
+                    fetch(exportUrlCSV)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Failed to fetch sheet data');
+                            return response.text();
+                        })
+                        .then(csv => {
+                            sheetsData = { 'Sheet1': { data: csv, gid: '0' } };
+                            currentGid = '0';
+                            currentSheetName = 'Sheet1';
+                            displaySheet(csv);
+                            showLoading(false);
+                        })
+                        .catch(err => {
+                            showLoading(false);
+                            showError('Error: Sheet may be private or URL is invalid. Please ensure the sheet is shared publicly.');
+                        });
+                });
+        }
+
+        function processSheetMetadata(data) {
+            // Extract sheet names from the metadata
+            if (data && data.values) {
+                sheetsData = {};
+                let index = 0;
+
+                // Try to extract from the title or default
+                const firstGid = '0';
+                fetchSheetData(currentSheetId, firstGid, 'Sheet1');
+            }
+        }
+
+        function fetchSheetData(sheetId, gid, sheetName) {
+            const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+            fetch(exportUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Failed to fetch sheet data');
+                    return response.text();
+                })
+                .then(csv => {
+                    sheetsData[sheetName] = { data: csv, gid: gid };
+                    
+                    // Update sheet selector if multiple sheets exist
+                    if (Object.keys(sheetsData).length > 1) {
+                        updateSheetSelector();
+                    }
+
+                    if (!currentGid) {
+                        currentGid = gid;
+                        currentSheetName = sheetName;
+                    }
+
+                    displaySheet(csv);
+                    showLoading(false);
+                    showSuccess(`Sheet loaded successfully (${csv.split('\n').length - 1} rows)`);
+                })
+                .catch(error => {
+                    showLoading(false);
+                    showError('Error: Unable to load sheet. Make sure the sheet is publicly shared.');
+                });
+        }
+
+        function updateSheetSelector() {
+            const selector = document.getElementById('sheetSelector');
+            const select = document.getElementById('sheetSelect');
+            selector.classList.add('active');
+            
+            select.innerHTML = '';
+            Object.keys(sheetsData).forEach((name, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = name;
+                select.appendChild(option);
+            });
+        }
+
+        function changeSheet() {
+            const select = document.getElementById('sheetSelect');
+            const sheetNames = Object.keys(sheetsData);
+            if (select.value !== '') {
+                currentSheetName = sheetNames[select.value];
+                displaySheet(sheetsData[currentSheetName].data);
+            }
+        }
+
+        function displaySheet(csv) {
+            const lines = csv.trim().split('\n');
+            if (lines.length === 0) {
+                showError('No data found in sheet');
+                return;
+            }
+
+            const rows = lines.map(line => parseCSVLine(line));
+            const headers = rows[0] || [];
+            const data = rows.slice(1) || [];
+
+            // Store original data
+            allData = data;
+            filteredData = data;
+            sortColumn = -1;
+            sortDirection = 'asc';
+            columnFilters = {};
+
+            // Render table headers with click handlers
+            const thead = document.getElementById('tableHead');
+            thead.innerHTML = '<tr>' + headers.map((h, idx) => 
+                `<th class="sortable" onclick="sortByColumn(${idx})">${escapeHtml(h)}</th>`
+            ).join('') + '</tr>';
+
+            // Setup filter controls
+            setupFilterControls(headers);
+
+            // Display stats
+            updateStats(headers, data);
+
+            // Render table body
+            renderTable(data);
+
+            // Show table and controls
+            document.getElementById('tableWrapper').classList.add('active');
+            document.getElementById('controls').style.display = 'flex';
+            document.getElementById('dataTools').style.display = 'block';
+            document.getElementById('saveBtn').style.display = 'block';
+
+            // Update info
+            document.getElementById('info').innerHTML = `
+                <strong>Sheet Name:</strong> ${currentSheetName} | 
+                <strong>Total Rows:</strong> ${data.length} | 
+                <strong>Columns:</strong> ${headers.length}
+            `;
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = data.map(row => 
+                '<tr>' + row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('') + '</tr>'
+            ).join('');
+
+            // Update filtered info
+            const filteredInfo = document.querySelector('.filtered-info');
+            if (data.length < allData.length) {
+                if (!filteredInfo) {
+                    const info = document.createElement('div');
+                    info.className = 'filtered-info active';
+                    info.innerHTML = `📊 Showing ${data.length} of ${allData.length} rows`;
+                    document.getElementById('tableWrapper').parentNode.insertBefore(info, document.getElementById('tableWrapper').nextSibling);
+                } else {
+                    filteredInfo.textContent = `📊 Showing ${data.length} of ${allData.length} rows`;
+                    filteredInfo.classList.add('active');
+                }
+            } else if (filteredInfo) {
+                filteredInfo.classList.remove('active');
+            }
+        }
+
+        function sortByColumn(columnIndex) {
+            const headers = document.querySelectorAll('th');
+            
+            // Clear previous sort classes
+            headers.forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+
+            // Toggle sort direction
+            if (sortColumn === columnIndex) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = columnIndex;
+                sortDirection = 'asc';
+            }
+
+            // Apply sort class
+            headers[columnIndex].classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+
+            // Sort data
+            filteredData.sort((a, b) => {
+                let aVal = a[columnIndex] || '';
+                let bVal = b[columnIndex] || '';
+
+                // Try to sort numerically if possible
+                const aNum = parseFloat(aVal);
+                const bNum = parseFloat(bVal);
+                
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+                }
+
+                // Otherwise sort as strings
+                aVal = aVal.toString().toLowerCase();
+                bVal = bVal.toString().toLowerCase();
+                
+                if (sortDirection === 'asc') {
+                    return aVal.localeCompare(bVal);
+                } else {
+                    return bVal.localeCompare(aVal);
+                }
+            });
+
+            renderTable(filteredData);
+        }
+
+        function setupFilterControls(headers) {
+            const filterControls = document.getElementById('filterControls');
+            filterControls.innerHTML = '';
+
+            headers.forEach((header, idx) => {
+                const control = document.createElement('div');
+                control.className = 'filter-control';
+
+                // Get unique values for dropdown
+                const uniqueValues = [...new Set(allData.map(row => row[idx]))].sort().slice(0, 10);
+
+                const label = document.createElement('label');
+                label.textContent = escapeHtml(header);
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `Filter ${escapeHtml(header)}...`;
+                input.dataset.column = idx;
+                input.onkeyup = applyFilters;
+
+                control.appendChild(label);
+                control.appendChild(input);
+                filterControls.appendChild(control);
+            });
+        }
+
+        function applyFilters() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const headers = document.querySelectorAll('th');
+            columnFilters = {};
+
+            // Get column filters
+            document.querySelectorAll('.filter-control input').forEach(input => {
+                const col = parseInt(input.dataset.column);
+                const value = input.value.toLowerCase();
+                if (value) {
+                    columnFilters[col] = value;
+                }
+            });
+
+            // Filter data
+            filteredData = allData.filter(row => {
+                // Global search check
+                if (searchInput) {
+                    const matchSearch = row.some(cell => 
+                        cell.toString().toLowerCase().includes(searchInput)
+                    );
+                    if (!matchSearch) return false;
+                }
+
+                // Column-specific filters
+                for (const [col, filterValue] of Object.entries(columnFilters)) {
+                    const colIdx = parseInt(col);
+                    if (!row[colIdx].toString().toLowerCase().includes(filterValue)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            });
+
+            renderTable(filteredData);
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.querySelectorAll('.filter-control input').forEach(input => {
+                input.value = '';
+            });
+            columnFilters = {};
+            filteredData = allData;
+            renderTable(filteredData);
+
+            // Clear sort classes
+            document.querySelectorAll('th').forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+            sortColumn = -1;
+        }
+
+        function updateStats(headers, data) {
+            const statsDiv = document.getElementById('dataStats');
+            let statsHTML = '';
+
+            // Total rows
+            statsHTML += `<div class="stat-item"><div class="stat-value">${data.length}</div><div class="stat-label">Total Rows</div></div>`;
+
+            // Columns
+            statsHTML += `<div class="stat-item"><div class="stat-value">${headers.length}</div><div class="stat-label">Columns</div></div>`;
+
+            // Numeric columns
+            let numericCount = 0;
+            headers.forEach((header, idx) => {
+                const allNumeric = data.every(row => !isNaN(parseFloat(row[idx])));
+                if (allNumeric && data.some(row => row[idx])) {
+                    numericCount++;
+                }
+            });
+            statsHTML += `<div class="stat-item"><div class="stat-value">${numericCount}</div><div class="stat-label">Numeric Columns</div></div>`;
+
+            // Empty cells
+            let emptyCount = 0;
+            data.forEach(row => {
+                row.forEach(cell => {
+                    if (!cell || cell.trim() === '') emptyCount++;
+                });
+            });
+            statsHTML += `<div class="stat-item"><div class="stat-value">${emptyCount}</div><div class="stat-label">Empty Cells</div></div>`;
+
+            statsDiv.innerHTML = statsHTML;
+        }
+
+        function exportFiltered() {
+            const headers = document.querySelectorAll('th');
+            let csv = '';
+
+            // Add headers
+            csv += Array.from(headers).map(h => `"${h.textContent.replace(/[↑↓↕]/g, '').trim()}"`).join(',') + '\n';
+
+            // Add filtered rows
+            filteredData.forEach(row => {
+                csv += row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${currentSheetName}-filtered.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showSuccess('Filtered data exported!');
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let insideQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+
+                if (char === '"') {
+                    if (insideQuotes && nextChar === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        insideQuotes = !insideQuotes;
+                    }
+                } else if (char === ',' && !insideQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            result.push(current.trim());
+            return result;
+        }
+
+        function downloadCSV() {
+            const csv = sheetsData[currentSheetName].data;
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${currentSheetName}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showSuccess('Full data exported!');
+        }
+
+        function clearSheet() {
+            document.getElementById('sheetsUrl').value = '';
+            document.getElementById('tableWrapper').classList.remove('active');
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('dataTools').style.display = 'none';
+            document.getElementById('sheetSelector').classList.remove('active');
+            document.getElementById('saveBtn').style.display = 'none';
+            document.getElementById('info').innerHTML = '';
+            document.querySelectorAll('th').forEach(h => {
+                h.classList.remove('sort-asc', 'sort-desc');
+            });
+            sheetsData = {};
+            allData = [];
+            filteredData = [];
+            clearError();
+            clearSuccess();
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('active');
+        }
+
+        function clearError() {
+            document.getElementById('errorMsg').classList.remove('active');
+        }
+
+        function clearSuccess() {
+            document.getElementById('successMsg').classList.remove('active');
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMsg');
+            successDiv.textContent = message;
+            successDiv.classList.add('active');
+            setTimeout(() => {
+                successDiv.classList.remove('active');
+            }, 5000);
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Local Storage Functions
+        function getSavedLinks() {
+            const saved = localStorage.getItem('savedSheets');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveLinkToStorage(url, name) {
+            const saved = getSavedLinks();
+            const id = Date.now().toString();
+            saved[id] = {
+                url: url,
+                name: name,
+                dateAdded: new Date().toLocaleDateString(),
+                rowCount: 0
+            };
+            localStorage.setItem('savedSheets', JSON.stringify(saved));
+            return id;
+        }
+
+        function removeLinkFromStorage(id) {
+            const saved = getSavedLinks();
+            delete saved[id];
+            localStorage.setItem('savedSheets', JSON.stringify(saved));
+        }
+
+        function updateLinkStats(id, rowCount) {
+            const saved = getSavedLinks();
+            if (saved[id]) {
+                saved[id].rowCount = rowCount;
+                saved[id].lastAccessed = new Date().toLocaleDateString();
+                localStorage.setItem('savedSheets', JSON.stringify(saved));
+            }
+        }
+
+        function loadSavedLinks() {
+            const saved = getSavedLinks();
+            const listContainer = document.getElementById('savedLinksList');
+            const section = document.getElementById('savedLinksSection');
+
+            if (Object.keys(saved).length === 0) {
+                section.classList.remove('active');
+                return;
+            }
+
+            section.classList.add('active');
+            listContainer.innerHTML = '';
+
+            Object.entries(saved).forEach(([id, data]) => {
+                const card = document.createElement('div');
+                card.className = 'saved-link-card';
+                
+                const lastAccessed = data.lastAccessed ? `Last: ${data.lastAccessed}` : `Added: ${data.dateAdded}`;
+                const rowInfo = data.rowCount > 0 ? ` • ${data.rowCount} rows` : '';
+
+                card.innerHTML = `
+                    <div class="saved-link-name">${escapeHtml(data.name)}</div>
+                    <div class="saved-link-meta">${lastAccessed}${rowInfo}</div>
+                    <div class="saved-link-actions">
+                        <button class="load" onclick="loadSavedLink('${id}')">📂 Load</button>
+                        <button class="delete" onclick="deleteSavedLink('${id}')">🗑️</button>
+                    </div>
+                `;
+                
+                listContainer.appendChild(card);
+            });
+        }
+
+        function loadSavedLink(id) {
+            const saved = getSavedLinks();
+            if (saved[id]) {
+                document.getElementById('sheetsUrl').value = saved[id].url;
+                loadSheet();
+            }
+        }
+
+        function deleteSavedLink(id) {
+            if (confirm('Delete this saved sheet link?')) {
+                removeLinkFromStorage(id);
+                loadSavedLinks();
+                showSuccess('Saved link deleted');
+            }
+        }
+
+        function showSaveDialog() {
+            document.getElementById('saveModal').classList.add('active');
+            document.getElementById('saveName').focus();
+            document.getElementById('saveName').value = '';
+        }
+
+        function closeSaveDialog() {
+            document.getElementById('saveModal').classList.remove('active');
+        }
+
+        function saveLink() {
+            const url = document.getElementById('sheetsUrl').value.trim();
+            const name = document.getElementById('saveName').value.trim();
+
+            if (!name) {
+                alert('Please enter a name for this sheet');
+                return;
+            }
+
+            saveLinkToStorage(url, name);
+            closeSaveDialog();
+            loadSavedLinks();
+            showSuccess(`Sheet "${name}" saved!`);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('saveModal');
+            if (event.target === modal) {
+                closeSaveDialog();
+            }
+        }
+
+        // Allow Enter key in save dialog
+        document.getElementById('saveName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                saveLink();
+            }
+        });
+
+        // Allow Enter key to load sheet
+        document.getElementById('sheetsUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadSheet();
+            }
+        });
+
+        // Pre-fill with example if URL params provided
+        const urlParams = new URLSearchParams(window.location.search);
+        const sheetsUrlParam = urlParams.get('url');
+        if (sheetsUrlParam) {
+            document.getElementById('sheetsUrl').value = decodeURIComponent(sheetsUrlParam);
+            loadSheet();
+        }
+
+        // Load saved links on page load
+        loadSavedLinks();
+    </script>
+</body>
+</html>
