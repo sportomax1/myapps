@@ -131,7 +131,7 @@
 
     .sport-tabs {
       display: flex; gap: 8px; overflow-x: auto; padding: 4px 0; scrollbar-width: none;
-      justify-content: center;
+      justify-content: center; flex-wrap: wrap;
     }
     .sport-tabs::-webkit-scrollbar { display: none; }
 
@@ -145,11 +145,93 @@
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
     }
 
+    /* Mobile: Toggle layout */
+    @media (max-width: 767px) {
+      .sport-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding: 8px;
+        background: var(--surface);
+        border-radius: 12px;
+        overflow: visible;
+        width: 100%;
+        flex-wrap: initial;
+        overflow-x: visible;
+        justify-content: initial;
+      }
+
+      .sport-tab[data-sport="all"] {
+        display: none;
+      }
+
+      .sport-tab {
+        padding: 10px 6px;
+        border-radius: 8px;
+        font-size: 11px;
+        padding-left: 28px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        white-space: nowrap;
+        flex: auto;
+      }
+
+      .sport-tab::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        width: 14px;
+        height: 14px;
+        border: 2px solid var(--border);
+        border-radius: 3px;
+        background: transparent;
+        transition: all 0.2s;
+        flex-shrink: 0;
+      }
+
+      .sport-tab.active::before {
+        background: var(--accent);
+        border-color: var(--accent);
+        content: '✓';
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 9px;
+        font-weight: bold;
+        line-height: 1;
+      }
+
+      .sport-tab.active {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent);
+        border-color: var(--accent);
+        box-shadow: none;
+      }
+    }
+
     .main-content { max-width: 1600px; margin: 0 auto; padding: 20px; }
     .lanes { display: grid; grid-template-columns: 1fr; gap: 24px; }
-    @media (min-width: 768px) { .lanes { grid-template-columns: repeat(2, 1fr); } }
-    @media (min-width: 1200px) { .lanes { grid-template-columns: repeat(3, 1fr); } }
-    @media (min-width: 1600px) { .lanes { grid-template-columns: repeat(4, 1fr); } }
+    
+    /* Mobile: Single column unless filtered */
+    @media (min-width: 768px) { 
+      .lanes { grid-template-columns: repeat(2, 1fr); } 
+    }
+    @media (min-width: 1200px) { 
+      .lanes { grid-template-columns: repeat(3, 1fr); } 
+    }
+    @media (min-width: 1600px) { 
+      .lanes { grid-template-columns: repeat(4, 1fr); } 
+    }
+
+    /* Mobile: Multi-column only if specific sport is filtered */
+    @media (max-width: 767px) {
+      body.filtered-view .lanes {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
 
     .lane { display: flex; flex-direction: column; gap: 16px; }
     .lane-header {
@@ -361,6 +443,22 @@
     let tz = localStorage.getItem('gd_tz') || 'America/Denver';
     let activeSport = 'all';
     const standingsCache = {};
+    let isMobile = window.innerWidth <= 767;
+    let selectedSports = JSON.parse(localStorage.getItem('gd_selectedSports')) || {
+      nfl: true, nba: true, mlb: true, nhl: true, ncaaf: true, ncaam: true
+    };
+
+    window.addEventListener('resize', () => {
+      isMobile = window.innerWidth <= 767;
+    });
+
+    function updateBodyClass() {
+      if (activeSport !== 'all') {
+        document.body.classList.add('filtered-view');
+      } else {
+        document.body.classList.remove('filtered-view');
+      }
+    }
 
     function getFormattedApiDate(date) {
       const y = date.getFullYear();
@@ -423,6 +521,51 @@
         winPct: winPct,
         fullTeam: team.team
       };
+    }
+
+    // Sport-specific nailbiter logic
+    function isNailbiter(laneId, comp, state, homeScore, awayScore, game) {
+      const a = parseInt(homeScore) || 0;
+      const b = parseInt(awayScore) || 0;
+      const diff = Math.abs(a - b);
+
+      // MLB: 1-run games in 7th inning or later (live)
+      if (laneId === 'mlb') {
+        if (state === 'in' && diff === 1) {
+          const detail = game.status?.type?.detail || '';
+          const m = detail.match(/(\d+)(?:st|nd|rd|th)?/);
+          const inning = m ? parseInt(m[1]) : (comp.status?.period || 0);
+          return inning >= 7;
+        }
+        return false;
+      }
+
+      // Basketball (NBA / CBB): within 3 points in 4th quarter (or final 4 minutes)
+      if (laneId === 'nba' || laneId === 'ncaam') {
+        if (state === 'in' && diff <= 3) {
+          const period = comp.status?.period || 0;
+          const clock = comp.status?.displayClock || '';
+          let minutes = 99;
+          const m = clock.match(/(\d+):\d{2}/);
+          if (m) minutes = parseInt(m[1]);
+          // consider 4th quarter or later, and final 4 minutes
+          if (period >= 4 && minutes <= 4) return true;
+          if (period >= 4 && period > 4 && diff <= 3) return true; // OT also dramatic
+        }
+        return false;
+      }
+
+      // Football (NFL / CFB): within 8 points in 4th quarter
+      if (laneId === 'nfl' || laneId === 'ncaaf') {
+        if (state === 'in' && diff <= 8) {
+          const period = comp.status?.period || 0;
+          return period >= 4;
+        }
+        return false;
+      }
+
+      // Fallback: close if within 3 and live/post
+      return (state === 'in' || state === 'post') && diff <= 3;
     }
 
     function openMatchupModal(game, home, away, leagueName) {
@@ -497,29 +640,43 @@
       }));
 
       container.innerHTML = '';
-      laneResults.forEach(({ lane, games }) => {
-        if ((activeSport !== 'all' && activeSport !== lane.id) || games.length === 0) return;
 
-        const processedGames = games.map(game => {
-          const comp = game.competitions[0];
-          const home = getTeamData(comp, 'home', lane.id);
-          const away = getTeamData(comp, 'away', lane.id);
-          const combinedPct = (home.winPct + away.winPct) / 2;
-          return { game, home, away, combinedPct };
+      // Mobile: Combine all selected sports and sort by combined winning percentage
+      if (isMobile && activeSport === 'all') {
+        const allGames = [];
+        
+        laneResults.forEach(({ lane, games }) => {
+          if (!selectedSports[lane.id] || games.length === 0) return;
+          
+          games.forEach(game => {
+            const comp = game.competitions[0];
+            const home = getTeamData(comp, 'home', lane.id);
+            const away = getTeamData(comp, 'away', lane.id);
+            const combinedPct = (home.winPct + away.winPct) / 2;
+            allGames.push({ 
+              game, home, away, combinedPct, lane
+            });
+          });
         });
 
-        processedGames.sort((a, b) => b.combinedPct - a.combinedPct);
+        // Sort by combined winning percentage
+        allGames.sort((a, b) => b.combinedPct - a.combinedPct);
 
+        // Create single lane container
         const laneEl = document.createElement('div');
         laneEl.className = 'lane';
-        laneEl.innerHTML = `<div class="lane-header"><h3>${lane.label}</h3><span style="font-size:12px; font-weight:800; color:var(--accent)">${games.length} GAMES</span></div>`;
+        
+        const selectedCount = Object.values(selectedSports).filter(v => v).length;
+        const activeLeagues = LANES.filter(l => selectedSports[l.id]).map(l => l.label).join(', ');
+        
+        laneEl.innerHTML = `<div class="lane-header"><h3>ALL GAMES</h3><span style="font-size:12px; font-weight:800; color:var(--accent)">${allGames.length} GAMES</span></div>`;
 
-        processedGames.forEach(({ game, home, away, combinedPct }) => {
+        allGames.forEach(({ game, home, away, combinedPct, lane }) => {
           const comp = game.competitions[0];
           const state = game.status.type.state;
           const qualityScore = Math.round(combinedPct * 100);
           const scoreDiff = Math.abs(parseInt(home.score) - parseInt(away.score));
-          const isCloseGame = (state === 'in' || state === 'post') && scoreDiff <= 3 && scoreDiff >= 0;
+          const isCloseGame = isNailbiter(lane.id, comp, state, home.score, away.score, game);
           
           const homeRank = lane.core ? standingsCache[lane.id]?.[home.id]?.rank : home.curatedRank;
           const awayRank = lane.core ? standingsCache[lane.id]?.[away.id]?.rank : away.curatedRank;
@@ -544,6 +701,7 @@
                 ${settings.tv && network ? `<div class="broadcast">${network}</div>` : ''}
               </div>
               <div class="badge-container">
+                <span style="font-size:10px; font-weight:900; color:var(--accent); text-transform:uppercase;">${lane.label}</span>
                 ${isCloseGame ? `<div class="badge badge-nailbiter">NAILBITER</div>` : ''}
                 ${settings.odds && oddsStr ? `<div class="badge badge-odds">${oddsStr}</div>` : ''}
               </div>
@@ -584,7 +742,98 @@
           laneEl.appendChild(gameCard);
         });
         container.appendChild(laneEl);
-      });
+      } else {
+        // Desktop or filtered view: Show by lane
+        laneResults.forEach(({ lane, games }) => {
+          if ((!isMobile && (activeSport !== 'all' && activeSport !== lane.id)) || (isMobile && !selectedSports[lane.id])) return;
+          if (games.length === 0) return;
+
+          const processedGames = games.map(game => {
+            const comp = game.competitions[0];
+            const home = getTeamData(comp, 'home', lane.id);
+            const away = getTeamData(comp, 'away', lane.id);
+            const combinedPct = (home.winPct + away.winPct) / 2;
+            return { game, home, away, combinedPct };
+          });
+
+          processedGames.sort((a, b) => b.combinedPct - a.combinedPct);
+
+          const laneEl = document.createElement('div');
+          laneEl.className = 'lane';
+          laneEl.innerHTML = `<div class="lane-header"><h3>${lane.label}</h3><span style="font-size:12px; font-weight:800; color:var(--accent)">${games.length} GAMES</span></div>`;
+
+          processedGames.forEach(({ game, home, away, combinedPct }) => {
+            const comp = game.competitions[0];
+            const state = game.status.type.state;
+            const qualityScore = Math.round(combinedPct * 100);
+            const scoreDiff = Math.abs(parseInt(home.score) - parseInt(away.score));
+            const isCloseGame = isNailbiter(lane.id, comp, state, home.score, away.score, game);
+            
+            const homeRank = lane.core ? standingsCache[lane.id]?.[home.id]?.rank : home.curatedRank;
+            const awayRank = lane.core ? standingsCache[lane.id]?.[away.id]?.rank : away.curatedRank;
+
+            const gameCard = document.createElement('div');
+            gameCard.className = `game-card ${isCloseGame ? 'close-game' : ''}`;
+            gameCard.onclick = () => openMatchupModal(game, home, away, lane.label);
+            
+            const network = comp.broadcasts?.[0]?.names?.[0] || '';
+            
+            let oddsStr = '';
+            if (comp.odds && comp.odds[0]) {
+              const odds = comp.odds[0];
+              if (odds.details) oddsStr = odds.details;
+              if (odds.overUnder) oddsStr += ` • O/U ${odds.overUnder}`;
+            }
+
+            gameCard.innerHTML = `
+              <div class="game-header">
+                <div class="game-status">
+                  ${state === 'in' ? `<span class="status-live">LIVE • ${game.status.type.detail}</span>` : `<span>${state === 'pre' ? new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit'}).format(new Date(game.date)) : 'FINAL'}</span>`}
+                  ${settings.tv && network ? `<div class="broadcast">${network}</div>` : ''}
+                </div>
+                <div class="badge-container">
+                  ${isCloseGame ? `<div class="badge badge-nailbiter">NAILBITER</div>` : ''}
+                  ${settings.odds && oddsStr ? `<div class="badge badge-odds">${oddsStr}</div>` : ''}
+                </div>
+              </div>
+              
+              <div class="team-row">
+                <div class="team-info">
+                  <div class="team-logo-wrapper"><img src="${away.logo}" class="team-logo"></div>
+                  <div class="team-name-wrap">
+                    <div class="team-name">
+                      ${settings.ranks && awayRank ? `<span class="${lane.core ? 'league-rank' : 'rank-badge'}">#${awayRank}</span>` : ''}
+                      ${away.name}
+                    </div>
+                    ${settings.record ? `<div class="team-meta">${away.record}</div>` : ''}
+                  </div>
+                </div>
+                <div class="team-score" style="${state === 'post' && parseInt(away.score) < parseInt(home.score) ? 'opacity:0.4' : ''}">${away.score}</div>
+              </div>
+              <div class="team-row">
+                <div class="team-info">
+                  <div class="team-logo-wrapper"><img src="${home.logo}" class="team-logo"></div>
+                  <div class="team-name-wrap">
+                    <div class="team-name">
+                      ${settings.ranks && homeRank ? `<span class="${lane.core ? 'league-rank' : 'rank-badge'}">#${homeRank}</span>` : ''}
+                      ${home.name}
+                    </div>
+                    ${settings.record ? `<div class="team-meta">${home.record}</div>` : ''}
+                  </div>
+                </div>
+                <div class="team-score" style="${state === 'post' && parseInt(home.score) < parseInt(away.score) ? 'opacity:0.4' : ''}">${home.score}</div>
+              </div>
+              ${settings.pct ? `
+                <div class="win-bar-container">
+                  <div class="win-bar-header"><span class="win-bar-label">Matchup Quality</span><span class="win-bar-label" style="color:var(--accent)">${qualityScore}%</span></div>
+                  <div class="win-bar"><div class="win-bar-fill" style="width:${qualityScore}%"></div></div>
+                </div>` : ''}
+            `;
+            laneEl.appendChild(gameCard);
+          });
+          container.appendChild(laneEl);
+        });
+      }
     }
 
     document.getElementById('prevDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()-1); renderDashboard(); };
@@ -603,10 +852,25 @@
     document.getElementById('sportTabs').onclick = (e) => {
       const tab = e.target.closest('.sport-tab');
       if (!tab) return;
-      document.querySelectorAll('.sport-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      activeSport = tab.dataset.sport;
-      renderDashboard();
+      
+      const sport = tab.dataset.sport;
+      
+      if (isMobile) {
+        // Mobile: Multi-select toggle (skip "all" tab)
+        if (sport !== 'all') {
+          selectedSports[sport] = !selectedSports[sport];
+          tab.classList.toggle('active');
+          localStorage.setItem('gd_selectedSports', JSON.stringify(selectedSports));
+          renderDashboard();
+        }
+      } else {
+        // Desktop: Single selection
+        document.querySelectorAll('.sport-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        activeSport = tab.dataset.sport;
+        updateBodyClass();
+        renderDashboard();
+      }
     };
 
     let settings = JSON.parse(localStorage.getItem('gd_settings')) || { record:true, ranks:true, pct:true, tv:true, odds:true };
@@ -633,6 +897,23 @@
     document.getElementById('chkOdds').checked = settings.odds;
     document.getElementById('tzSelect').value = tz;
 
+    // Initialize sport tabs based on device type and selectedSports
+    if (isMobile) {
+      LANES.forEach(lane => {
+        const tab = document.querySelector(`[data-sport="${lane.id}"]`);
+        if (tab && selectedSports[lane.id]) {
+          tab.classList.add('active');
+        }
+      });
+    } else {
+      // Desktop: Initialize active tab
+      const tab = document.querySelector(`[data-sport="${activeSport}"]`);
+      if (tab) {
+        tab.classList.add('active');
+      }
+    }
+
+    updateBodyClass();
     renderDashboard();
     setInterval(renderDashboard, 60000);
   </script>
