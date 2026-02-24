@@ -149,12 +149,6 @@
     }
     .live { color: var(--danger); }
 
-    @media (max-width: 800px) {
-      .field-container { aspect-ratio: auto; height: auto; min-height: 1200px; display: flex; flex-direction: column; gap: 40px; padding: 20px; }
-      .zone { position: static; width: 100%; transform: none; }
-      .diamond-svg { display: none; }
-    }
-
     /* Innings column view */
     .innings-container { max-width: 1200px; margin: 20px auto; background: transparent; border-radius: 12px; overflow-x: auto; }
     .innings-grid { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(140px, 1fr); gap: 8px; padding: 10px; align-items: start; }
@@ -163,6 +157,9 @@
     .inning-list { display: flex; flex-direction: column; gap: 8px; }
 
     @media (max-width: 800px) {
+      .field-container { aspect-ratio: auto; height: auto; min-height: 1200px; display: flex; flex-direction: column; gap: 40px; padding: 20px; }
+      .zone { position: static; width: 100%; transform: none; }
+      .diamond-svg { display: none; }
       .innings-grid { grid-auto-columns: minmax(120px, 1fr); }
     }
   </style>
@@ -220,18 +217,21 @@
     </div>
   </main>
 
-    <script>
+  <script>
     // view mode: 'diamond' or 'innings'
     let viewMode = 'diamond';
+
     function setViewMode(m) {
       viewMode = m;
-      document.getElementById('field').style.display = (m === 'diamond') ? '' : 'none';
-      document.getElementById('innings-view').style.display = (m === 'innings') ? '' : 'none';
+      const field = document.getElementById('field');
+      const inningsView = document.getElementById('innings-view');
+      if (field) field.style.display = (m === 'diamond') ? '' : 'none';
+      if (inningsView) inningsView.style.display = (m === 'innings') ? '' : 'none';
       // button active styles
-      document.getElementById('view-btn-diamond').classList.toggle('bg-green-600', m === 'diamond');
-      document.getElementById('view-btn-diamond').classList.toggle('text-white', m === 'diamond');
-      document.getElementById('view-btn-innings').classList.toggle('bg-green-600', m === 'innings');
-      document.getElementById('view-btn-innings').classList.toggle('text-white', m === 'innings');
+      const btnD = document.getElementById('view-btn-diamond');
+      const btnI = document.getElementById('view-btn-innings');
+      if (btnD) { btnD.classList.toggle('bg-green-600', m === 'diamond'); btnD.classList.toggle('text-white', m === 'diamond'); }
+      if (btnI) { btnI.classList.toggle('bg-green-600', m === 'innings'); btnI.classList.toggle('text-white', m === 'innings'); }
       // refresh display
       fetchGames();
     }
@@ -240,7 +240,7 @@
     function ensureInningCols() {
       const grid = document.getElementById('innings-grid');
       if (!grid) return;
-      // clear existing numeric columns (keep pre and any post)
+      // add numeric columns 1..9 if missing
       for (let i = 1; i <= 9; i++) {
         if (!document.getElementById(`col-${i}`)) {
           const div = document.createElement('div');
@@ -259,11 +259,11 @@
         grid.appendChild(div);
       }
     }
+
     let currentDate = new Date();
-    // ensure innings cols exist when script loads
+
     document.addEventListener('DOMContentLoaded', () => {
       ensureInningCols();
-      // set default view button active
       setViewMode(viewMode);
     });
 
@@ -281,22 +281,18 @@
 
     async function fetchGames() {
       const dateStr = getFormattedDate(currentDate);
-      document.getElementById('dateDisplay').textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      
+      const dateDisplay = document.getElementById('dateDisplay');
+      if (dateDisplay) dateDisplay.textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
       // Clear diamond zones
       document.querySelectorAll('.zone').forEach(z => {
-        const label = z.querySelector('.zone-label').outerHTML;
+        const labelEl = z.querySelector('.zone-label');
+        const label = labelEl ? labelEl.outerHTML : '';
         z.innerHTML = label;
       });
       // Clear innings lists
-      for (let k of ['pre','post']) {
-        const el = document.getElementById(`list-${k}`);
-        if (el) el.innerHTML = '';
-      }
-      for (let i = 1; i <= 9; i++) {
-        const el = document.getElementById(`list-${i}`);
-        if (el) el.innerHTML = '';
-      }
+      ['pre','post'].forEach(k => { const el = document.getElementById(`list-${k}`); if (el) el.innerHTML = ''; });
+      for (let i = 1; i <= 9; i++) { const el = document.getElementById(`list-${i}`); if (el) el.innerHTML = ''; }
 
       try {
         const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${dateStr}`);
@@ -308,11 +304,11 @@
           const home = game.competitors.find(c => c.homeAway === 'home');
           const away = game.competitors.find(c => c.homeAway === 'away');
           const status = event.status.type.state; // 'pre', 'in', 'post'
-          const detail = event.status.type.detail;
-          // create card
+          const detail = event.status.type.detail || '';
+
           const card = document.createElement('div');
           card.className = 'game-card';
-          card.onclick = () => window.open(event.links[0].href, '_blank');
+          card.onclick = () => { try { window.open(event.links?.[0]?.href || '#', '_blank'); } catch (e) {} };
           card.innerHTML = `
             <div class="team-line">
               <img src="${away.team.logo}" class="team-logo">
@@ -329,7 +325,6 @@
             </div>
           `;
 
-          // append card to appropriate location depending on view
           if (viewMode === 'diamond') {
             let targetZone = 'zone-pre';
             if (status === 'post') targetZone = 'zone-post';
@@ -340,32 +335,30 @@
               else if (inning <= 6) targetZone = 'zone-4-6';
               else targetZone = 'zone-7-9';
             }
-            document.getElementById(targetZone).appendChild(card);
+            const zoneEl = document.getElementById(targetZone);
+            if (zoneEl) zoneEl.appendChild(card);
           } else {
-            // innings column view: pre -> list-pre, post -> list-post, in -> list-<inning>
-            if (status === 'pre') {
-              document.getElementById('list-pre').appendChild(card);
-            } else if (status === 'post') {
-              document.getElementById('list-post').appendChild(card);
-            } else if (status === 'in') {
+            if (status === 'pre') document.getElementById('list-pre')?.appendChild(card);
+            else if (status === 'post') document.getElementById('list-post')?.appendChild(card);
+            else if (status === 'in') {
               const m = detail.match(/(\d+)/);
               let inning = m ? parseInt(m[1]) : 1;
               if (!inning || inning < 1) inning = 1;
               if (inning > 9) inning = 9;
-              const list = document.getElementById(`list-${inning}`);
-              if (list) list.appendChild(card);
-              else document.getElementById('list-post').appendChild(card);
-            } else {
-              document.getElementById('list-pre').appendChild(card);
-            }
+              const listEl = document.getElementById(`list-${inning}`);
+              if (listEl) listEl.appendChild(card);
+              else document.getElementById('list-post')?.appendChild(card);
+            } else document.getElementById('list-pre')?.appendChild(card);
           }
         });
 
       } catch (err) {
-        console.error("Fetch error:", err);
+        console.error('Fetch error:', err);
       }
     }
 
+    // initial load
+    ensureInningCols();
     fetchGames();
     setInterval(fetchGames, 30000); // Refresh every 30s
   </script>
