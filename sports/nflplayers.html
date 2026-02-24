@@ -6,6 +6,8 @@
     <title>NFL Player Vault | Pro & College History</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -362,8 +364,8 @@
                 </div>
             </div>
 
-            <div class="glass-panel p-4 overflow-auto max-h-[70vh]">
-                <div id="depth-container" class="w-full overflow-auto">
+            <div class="glass-panel p-4">
+                <div id="depth-container" class="w-full overflow-x-auto overflow-y-auto max-h-[70vh]">
                     <table id="depth-table" class="w-full text-left text-sm border-collapse">
                         <thead id="depth-thead"></thead>
                         <tbody id="depth-tbody"></tbody>
@@ -440,6 +442,7 @@
         let nflTeams = []; 
         let collegeMap = {}; 
         let hometownMap = {};
+        let countryMap = {}; // for world view counts by country code
         let positionMap = {};
 
         function normalizePositionAbbrev(abbrev) {
@@ -639,6 +642,7 @@
         function processLocationData() {
             collegeMap = {};
             hometownMap = {}; 
+            countryMap = {};
             allPlayers.forEach(p => {
                 // College Data
                 if (p.college && p.college.name) {
@@ -673,6 +677,12 @@
                         };
                     }
                     hometownMap[locationCode].players.push(p);
+                }
+                // Country data for world view
+                const c = p.birthPlace && p.birthPlace.country ? p.birthPlace.country : null;
+                if (c) {
+                    if (!countryMap[c]) countryMap[c] = { code: c, players: [] };
+                    countryMap[c].players.push(p);
                 }
             });
 
@@ -1176,6 +1186,7 @@
         function getLocationCode(p) {
             if (!p.birthPlace) return null;
             const { country, state } = p.birthPlace;
+            const name = (state || country || '').toString();
 
             // Map US states
             const usStateMap = {
@@ -1196,7 +1207,7 @@
                 "Wyoming": "WY"
             };
 
-            if (usStateMap[name]) return usStateMap[name]; // Corrected line
+            if (usStateMap[name]) return usStateMap[name];
             if (name.includes("Florida")) return "FL";
             if (name.includes("California") || name.includes("Cal State")) return "CA";
             if (name.includes("Texas")) return "TX";
@@ -1234,6 +1245,100 @@
             if (name.includes("New York")) return "NY";
             if (name.includes("New Jersey")) return "NJ";
             return null;
+        }
+
+        // Map controls: toggle and render helpers
+        function updateMapControls() {
+            // Data buttons
+            document.querySelectorAll('.map-data-btn').forEach(btn => {
+                const v = btn.getAttribute('data-value');
+                if (v === currentMapData) btn.classList.add('bg-green-600','text-white'); else btn.classList.remove('bg-green-600','text-white');
+            });
+            // Scope buttons
+            document.querySelectorAll('.map-scope-btn').forEach(btn => {
+                const v = btn.getAttribute('data-value');
+                if (v === currentMapScope) btn.classList.add('bg-green-600','text-white'); else btn.classList.remove('bg-green-600','text-white');
+            });
+        }
+
+        function toggleMapOption(type, value) {
+            if (type === 'data') currentMapData = value;
+            else if (type === 'scope') currentMapScope = value;
+            updateMapControls();
+            renderMap(currentMapData, currentMapScope);
+        }
+
+        function renderMap(dataType, scope) {
+            const container = document.getElementById('map-container');
+            if (!container) return;
+            // Initialize Leaflet map once
+            if (!window._nflLeaflet) {
+                const map = L.map(container).setView(scope === 'world' ? [20, 0] : [39.5, -98.35], scope === 'world' ? 2 : 4);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 18,
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+                window._nflLeaflet = { map, layer: L.layerGroup().addTo(map) };
+            }
+
+            const { map, layer } = window._nflLeaflet;
+            layer.clearLayers();
+
+            // Simple US state centroids for plotting hometown aggregates
+            const stateCentroids = {
+                'AL':[32.806671,-86.791130],'AK':[61.370716,-152.404419],'AZ':[33.729759,-111.431221],'AR':[34.969704,-92.373123],'CA':[36.116203,-119.681564],'CO':[39.059811,-105.311104],'CT':[41.597782,-72.755371],'DE':[39.318523,-75.507141],'FL':[27.766279,-81.686783],'GA':[33.040619,-83.643074],'HI':[21.094318,-157.498337],'ID':[44.240459,-114.478828],'IL':[40.349457,-88.986137],'IN':[39.849426,-86.258278],'IA':[42.011539,-93.210526],'KS':[38.526600,-96.726486],'KY':[37.668140,-84.670067],'LA':[31.169546,-91.867805],'ME':[44.693947,-69.381927],'MD':[39.063946,-76.802101],'MA':[42.230171,-71.530106],'MI':[43.326618,-84.536095],'MN':[45.694454,-93.900192],'MS':[32.741646,-89.678696],'MO':[38.456085,-92.288368],'MT':[46.921925,-110.454353],'NE':[41.125370,-98.268082],'NV':[38.313515,-117.055374],'NH':[43.452492,-71.563896],'NJ':[40.298904,-74.521011],'NM':[34.840515,-106.248482],'NY':[42.165726,-74.948051],'NC':[35.630066,-79.806419],'ND':[47.528912,-99.784012],'OH':[40.388783,-82.764915],'OK':[35.565342,-96.928917],'OR':[44.572021,-122.070938],'PA':[40.590752,-77.209755],'RI':[41.680893,-71.511780],'SC':[33.856892,-80.945007],'SD':[44.299782,-99.438828],'TN':[35.747845,-86.692345],'TX':[31.054487,-97.563461],'UT':[40.150032,-111.862434],'VT':[44.045876,-72.710686],'VA':[37.769337,-78.169968],'WA':[47.400902,-121.490494],'WV':[38.491226,-80.954456],'WI':[44.268543,-89.616508],'WY':[42.755966,-107.302490]
+            };
+
+            if (dataType === 'hometown') {
+                const keys = Object.keys(hometownMap || {});
+                const counts = keys.map(k => (hometownMap[k] && hometownMap[k].players ? hometownMap[k].players.length : 0));
+                const maxCnt = Math.max(1, ...counts);
+                const getColor = (val) => {
+                    const ratio = Math.max(0, Math.min(1, val / maxCnt));
+                    const hue = (1 - ratio) * 120; // 120 green -> 0 red
+                    return `hsl(${hue},70%,45%)`;
+                };
+
+                keys.forEach(k => {
+                    const cnt = hometownMap[k] && hometownMap[k].players ? hometownMap[k].players.length : 0;
+                    const coord = stateCentroids[k];
+                    if (coord) {
+                        const ratio = cnt / maxCnt;
+                        const radius = 6 + Math.sqrt(ratio) * 36;
+                        const color = getColor(cnt);
+                        const m = L.circleMarker(coord, { radius, color, fillColor: color, fillOpacity: 0.75, weight: 1 });
+                        m.bindPopup(`<strong>${k}</strong><br/>Players: ${cnt}`);
+                        layer.addLayer(m);
+                    }
+                });
+
+                // legend
+                const legendId = '_nfl_map_legend';
+                let legend = document.getElementById(legendId);
+                if (legend) legend.remove();
+                legend = L.control({ position: 'bottomright' });
+                legend.onAdd = function () {
+                    const div = L.DomUtil.create('div', 'info legend');
+                    div.id = legendId;
+                    const grades = [0, Math.round(maxCnt * 0.25), Math.round(maxCnt * 0.5), Math.round(maxCnt * 0.75), maxCnt];
+                    let html = '<div style="background:rgba(0,0,0,0.6);padding:8px;border-radius:8px;color:#fff;font-size:12px">';
+                    html += '<strong>Players</strong><br/>';
+                    grades.forEach(g => { html += `<i style="background:${getColor(g)};width:12px;height:12px;display:inline-block;margin-right:6px;border-radius:2px;"></i> ${g}<br/>`; });
+                    html += '</div>';
+                    div.innerHTML = html;
+                    return div;
+                };
+                legend.addTo(map);
+
+                if (scope === 'usa') map.setView([39.5, -98.35], 4);
+                else map.setView([20,0], 2);
+            } else if (dataType === 'college') {
+                // Fallback: show counts per college as a simple list overlay when accurate coords are not available
+                const info = L.popup({ maxWidth: 400 }).setLatLng(map.getCenter()).setContent(`<div style="max-height:300px;overflow:auto;color:#fff"><strong>Colleges (${Object.keys(collegeMap||{}).length})</strong><ul style="padding-left:12px;">${Object.values(collegeMap||{}).slice(0,50).map(c=>`<li>${c.name} (${c.players.length})</li>`).join('')}</ul></div>`);
+                info.openOn(map);
+            } else {
+                // clear
+            }
         }
 
         // --- Draft Logic ---
@@ -1859,6 +1964,13 @@
                 if (filteredPosList.length === 0) filteredPosList = posList.slice();
 
                 // Build header (with per-position coloring) and respect per-position limit
+                const posColorMap = {
+                    QB: { header: 'bg-blue-800 text-white', cell: 'bg-blue-700/5 text-blue-200' },
+                    RB: { header: 'bg-orange-800 text-white', cell: 'bg-orange-700/5 text-orange-200' },
+                    WR: { header: 'bg-purple-800 text-white', cell: 'bg-purple-700/5 text-purple-200' },
+                    TE: { header: 'bg-yellow-600 text-black', cell: 'bg-yellow-400/5 text-yellow-700' }
+                };
+
                 const headers = [''];
                 filteredPosList.forEach(p => {
                     const available = maxDepth[p] || 1;
@@ -1870,8 +1982,9 @@
                     `<th class="sticky top-0 left-0 bg-slate-800 z-40 py-2 pr-4" style="width:64px"></th>` +
                     headers.slice(1).map(h => {
                         const pos = h.pos;
-                        const cls = FANTASY_POS.includes(pos) ? 'bg-green-800/20 text-green-200' : 'bg-slate-800 text-slate-400';
-                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4">${h.text}</th>`;
+                        const mapping = posColorMap[pos];
+                        const cls = mapping ? mapping.header : (FANTASY_POS.includes(pos) ? 'bg-green-800 text-white' : 'bg-slate-800 text-slate-400');
+                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4 col-${pos.toLowerCase()}">${h.text}</th>`;
                     }).join('') +
                     `</tr>`;
 
@@ -1893,8 +2006,9 @@
                                 const imgHtml = ph ? `<img src="${ph}" class="w-6 h-6 rounded-full object-cover">` : '';
                                 display = `<div class="flex items-center gap-2"><div class="w-6 h-6 flex-shrink-0">${imgHtml}</div><span class="text-[13px] text-slate-200">${pname}</span></div>`;
                             }
-                            const cellCls = FANTASY_POS.includes(p) ? 'bg-green-900/5' : '';
-                            rowCols.push(`<td class="py-2 pr-4 align-top text-[13px] ${cellCls}">${display}</td>`);
+                                const mapping = posColorMap && posColorMap[p];
+                                const posCellBg = mapping ? mapping.cell : (FANTASY_POS.includes(p) ? 'bg-green-900/5' : '');
+                                rowCols.push(`<td class="py-2 pr-4 align-top text-[13px] ${posCellBg} col-${p.toLowerCase()}">${display}</td>`);
                         }
                     });
                     return `<tr class="border-b border-slate-800">${rowCols.join('')}</tr>`;
@@ -1965,6 +2079,13 @@
                 }
                 if (filteredPosList.length === 0) filteredPosList = posList.slice();
 
+                const posColorMap = {
+                    QB: { header: 'bg-blue-800 text-white', cell: 'bg-blue-700/5 text-blue-200' },
+                    RB: { header: 'bg-orange-800 text-white', cell: 'bg-orange-700/5 text-orange-200' },
+                    WR: { header: 'bg-purple-800 text-white', cell: 'bg-purple-700/5 text-purple-200' },
+                    TE: { header: 'bg-yellow-600 text-black', cell: 'bg-yellow-400/5 text-yellow-700' }
+                };
+
                 const headers = [''];
                 filteredPosList.forEach(p => {
                     const available = maxDepth[p] || 1;
@@ -1976,8 +2097,9 @@
                     `<th class="sticky top-0 left-0 bg-slate-800 z-40 py-2 pr-4" style="width:64px"></th>` +
                     headers.slice(1).map(h => {
                         const pos = h.pos;
-                        const cls = FANTASY_POS.includes(pos) ? 'bg-green-800/20 text-green-200' : 'bg-slate-800 text-slate-400';
-                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4">${h.text}</th>`;
+                        const mapping = posColorMap[pos];
+                        const cls = mapping ? mapping.header : (FANTASY_POS.includes(pos) ? 'bg-green-800 text-white' : 'bg-slate-800 text-slate-400');
+                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4 col-${pos.toLowerCase()}">${h.text}</th>`;
                     }).join('') +
                     `</tr>`;
 
@@ -1997,7 +2119,9 @@
                                 const imgHtml = ph ? `<img src="${ph}" class="w-6 h-6 rounded-full object-cover">` : '';
                                 display = `<div class="flex items-center gap-2"><div class="w-6 h-6 flex-shrink-0">${imgHtml}</div><span class="text-[13px] text-slate-200">${pname}</span></div>`;
                             }
-                            rowCols.push(`<td class="py-2 pr-4 align-top text-[13px]">${display}</td>`);
+                            const mapping = posColorMap && posColorMap[p];
+                            const posCellBg = mapping ? mapping.cell : (FANTASY_POS.includes(p) ? 'bg-green-900/5' : '');
+                            rowCols.push(`<td class="py-2 pr-4 align-top text-[13px] ${posCellBg} col-${p.toLowerCase()}">${display}</td>`);
                         }
                     });
                     return `<tr class="border-b border-slate-800">${rowCols.join('')}</tr>`;
