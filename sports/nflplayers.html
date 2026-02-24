@@ -149,6 +149,9 @@
                 <button id="btn-view-draft" onclick="switchView('draft')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
                     Draft
                 </button>
+                <button id="btn-view-depth" onclick="switchView('depth')" class="px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">
+                    Depth Charts
+                </button>
             </div>
 
             <!-- Sort Dropdown -->
@@ -338,6 +341,37 @@
             </div>
         </div>
 
+        <!-- View X: Depth Charts -->
+        <div id="depth-view" class="view-section hidden flex flex-col gap-4">
+            <div class="glass-panel p-4 flex items-center justify-between">
+                <h2 class="text-xl font-black italic uppercase text-slate-300">Depth Charts</h2>
+                <div class="flex items-center gap-3">
+                    <div id="depth-filters" class="flex gap-1 bg-slate-800 p-1 rounded-lg">
+                        <button onclick="setDepthFilter('all')" id="depth-filter-all" class="px-3 py-1 text-xs font-bold uppercase rounded">All</button>
+                        <button onclick="setDepthFilter('offense')" id="depth-filter-offense" class="px-3 py-1 text-xs font-bold uppercase rounded">Offense</button>
+                        <button onclick="setDepthFilter('defense')" id="depth-filter-defense" class="px-3 py-1 text-xs font-bold uppercase rounded">Defense</button>
+                        <button onclick="setDepthFilter('fantasy')" id="depth-filter-fantasy" class="px-3 py-1 text-xs font-bold uppercase rounded">Fantasy</button>
+                    </div>
+                    <div id="depth-limit-controls" class="ml-2 flex gap-1 bg-slate-800 p-1 rounded-lg" title="Players per position">
+                        <button onclick="setDepthLimit(1)" id="depth-limit-1" class="px-2 py-1 text-xs font-bold uppercase rounded">1</button>
+                        <button onclick="setDepthLimit(2)" id="depth-limit-2" class="px-2 py-1 text-xs font-bold uppercase rounded">2</button>
+                        <button onclick="setDepthLimit(3)" id="depth-limit-3" class="px-2 py-1 text-xs font-bold uppercase rounded">3</button>
+                        <button onclick="setDepthLimit('all')" id="depth-limit-all" class="px-2 py-1 text-xs font-bold uppercase rounded">All</button>
+                    </div>
+                    <span class="text-xs font-bold text-slate-500 uppercase" id="depth-status">Loading...</span>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 overflow-auto max-h-[70vh]">
+                <div id="depth-container" class="w-full overflow-auto">
+                    <table id="depth-table" class="w-full text-left text-sm border-collapse">
+                        <thead id="depth-thead"></thead>
+                        <tbody id="depth-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- View 6: Roster/Player View (Overlay) -->
         <div id="roster-view" class="hidden flex flex-col gap-6 animate-fade-in fixed inset-0 bg-[#0f172a] z-50 overflow-y-auto p-4 md:p-8">
             <!-- Back Button -->
@@ -486,6 +520,8 @@
                 document.getElementById('loading-text').classList.add('text-red-500');
             }
             console.log('--- NFL Vault Init End ---');
+            // Initialize depth limit UI default
+            try { setDepthLimit(depthPerPositionLimit); } catch (e) { }
         }
 
         function loadFromCache() {
@@ -518,6 +554,8 @@
             document.getElementById('main-container').classList.remove('hidden');
             updateSortOptions();
             renderNflView();
+            // Default depth filter to fantasy and update buttons
+            try { setDepthFilter(depthFilter); } catch (e) { /* ignore */ }
         }
 
         function processStandings(data) {
@@ -710,7 +748,7 @@
                     <option value="prowin">Pro Win %</option>
                     <option value="alpha">Name (A-Z)</option>
                 `;
-            } else if (['map', 'position', 'number'].includes(currentView)) { 
+            } else if (['map', 'position', 'number', 'depth'].includes(currentView)) { 
                 select.innerHTML = `<option>N/A</option>`;
                 select.disabled = true;
             }
@@ -1074,6 +1112,7 @@
             const btnPos = document.getElementById('btn-view-position');
             const btnNum = document.getElementById('btn-view-number');
             const btnDraft = document.getElementById('btn-view-draft');
+            const btnDepth = document.getElementById('btn-view-depth');
             
             currentView = view;
             updateSortOptions();
@@ -1090,6 +1129,7 @@
             document.getElementById('position-view').classList.add('hidden');
             document.getElementById('number-view').classList.add('hidden');
             document.getElementById('draft-view').classList.add('hidden');
+            document.getElementById('depth-view').classList.add('hidden');
 
             if (view === 'nfl') {
                 btnNfl.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-green-600 text-white shadow-lg";
@@ -1120,6 +1160,10 @@
             } else if (view === 'draft') {
                 btnDraft.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-red-600 text-white shadow-lg";
                 document.getElementById('draft-view').classList.remove('hidden');
+            } else if (view === 'depth') {
+                if (btnDepth) btnDepth.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-indigo-600 text-white shadow-lg";
+                document.getElementById('depth-view').classList.remove('hidden');
+                renderDepthView();
             }
         }
 
@@ -1620,6 +1664,369 @@
             // Reset pick number in round if needed, but simplistic "pick" counter just increments globally or per round.
             // My UI shows "Pick X" as global pick in round? usually Pick is 1..N in round.
             draftState.pick = (draftState.totalPicks % teamCount) + 1;
+        }
+
+        // --- Depth Charts: fetch and render ---
+        async function fetchDepthForTeam(teamId) {
+            const url = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/${teamId}/depthcharts`;
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+
+                const result = {};
+
+                // Helper to resolve athlete $ref -> id -> name
+                async function resolveAthleteRef(refObj) {
+                    if (!refObj) return null;
+                    // expected format: { "$ref": ".../athletes/4426338?lang=..." }
+                    const ref = refObj.$ref || refObj.ref || refObj.href || null;
+                    if (!ref) return null;
+                    const m = ref.match(/athletes\/(\d+)/);
+                    const id = m ? m[1] : null;
+                    if (!id) return ref;
+
+                    // Try local cache of roster players first
+                    const found = allPlayers.find(p => String(p.id) === String(id) || String(p.id) === String(id));
+                    if (found) return { name: (found.displayName || `${found.firstName || ''} ${found.lastName || ''}`.trim()), headshot: (found.headshot && found.headshot.href) || (found.headshot && found.headshot.url) || null };
+
+                    // Fallback: fetch athlete overview for name
+                    try {
+                        const aRes = await fetch(ATHLETE_OVERVIEW_API(id));
+                        if (aRes.ok) {
+                            const aData = await aRes.json();
+                            // Try common name fields
+                            const name = aData.displayName || aData.athlete?.displayName || aData.name || (aData.person && aData.person.fullName) || (`Athlete ${id}`);
+                            const headshot = aData.headshot?.href || aData.athlete?.headshot?.href || aData.photo?.url || null;
+                            return { name, headshot };
+                        }
+                    } catch (e) {
+                        // ignore
+                    }
+                    return { name: `Athlete ${id}`, headshot: null };
+                }
+
+                // Flexible parsing: handle multiple shapes including ranked athletes
+                if (data && data.items && Array.isArray(data.items)) {
+                    // items can be position objects or contain a `positions` mapping
+                    for (const item of data.items) {
+                        // If item contains a `positions` map, iterate its entries
+                        if (item.positions && typeof item.positions === 'object') {
+                            for (const [key, posObj] of Object.entries(item.positions)) {
+                                const pos = posObj.position?.abbreviation || posObj.position?.displayName || posObj.position?.name || key;
+                                if (!pos) continue;
+                                const arr = [];
+                                if (posObj.athletes && Array.isArray(posObj.athletes)) {
+                                    for (const a of posObj.athletes) {
+                                        const rank = a.rank || a.slot || 0;
+                                        const pobj = await resolveAthleteRef(a.athlete || a);
+                                        if (rank && rank > 0) arr[rank - 1] = pobj || {name: '', headshot: null};
+                                        else arr.push(pobj || {name: '', headshot: null});
+                                    }
+                                }
+                                if (posObj.players && Array.isArray(posObj.players)) {
+                                    for (const p of posObj.players) {
+                                        const rank = p.rank || p.slot || 0;
+                                        const pobj = p.athlete ? await resolveAthleteRef(p.athlete) : { name: (p.displayName || p.name || ''), headshot: null };
+                                        if (rank && rank > 0) arr[rank - 1] = pobj || {name: '', headshot: null};
+                                        else arr.push(pobj || {name: '', headshot: null});
+                                    }
+                                }
+                                result[pos] = arr.filter(v => v !== undefined && v !== null);
+                            }
+                            continue;
+                        }
+
+                        // Fallback: item represents a single position
+                        const pos = item.position?.abbreviation || item.position || item.name || item.label || null;
+                        if (!pos) continue;
+                        const arr = [];
+
+                        if (item.athletes && Array.isArray(item.athletes)) {
+                            for (const a of item.athletes) {
+                                const rank = a.rank || a.slot || a.depth || 0;
+                                const pobj = await resolveAthleteRef(a.athlete || a.athleteRef || a.player || a.person || a);
+                                if (rank && rank > 0) arr[rank - 1] = pobj || {name: '', headshot: null};
+                                else arr.push(pobj || {name: '', headshot: null});
+                            }
+                        }
+
+                        if ((item.players && Array.isArray(item.players)) || (item.depth && Array.isArray(item.depth))) {
+                            const list = item.players || item.depth;
+                            for (const d of list) {
+                                if (d.athlete || d.player) {
+                                    const rank = d.rank || d.slot || d.depth || 0;
+                                    const pobj = await resolveAthleteRef(d.athlete || d.player || d);
+                                    if (rank && rank > 0) arr[rank - 1] = pobj || {name: '', headshot: null};
+                                    else arr.push(pobj || {name: '', headshot: null});
+                                } else {
+                                    arr.push({ name: (d.displayName || d.fullName || d.name || (d.player && d.player.displayName) || ''), headshot: null });
+                                }
+                            }
+                        }
+
+                        result[pos] = arr.filter(v => v !== undefined && v !== null);
+                    }
+                } else if (data && data.depthCharts && Array.isArray(data.depthCharts)) {
+                    for (const dc of data.depthCharts) {
+                        const pos = dc.position || dc.label || dc.name;
+                        if (!pos) continue;
+                        const arr = [];
+                        const entries = dc.entries || dc.items || [];
+                        for (const e of entries) {
+                            const rank = e.rank || e.slot || 0;
+                            let name = e.displayName || e.name || (e.player && e.player.displayName) || null;
+                            if (!name && e.athlete) name = await resolveAthleteRef(e.athlete);
+                            if (rank && rank > 0) arr[rank - 1] = name || '';
+                            else arr.push(name || '');
+                        }
+                        result[pos] = arr.filter(v => v !== undefined && v !== null);
+                    }
+                }
+
+                // If parsing failed, fallback to roster grouping available in nflTeams
+                if (Object.keys(result).length === 0) {
+                    const team = nflTeams.find(t => String(t.id) === String(teamId));
+                    if (team && team.roster) {
+                        team.roster.forEach(p => {
+                            const pos = (p.position && p.position.abbreviation) || 'UNK';
+                            if (!result[pos]) result[pos] = [];
+                            result[pos].push(p.displayName || `${p.firstName || ''} ${p.lastName || ''}`.trim());
+                        });
+                    }
+                }
+
+                return result;
+            } catch (e) {
+                console.warn('Depth fetch failed for', teamId, e);
+                // Fallback to roster grouping if available
+                const fallback = {};
+                const team = nflTeams.find(t => String(t.id) === String(teamId));
+                if (team && team.roster) {
+                    team.roster.forEach(p => {
+                        const pos = (p.position && p.position.abbreviation) || 'UNK';
+                        if (!fallback[pos]) fallback[pos] = [];
+                        fallback[pos].push(p.displayName || `${p.firstName || ''} ${p.lastName || ''}`.trim());
+                    });
+                }
+                return fallback;
+            }
+        }
+
+        async function buildDepthTableData() {
+            const teamDepths = {};
+            const positions = new Set();
+            const maxDepth = {};
+
+            const chunkSize = 6;
+            for (let i = 0; i < nflTeams.length; i += chunkSize) {
+                const chunk = nflTeams.slice(i, i + chunkSize);
+                await Promise.all(chunk.map(async team => {
+                    const depths = await fetchDepthForTeam(team.id);
+                    teamDepths[team.id] = { team, depths };
+                    Object.keys(depths).forEach(p => {
+                        positions.add(p);
+                        maxDepth[p] = Math.max(maxDepth[p] || 0, depths[p].length || 0);
+                    });
+                }));
+            }
+
+            const posList = Array.from(positions).sort();
+            return { teamDepths, posList, maxDepth };
+        }
+
+        async function renderDepthView() {
+            const status = document.getElementById('depth-status');
+            const thead = document.getElementById('depth-thead');
+            const tbody = document.getElementById('depth-tbody');
+            status.textContent = 'Building depth table...';
+            thead.innerHTML = '';
+            tbody.innerHTML = '<tr><td class="py-6 text-slate-500">Loading...</td></tr>';
+
+            try {
+                const { teamDepths, posList, maxDepth } = await buildDepthTableData();
+
+                // Apply client-side filter (all/offense/defense/fantasy)
+                const filter = depthFilter || 'all';
+                let filteredPosList = posList.slice();
+                if (filter !== 'all') {
+                    if (filter === 'offense') filteredPosList = posList.filter(p => OFFENSE_POS.includes(p));
+                    else if (filter === 'defense') filteredPosList = posList.filter(p => DEFENSE_POS.includes(p));
+                    else if (filter === 'fantasy') filteredPosList = posList.filter(p => FANTASY_POS.includes(p));
+                }
+
+                // If filtered list is empty, fall back to full list
+                if (filteredPosList.length === 0) filteredPosList = posList.slice();
+
+                // Build header (with per-position coloring) and respect per-position limit
+                const headers = [''];
+                filteredPosList.forEach(p => {
+                    const available = maxDepth[p] || 1;
+                    const colCount = (depthPerPositionLimit === 'all') ? available : Math.min(available, Number(depthPerPositionLimit || 2));
+                    for (let i = 1; i <= colCount; i++) headers.push({ text: `${p} ${i}`, pos: p });
+                });
+
+                thead.innerHTML = `<tr class="text-xs text-slate-400 uppercase border-b border-slate-700">` +
+                    `<th class="sticky top-0 left-0 bg-slate-800 z-40 py-2 pr-4" style="width:64px"></th>` +
+                    headers.slice(1).map(h => {
+                        const pos = h.pos;
+                        const cls = FANTASY_POS.includes(pos) ? 'bg-green-800/20 text-green-200' : 'bg-slate-800 text-slate-400';
+                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4">${h.text}</th>`;
+                    }).join('') +
+                    `</tr>`;
+
+                // Build rows
+                const rows = Object.values(teamDepths).map(({ team, depths }) => {
+                    const rowCols = [];
+                    // Sticky left team column (logo only)
+                    rowCols.push(`<td class="py-3 pr-4 sticky left-0 bg-slate-900/90 z-20" style="width:64px"><div class="flex items-center gap-3 justify-center"><img src="${team.logos?.[0]?.href || ''}" class="w-10 h-10 object-contain"></div></td>`);
+                    filteredPosList.forEach(p => {
+                        const players = depths[p] || [];
+                        const available = maxDepth[p] || 1;
+                        const colCount = (depthPerPositionLimit === 'all') ? available : Math.min(available, Number(depthPerPositionLimit || 2));
+                        for (let i = 0; i < colCount; i++) {
+                            const pobj = players[i] || null;
+                            let display = '';
+                            if (pobj) {
+                                const pname = (typeof pobj === 'string') ? pobj : (pobj.name || '');
+                                const ph = (typeof pobj === 'object') ? pobj.headshot : null;
+                                const imgHtml = ph ? `<img src="${ph}" class="w-6 h-6 rounded-full object-cover">` : '';
+                                display = `<div class="flex items-center gap-2"><div class="w-6 h-6 flex-shrink-0">${imgHtml}</div><span class="text-[13px] text-slate-200">${pname}</span></div>`;
+                            }
+                            const cellCls = FANTASY_POS.includes(p) ? 'bg-green-900/5' : '';
+                            rowCols.push(`<td class="py-2 pr-4 align-top text-[13px] ${cellCls}">${display}</td>`);
+                        }
+                    });
+                    return `<tr class="border-b border-slate-800">${rowCols.join('')}</tr>`;
+                });
+
+                tbody.innerHTML = rows.join('');
+                // Ensure horizontal scroll and set sensible min-width based on columns
+                const table = document.getElementById('depth-table');
+                try {
+                    const minW = Math.max(900, headers.length * 140);
+                    table.style.minWidth = minW + 'px';
+                } catch (e) { }
+                status.textContent = `Depth charts: ${Object.keys(teamDepths).length} teams`;
+            } catch (e) {
+                console.error('Error building depth table', e);
+                tbody.innerHTML = `<tr><td class="py-6 text-red-500">Failed to build depth charts: ${e.message}</td></tr>`;
+                status.textContent = 'Error';
+            }
+        }
+
+        // Depth filter state and helpers
+        let depthFilter = 'fantasy';
+        // How many players to show per position column (number or 'all')
+        let depthPerPositionLimit = 2; // default top 2
+        const OFFENSE_POS = ['QB','RB','WR','TE','FB','OL','C','OG','OT','G','T'];
+        const DEFENSE_POS = ['CB','S','DB','LB','ILB','OLB','DE','DT','DL'];
+        const FANTASY_POS = ['QB','RB','WR','TE'];
+
+        function setDepthLimit(lim) {
+            depthPerPositionLimit = lim;
+            ['1','2','3','all'].forEach(k => {
+                const btn = document.getElementById(`depth-limit-${k}`);
+                if (!btn) return;
+                if ((k === 'all' && lim === 'all') || (k !== 'all' && Number(k) === lim)) btn.classList.add('bg-green-600','text-white'); else btn.classList.remove('bg-green-600','text-white');
+            });
+            renderDepthView();
+        }
+
+        // Simple cache so switching filters doesn't refetch depth data repeatedly
+        let depthDataCache = null;
+        async function buildDepthTableData_cached(forceRefresh = false) {
+            if (!forceRefresh && depthDataCache) return depthDataCache;
+            const data = await buildDepthTableData();
+            depthDataCache = data;
+            return data;
+        }
+
+        // Replace calls to buildDepthTableData with cached version inside renderDepthView
+        const _oldRenderDepthView = renderDepthView;
+        async function renderDepthView(forceRefresh = false) {
+            const status = document.getElementById('depth-status');
+            const thead = document.getElementById('depth-thead');
+            const tbody = document.getElementById('depth-tbody');
+            status.textContent = 'Building depth table...';
+            thead.innerHTML = '';
+            tbody.innerHTML = '<tr><td class="py-6 text-slate-500">Loading...</td></tr>';
+
+            try {
+                const { teamDepths, posList, maxDepth } = await buildDepthTableData_cached(forceRefresh);
+
+                // Apply client-side filter (all/offense/defense/fantasy)
+                const filter = depthFilter || 'all';
+                let filteredPosList = posList.slice();
+                if (filter !== 'all') {
+                    if (filter === 'offense') filteredPosList = posList.filter(p => OFFENSE_POS.includes(p));
+                    else if (filter === 'defense') filteredPosList = posList.filter(p => DEFENSE_POS.includes(p));
+                    else if (filter === 'fantasy') filteredPosList = posList.filter(p => FANTASY_POS.includes(p));
+                }
+                if (filteredPosList.length === 0) filteredPosList = posList.slice();
+
+                const headers = [''];
+                filteredPosList.forEach(p => {
+                    const available = maxDepth[p] || 1;
+                    const colCount = (depthPerPositionLimit === 'all') ? available : Math.min(available, Number(depthPerPositionLimit || 2));
+                    for (let i = 1; i <= colCount; i++) headers.push({ text: `${p} ${i}`, pos: p });
+                });
+
+                thead.innerHTML = `<tr class="text-xs text-slate-400 uppercase border-b border-slate-700">` +
+                    `<th class="sticky top-0 left-0 bg-slate-800 z-40 py-2 pr-4" style="width:64px"></th>` +
+                    headers.slice(1).map(h => {
+                        const pos = h.pos;
+                        const cls = FANTASY_POS.includes(pos) ? 'bg-green-800/20 text-green-200' : 'bg-slate-800 text-slate-400';
+                        return `<th class="sticky top-0 ${cls} z-30 py-2 pr-4">${h.text}</th>`;
+                    }).join('') +
+                    `</tr>`;
+
+                const rows = Object.values(teamDepths).map(({ team, depths }) => {
+                    const rowCols = [];
+                    rowCols.push(`<td class="py-3 pr-4 sticky left-0 bg-slate-900/90 z-20" style="width:64px"><div class="flex items-center gap-3 justify-center"><img src="${team.logos?.[0]?.href || ''}" class="w-10 h-10 object-contain"></div></td>`);
+                    filteredPosList.forEach(p => {
+                        const players = depths[p] || [];
+                        const available = maxDepth[p] || 1;
+                        const colCount = (depthPerPositionLimit === 'all') ? available : Math.min(available, Number(depthPerPositionLimit || 2));
+                        for (let i = 0; i < colCount; i++) {
+                            const pobj = players[i] || null;
+                            let display = '';
+                            if (pobj) {
+                                const pname = (typeof pobj === 'string') ? pobj : (pobj.name || '');
+                                const ph = (typeof pobj === 'object') ? pobj.headshot : null;
+                                const imgHtml = ph ? `<img src="${ph}" class="w-6 h-6 rounded-full object-cover">` : '';
+                                display = `<div class="flex items-center gap-2"><div class="w-6 h-6 flex-shrink-0">${imgHtml}</div><span class="text-[13px] text-slate-200">${pname}</span></div>`;
+                            }
+                            rowCols.push(`<td class="py-2 pr-4 align-top text-[13px]">${display}</td>`);
+                        }
+                    });
+                    return `<tr class="border-b border-slate-800">${rowCols.join('')}</tr>`;
+                });
+
+                tbody.innerHTML = rows.join('');
+                // Ensure horizontal scroll and set sensible min-width based on columns
+                const table = document.getElementById('depth-table');
+                try {
+                    const minW = Math.max(900, headers.length * 140);
+                    table.style.minWidth = minW + 'px';
+                } catch (e) { }
+                status.textContent = `Depth charts: ${Object.keys(teamDepths).length} teams`;
+            } catch (e) {
+                console.error('Error building depth table', e);
+                tbody.innerHTML = `<tr><td class="py-6 text-red-500">Failed to build depth charts: ${e.message}</td></tr>`;
+                status.textContent = 'Error';
+            }
+        }
+
+        function setDepthFilter(filter) {
+            depthFilter = filter;
+            // Toggle active button styles
+            ['all','offense','defense','fantasy'].forEach(f => {
+                const btn = document.getElementById(`depth-filter-${f}`);
+                if (!btn) return;
+                if (f === filter) btn.classList.add('bg-green-600','text-white'); else btn.classList.remove('bg-green-600','text-white');
+            });
+            renderDepthView();
         }
 
         // Start
