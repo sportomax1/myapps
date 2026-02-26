@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Detailed Forecast | WeatherPulse</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card-bg: #1c1c1e;
+            --accent: #0a84ff;
+            --text: #ffffff;
+            --text-secondary: #8e8e93;
+            --separator: #38383a;
+            --sunny: #ff9f0a;
+            --rainy: #64d2ff;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding-bottom: 40px;
+        }
+
+        header {
+            padding: max(20px, env(safe-area-inset-top)) 20px 20px;
+            background: rgba(20, 20, 22, 0.8);
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .location-info h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .location-info p {
+            margin: 4px 0 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        main {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 16px;
+        }
+
+        section {
+            margin-bottom: 32px;
+        }
+
+        h2 {
+            font-size: 13px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-left: 4px;
+        }
+
+        /* 24 Hour Forecast */
+        .hourly-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 16px;
+            scrollbar-width: none;
+        }
+        .hourly-scroll::-webkit-scrollbar { display: none; }
+
+        .hour-card {
+            background: var(--card-bg);
+            min-width: 80px;
+            padding: 16px 8px;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: 0.5px solid var(--separator);
+        }
+
+        .hour-time { font-size: 13px; font-weight: 600; }
+        .hour-temp { font-size: 18px; font-weight: 800; }
+        .hour-icon { font-size: 24px; }
+        .hour-precip { font-size: 10px; color: var(--rainy); font-weight: 700; }
+
+        /* 7 Day Forecast */
+        .daily-list {
+            background: var(--card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 0.5px solid var(--separator);
+        }
+
+        .daily-row {
+            display: grid;
+            grid-template-columns: 80px 40px 1fr 40px 40px;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 0.5px solid var(--separator);
+            gap: 12px;
+        }
+
+        .daily-row:last-child { border-bottom: none; }
+
+        .day-name { font-weight: 600; font-size: 16px; }
+        .day-icon { font-size: 22px; text-align: center; }
+        .temp-bar-container {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            position: relative;
+        }
+        .temp-bar-fill {
+            position: absolute;
+            height: 100%;
+            background: linear-gradient(90deg, #0a84ff, #ff9f0a);
+            border-radius: 2px;
+        }
+        .day-low { color: var(--text-secondary); font-weight: 600; text-align: right; }
+        .day-high { font-weight: 600; text-align: right; }
+
+        /* Loading */
+        #loader {
+            position: fixed; inset: 0; background: #000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000;
+        }
+
+        @media (max-width: 600px) {
+            .location-info h1 { font-size: 20px; }
+            .daily-row { font-size: 14px; padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div style="font-size: 48px; animation: bounce 2s infinite">☁️</div>
+        <p style="font-weight: 700; color: var(--accent); margin-top: 16px">Loading Forecast...</p>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="location-info">
+                <h1 id="cityName">Denver, CO</h1>
+                <p id="currentSummary">Partly Cloudy • 72°</p>
+            </div>
+            <div id="dateDisplay" style="text-align: right; font-size: 14px; font-weight: 600;"></div>
+        </div>
+    </header>
+
+    <main>
+        <section>
+            <h2>24-Hour Forecast</h2>
+            <div class="hourly-scroll" id="hourlyContainer">
+                <!-- Hourly cards injected here -->
+            </div>
+        </section>
+
+        <section>
+            <h2>7-Day Forecast</h2>
+            <div class="daily-list" id="dailyContainer">
+                <!-- Daily rows injected here -->
+            </div>
+        </section>
+
+        <section style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="daily-list" style="padding: 16px;">
+                <h2 style="margin: 0 0 8px 0;">Sunrise</h2>
+                <div id="sunrise" style="font-size: 20px; font-weight: 800;">--:--</div>
+            </div>
+            <div class="daily-list" style="padding: 16px;">
+                <h2 style="margin: 0 0 8px 0;">Sunset</h2>
+                <div id="sunset" style="font-size: 20px; font-weight: 800;">--:--</div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const lat = 39.7392;
+        const lon = -104.9903;
+
+        function getWeatherIcon(code) {
+            if (code <= 1) return '☀️';
+            if (code <= 3) return '⛅';
+            if (code <= 48) return '🌫️';
+            if (code <= 55) return '🌦️';
+            if (code <= 65) return '🌧️';
+            if (code <= 77) return '❄️';
+            if (code <= 82) return '🌦️';
+            if (code <= 99) return '⛈️';
+            return '❓';
+        }
+
+        async function init() {
+            try {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,weathercode,precipitation_probability&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                // Header
+                document.getElementById('currentSummary').innerText = `Current: ${Math.round(data.current_weather.temperature)}° • Wind: ${data.current_weather.windspeed} mph`;
+                document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+                // Hourly
+                const hourlyCont = document.getElementById('hourlyContainer');
+                const now = new Date().getHours();
+                for (let i = 0; i < 24; i++) {
+                    const time = new Date(data.hourly.time[i]);
+                    const hourText = i === 0 ? 'Now' : time.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+                    const temp = Math.round(data.hourly.temperature_2m[i]);
+                    const prob = data.hourly.precipitation_probability[i];
+                    
+                    hourlyCont.innerHTML += `
+                        <div class="hour-card">
+                            <span class="hour-time">${hourText}</span>
+                            <span class="hour-icon">${getWeatherIcon(data.hourly.weathercode[i])}</span>
+                            <span class="hour-temp">${temp}°</span>
+                            <span class="hour-precip">${prob > 0 ? prob + '%' : ''}</span>
+                        </div>
+                    `;
+                }
+
+                // Daily
+                const dailyCont = document.getElementById('dailyContainer');
+                const minAll = Math.min(...data.daily.temperature_2m_min);
+                const maxAll = Math.max(...data.daily.temperature_2m_max);
+                const rangeAll = maxAll - minAll;
+
+                for (let i = 0; i < 7; i++) {
+                    const dayDate = new Date(data.daily.time[i]);
+                    const dayName = i === 0 ? 'Today' : dayDate.toLocaleDateString('en-US', { weekday: 'short' });
+                    const high = Math.round(data.daily.temperature_2m_max[i]);
+                    const low = Math.round(data.daily.temperature_2m_min[i]);
+                    
+                    // Temp bar logic
+                    const left = ((low - minAll) / rangeAll) * 100;
+                    const width = ((high - low) / rangeAll) * 100;
+
+                    dailyCont.innerHTML += `
+                        <div class="daily-row">
+                            <span class="day-name">${dayName}</span>
+                            <span class="day-icon">${getWeatherIcon(data.daily.weathercode[i])}</span>
+                            <div class="temp-bar-container">
+                                <div class="temp-bar-fill" style="left: ${left}%; width: ${width}%"></div>
+                            </div>
+                            <span class="day-low">${low}°</span>
+                            <span class="day-high">${high}°</span>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('sunrise').innerText = data.daily.sunrise[0].split('T')[1];
+                document.getElementById('sunset').innerText = data.daily.sunset[0].split('T')[1];
+
+                document.getElementById('loader').style.display = 'none';
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loader').innerHTML = '<p>Error loading weather data.</p>';
+            }
+        }
+
+        init();
+    </script>
+
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</body>
+</html>
