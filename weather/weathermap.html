@@ -3,277 +3,440 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USA High Temp Map</title>
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <title>USA Capital Weather Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #f8fafc; display: flex; flex-direction: column; min-height: 100vh; }
-        #map { flex-grow: 1; min-height: 400px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
-        .leaflet-container { background-color: #0f172a; }
-        
-        /* Custom Marker Styles */
-        .temp-marker {
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #6c757d;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+        #map {
+            height: calc(100vh - 60px);
+            width: 100%;
+            margin-top: 60px;
+        }
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            border: 2px solid white;
-            color: white;
-            font-weight: 800;
-            font-size: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
+            gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding: 0 15px;
+            box-sizing: border-box;
         }
-        .temp-marker:hover { transform: scale(1.2); z-index: 1000 !important; cursor: pointer; }
-
-        /* Custom Date Picker Styles */
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
+        .controls button, .controls input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .controls button:hover {
+            background: #f8f9fa;
+        }
+        .controls button.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            line-height: 18px;
+            color: #555;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        .temp-marker {
+            border: 1px solid #333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 18px;
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
             cursor: pointer;
         }
+        .close:hover { color: black; }
+        .grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        .grid-table th, .grid-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .grid-table th {
+            background-color: #f4f4f4;
+            position: sticky;
+            top: 0;
+        }
+        .grid-table tr:nth-child(even) { background-color: #fafafa; }
+        .grid-table td.state-cell {
+            text-align: left;
+            font-weight: bold;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 10;
+        }
+        .flag { margin-right: 8px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body>
+    <div class="controls">
+        <button id="prevDay">&lt; Prev</button>
+        <input type="date" id="datePicker">
+        <button id="todayBtn">Today</button>
+        <button id="nextDay">Next &gt;</button>
+        <button id="showGrid" style="margin-left: 20px; background: #28a745; color: white;">View Data Grid</button>
+    </div>
 
-    <header class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 mb-4 shrink-0 w-full">
-        <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/20">W</div>
-            <div>
-                <h1 class="text-2xl font-black uppercase tracking-tighter italic">WeatherMap</h1>
-                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">USA State Capitals • High Temps</p>
+    <div id="loading" class="loading-overlay">
+        <div id="loadingText">Fetching Capital Weather...</div>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Modal -->
+    <div id="gridModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <h2>Capital Weather Data Grid</h2>
+            <div style="overflow-x: auto;">
+                <table class="grid-table" id="dataTable">
+                    <thead id="tableHead"></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="flex flex-col md:flex-row gap-4 items-center">
-             <!-- Date Controls -->
-             <div class="flex items-center bg-slate-800 rounded-full p-1 border border-slate-700 shadow-lg">
-                <button onclick="changeDate(-1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                </button>
-                
-                <div class="relative mx-2">
-                    <input type="date" id="datePicker" onchange="updateMapDate(this.value)" 
-                           class="bg-transparent text-xs font-bold uppercase text-white outline-none border-none w-28 text-center tracking-wider cursor-pointer font-mono">
-                </div>
+    </div>
 
-                <button onclick="changeDate(1)" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </button>
-            </div>
-
-            <button onclick="goToToday()" class="px-5 py-2 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-500 transition-all text-xs uppercase shadow-lg shadow-blue-900/30">
-                Today
-            </button>
-
-            <!-- Legend -->
-            <div class="hidden md:flex items-center gap-1 bg-slate-800 rounded-full px-4 py-2 border border-slate-700">
-                <span class="text-[10px] uppercase font-bold text-blue-400 mr-1">Cold</span>
-                <div class="w-24 h-1.5 bg-gradient-to-r from-blue-600 via-green-400 via-yellow-400 to-red-600 rounded-full"></div>
-                <span class="text-[10px] uppercase font-bold text-red-400 ml-1">Hot</span>
-            </div>
-        </div>
-    </header>
-
-    <main class="max-w-7xl mx-auto w-full flex-grow flex flex-col gap-4 relative">
-        <div id="map" class="w-full h-full z-0"></div>
-        
-        <!-- Loading Indicator -->
-        <div id="loader" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex-col items-center justify-center rounded-xl">
-            <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <span class="text-xs font-bold uppercase tracking-widest text-white">Fetching Forecasts...</span>
-        </div>
-    </main>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
-        let map;
-        let markersLayer = L.layerGroup();
-        let currentDate = new Date();
-        const weatherCache = {}; // New: Cache for weather data
-
-        // 50 State Capitals
-        const CAPITALS = [
-            { name: "Montgomery", state: "AL", lat: 32.3770, lon: -86.3000 },
-            { name: "Juneau", state: "AK", lat: 58.3019, lon: -134.4197 },
-            { name: "Phoenix", state: "AZ", lat: 33.4484, lon: -112.0740 },
-            { name: "Little Rock", state: "AR", lat: 34.7465, lon: -92.2896 },
-            { name: "Sacramento", state: "CA", lat: 38.5816, lon: -121.4944 },
-            { name: "Denver", state: "CO", lat: 39.7392, lon: -104.9903 },
-            { name: "Hartford", state: "CT", lat: 41.7658, lon: -72.6734 },
-            { name: "Dover", state: "DE", lat: 39.1582, lon: -75.5244 },
-            { name: "Tallahassee", state: "FL", lat: 30.4383, lon: -84.2807 },
-            { name: "Atlanta", state: "GA", lat: 33.7490, lon: -84.3880 },
-            { name: "Honolulu", state: "HI", lat: 21.3069, lon: -157.8583 },
-            { name: "Boise", state: "ID", lat: 43.6150, lon: -116.2023 },
-            { name: "Springfield", state: "IL", lat: 39.7817, lon: -89.6501 },
-            { name: "Indianapolis", state: "IN", lat: 39.7684, lon: -86.1581 },
-            { name: "Des Moines", state: "IA", lat: 41.5868, lon: -93.6250 },
-            { name: "Topeka", state: "KS", lat: 39.0558, lon: -95.6890 },
-            { name: "Frankfort", state: "KY", lat: 38.2009, lon: -84.8732 },
-            { name: "Baton Rouge", state: "LA", lat: 30.4515, lon: -91.1871 },
-            { name: "Augusta", state: "ME", lat: 44.3106, lon: -69.7795 },
-            { name: "Annapolis", state: "MD", lat: 38.9784, lon: -76.4922 },
-            { name: "Boston", state: "MA", lat: 42.3601, lon: -71.0589 },
-            { name: "Lansing", state: "MI", lat: 42.7325, lon: -84.5555 },
-            { name: "Saint Paul", state: "MN", lat: 44.9537, lon: -93.0900 },
-            { name: "Jackson", state: "MS", lat: 32.2988, lon: -90.1848 },
-            { name: "Jefferson City", state: "MO", lat: 38.5767, lon: -92.1735 },
-            { name: "Helena", state: "MT", lat: 46.5891, lon: -112.0391 },
-            { name: "Lincoln", state: "NE", lat: 40.8136, lon: -96.7026 },
-            { name: "Carson City", state: "NV", lat: 39.1638, lon: -119.7674 },
-            { name: "Concord", state: "NH", lat: 43.2081, lon: -71.5375 },
-            { name: "Trenton", state: "NJ", lat: 40.2206, lon: -74.7597 },
-            { name: "Santa Fe", state: "NM", lat: 35.6870, lon: -105.9378 },
-            { name: "Albany", state: "NY", lat: 42.6526, lon: -73.7562 },
-            { name: "Raleigh", state: "NC", lat: 35.7796, lon: -78.6382 },
-            { name: "Bismarck", state: "ND", lat: 46.8083, lon: -100.7837 },
-            { name: "Columbus", state: "OH", lat: 39.9612, lon: -82.9988 },
-            { name: "Oklahoma City", state: "OK", lat: 35.4676, lon: -97.5164 },
-            { name: "Salem", state: "OR", lat: 44.9429, lon: -123.0351 },
-            { name: "Harrisburg", state: "PA", lat: 40.2732, lon: -76.8867 },
-            { name: "Providence", state: "RI", lat: 41.8240, lon: -71.4128 },
-            { name: "Columbia", state: "SC", lat: 34.0007, lon: -81.0348 },
-            { name: "Pierre", state: "SD", lat: 44.3683, lon: -100.3510 },
-            { name: "Nashville", state: "TN", lat: 36.1627, lon: -86.7816 },
-            { name: "Austin", state: "TX", lat: 30.2672, lon: -97.7431 },
-            { name: "Salt Lake City", state: "UT", lat: 40.7608, lon: -111.8910 },
-            { name: "Montpelier", state: "VT", lat: 44.2601, lon: -72.5754 },
-            { name: "Richmond", state: "VA", lat: 37.5407, lon: -77.4360 },
-            { name: "Olympia", state: "WA", lat: 47.0379, lon: -122.9007 },
-            { name: "Charleston", state: "WV", lat: 38.3498, lon: -81.6326 },
-            { name: "Madison", state: "WI", lat: 43.0731, lon: -89.4012 },
-            { name: "Cheyenne", state: "WY", lat: 41.1400, lon: -104.8202 }
+        const capitals = [
+            { name: "Montgomery", state: "Alabama", lat: 32.3668, lon: -86.3006 },
+            { name: "Juneau", state: "Alaska", lat: 58.3019, lon: -134.4197 },
+            { name: "Phoenix", state: "Arizona", lat: 33.4484, lon: -112.0740 },
+            { name: "Little Rock", state: "Arkansas", lat: 34.7465, lon: -92.2896 },
+            { name: "Sacramento", state: "California", lat: 38.5816, lon: -121.4944 },
+            { name: "Denver", state: "Colorado", lat: 39.7392, lon: -104.9903 },
+            { name: "Hartford", state: "Connecticut", lat: 41.7637, lon: -72.6851 },
+            { name: "Dover", state: "Delaware", lat: 39.1582, lon: -75.5244 },
+            { name: "Tallahassee", state: "Florida", lat: 30.4383, lon: -84.2807 },
+            { name: "Atlanta", state: "Georgia", lat: 33.7490, lon: -84.3880 },
+            { name: "Honolulu", state: "Hawaii", lat: 21.3069, lon: -157.8583 },
+            { name: "Boise", state: "Idaho", lat: 43.6150, lon: -116.2023 },
+            { name: "Springfield", state: "Illinois", lat: 39.7817, lon: -89.6501 },
+            { name: "Indianapolis", state: "Indiana", lat: 39.7684, lon: -86.1581 },
+            { name: "Des Moines", state: "Iowa", lat: 41.5868, lon: -93.6250 },
+            { name: "Topeka", state: "Kansas", lat: 39.0473, lon: -95.6752 },
+            { name: "Frankfort", state: "Kentucky", lat: 38.1973, lon: -84.8733 },
+            { name: "Baton Rouge", state: "Louisiana", lat: 30.4515, lon: -91.1871 },
+            { name: "Augusta", state: "Maine", lat: 44.3106, lon: -69.7795 },
+            { name: "Annapolis", state: "Maryland", lat: 38.9784, lon: -76.4922 },
+            { name: "Boston", state: "Massachusetts", lat: 42.3601, lon: -71.0589 },
+            { name: "Lansing", state: "Michigan", lat: 42.7325, lon: -84.5555 },
+            { name: "St. Paul", state: "Minnesota", lat: 44.9442, lon: -93.0933 },
+            { name: "Jackson", state: "Mississippi", lat: 32.2988, lon: -90.1848 },
+            { name: "Jefferson City", state: "Missouri", lat: 38.5767, lon: -92.1735 },
+            { name: "Helena", state: "Montana", lat: 46.5891, lon: -112.0391 },
+            { name: "Lincoln", state: "Nebraska", lat: 40.8136, lon: -96.7026 },
+            { name: "Carson City", state: "Nevada", lat: 39.1638, lon: -119.7674 },
+            { name: "Concord", state: "New Hampshire", lat: 43.2081, lon: -71.5376 },
+            { name: "Trenton", state: "New Jersey", lat: 40.2170, lon: -74.7429 },
+            { name: "Santa Fe", state: "New Mexico", lat: 35.6870, lon: -105.9378 },
+            { name: "Albany", state: "New York", lat: 42.6526, lon: -73.7562 },
+            { name: "Raleigh", state: "North Carolina", lat: 35.7796, lon: -78.6382 },
+            { name: "Bismarck", state: "North Dakota", lat: 46.8083, lon: -100.7837 },
+            { name: "Columbus", state: "Ohio", lat: 39.9612, lon: -82.9988 },
+            { name: "Oklahoma City", state: "Oklahoma", lat: 35.4676, lon: -97.5164 },
+            { name: "Salem", state: "Oregon", lat: 44.9429, lon: -123.0351 },
+            { name: "Harrisburg", state: "Pennsylvania", lat: 40.2732, lon: -76.8867 },
+            { name: "Providence", state: "Rhode Island", lat: 41.8240, lon: -71.4128 },
+            { name: "Columbia", state: "South Carolina", lat: 34.0007, lon: -81.0348 },
+            { name: "Pierre", state: "South Dakota", lat: 44.3668, lon: -100.3364 },
+            { name: "Nashville", state: "Tennessee", lat: 36.1627, lon: -86.7816 },
+            { name: "Austin", state: "Texas", lat: 30.2672, lon: -97.7431 },
+            { name: "Salt Lake City", state: "Utah", lat: 40.7608, lon: -111.8910 },
+            { name: "Montpelier", state: "Vermont", lat: 44.2601, lon: -72.5754 },
+            { name: "Richmond", state: "Virginia", lat: 37.5407, lon: -77.4360 },
+            { name: "Olympia", state: "Washington", lat: 47.0379, lon: -122.9007 },
+            { name: "Charleston", state: "West Virginia", lat: 38.3498, lon: -81.6326 },
+            { name: "Madison", state: "Wisconsin", lat: 43.0731, lon: -89.4012 },
+            { name: "Cheyenne", state: "Wyoming", lat: 41.1400, lon: -104.8202 }
         ];
 
-        function initMap() {
-            map = L.map('map').setView([39.8283, -98.5795], 4); 
+        // Map state flags (using US flag for all as individual state flag emojis are not standard)
+        // However, we can use the "State Flag" emoji sequences if supported, but 🇺🇸 is the safe fallback.
+        const stateFlags = {
+            "Alabama": "🇺🇸", "Alaska": "🇺🇸", "Arizona": "🇺🇸", "Arkansas": "🇺🇸", "California": "🇺🇸",
+            "Colorado": "🇺🇸", "Connecticut": "🇺🇸", "Delaware": "🇺🇸", "Florida": "🇺🇸", "Georgia": "🇺🇸",
+            "Hawaii": "🇺🇸", "Idaho": "🇺🇸", "Illinois": "🇺🇸", "Indiana": "🇺🇸", "Iowa": "🇺🇸",
+            "Kansas": "🇺🇸", "Kentucky": "🇺🇸", "Louisiana": "🇺🇸", "Maine": "🇺🇸", "Maryland": "🇺🇸",
+            "Massachusetts": "🇺🇸", "Michigan": "🇺🇸", "Minnesota": "🇺🇸", "Mississippi": "🇺🇸", "Missouri": "🇺🇸",
+            "Montana": "🇺🇸", "Nebraska": "🇺🇸", "Nevada": "🇺🇸", "New Hampshire": "🇺🇸", "New Jersey": "🇺🇸",
+            "New Mexico": "🇺🇸", "New York": "🇺🇸", "North Carolina": "🇺🇸", "North Dakota": "🇺🇸", "Ohio": "🇺🇸",
+            "Oklahoma": "🇺🇸", "Oregon": "🇺🇸", "Pennsylvania": "🇺🇸", "Rhode Island": "🇺🇸", "South Carolina": "🇺🇸",
+            "South Dakota": "🇺🇸", "Tennessee": "🇺🇸", "Texas": "🇺🇸", "Utah": "🇺🇸", "Vermont": "🇺🇸",
+            "Virginia": "🇺🇸", "Washington": "🇺🇸", "West Virginia": "🇺🇸", "Wisconsin": "🇺🇸", "Wyoming": "🇺🇸"
+        };
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
+        let selectedDate = new Date();
+        const markersGroup = L.layerGroup();
+        let weatherDataCache = {}; // { dateString: { capitalName: temp } }
 
-            markersLayer.addTo(map);
-            
-            // Set initial date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('datePicker').value = today;
-            fetchAndDisplayWeatherData(today); // Use the new function
+        const map = L.map('map').setView([39.8283, -98.5795], 4);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+        markersGroup.addTo(map);
+
+        function formatDate(date) {
+            return date.toISOString().split('T')[0];
         }
 
         function getColor(temp) {
-            if (temp < 20) return '#3b82f6'; // Deep Blue
-            if (temp < 40) return '#60a5fa'; // Light Blue
-            if (temp < 60) return '#34d399'; // Green/Teal
-            if (temp < 80) return '#fbbf24'; // Yellow/Orange
-            if (temp < 95) return '#f87171'; // Red-Orange
-            return '#ef4444'; // Hot Red
+            const minTemp = 32, maxTemp = 95;
+            const ratio = Math.max(0, Math.min(1, (temp - minTemp) / (maxTemp - minTemp)));
+            const r = Math.round(255 * ratio);
+            const b = Math.round(255 * (1 - ratio));
+            return `rgb(${r},0,${b})`;
         }
 
-        function updateMapDate(dateStr) {
-            currentDate = new Date(dateStr);
-            fetchAndDisplayWeatherData(dateStr);
+        function getContrastColor(rgbString) {
+            const rgb = rgbString.match(/\d+/g);
+            const brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
+            return brightness > 125 ? 'black' : 'white';
         }
 
-        function changeDate(days) {
-            currentDate.setDate(currentDate.getDate() + days);
-            const newDateStr = currentDate.toISOString().split('T')[0];
-            document.getElementById('datePicker').value = newDateStr;
-            fetchAndDisplayWeatherData(newDateStr);
-        }
+        async function fetchWeather(date) {
+            const dateStr = formatDate(date);
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loadingText').innerText = `Fetching weather for ${dateStr}...`;
+            
+            markersGroup.clearLayers();
+            const isToday = dateStr === formatDate(new Date());
 
-        function goToToday() {
-            currentDate = new Date();
-            const todayStr = currentDate.toISOString().split('T')[0];
-            document.getElementById('datePicker').value = todayStr;
-            fetchAndDisplayWeatherData(todayStr);
-        }
-
-        // New function to display markers from provided data
-        function displayMarkers(results, dateStr) {
-            markersLayer.clearLayers();
-            results.forEach((locationData, index) => {
-                const capital = CAPITALS[index];
-                // Check if data is valid (e.g., for Honolulu, temperature_2m_max might be null if not available for Hawaii)
-                if (!locationData || !locationData.daily || !locationData.daily.temperature_2m_max || locationData.daily.temperature_2m_max[0] === null) {
-                    console.warn(`No temperature data for ${capital.name} on ${dateStr}`);
-                    return; 
+            const promises = capitals.map(async (cap) => {
+                let url;
+                if (isToday) {
+                    url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&current_weather=true&temperature_unit=fahrenheit`;
+                } else {
+                    url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
                 }
 
-                const highTemp = Math.round(locationData.daily.temperature_2m_max[0]);
-                const color = getColor(highTemp);
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    let temp;
+                    if (isToday) {
+                        temp = data.current_weather.temperature;
+                    } else {
+                        temp = data.daily.temperature_2m_max[0];
+                    }
+                    
+                    if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
+                    weatherDataCache[dateStr][cap.name] = temp;
+
+                    return { ...cap, temp };
+                } catch (e) {
+                    return { ...cap, temp: null };
+                }
+            });
+
+            const results = await Promise.all(promises);
+            
+            results.forEach(cap => {
+                if (cap.temp === null) return;
+                const color = getColor(cap.temp);
+                const textColor = getContrastColor(color);
                 
                 const icon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div class="temp-marker" style="background-color: ${color}; width: 30px; height: 30px;">
-                               ${highTemp}°
-                           </div>`,
+                    html: `<div class="temp-marker" style="background-color: ${color}; color: ${textColor}; width: 30px; height: 30px;">${Math.round(cap.temp)}</div>`,
                     iconSize: [30, 30],
                     iconAnchor: [15, 15]
                 });
 
-                const marker = L.marker([capital.lat, capital.lon], { icon: icon });
-                marker.bindPopup(`
-                    <div class="text-center">
-                        <b class="text-sm font-black uppercase text-white">${capital.name}, ${capital.state}</b><br>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 block">${dateStr}</span>
-                        <span class="text-lg font-black" style="color:${color}">${highTemp}°F</span>
-                    </div>
-                `);
-                markersLayer.addLayer(marker);
+                L.marker([cap.lat, cap.lon], { icon: icon })
+                    .addTo(markersGroup)
+                    .bindPopup(`<b>${cap.name}, ${cap.state}</b><br>Date: ${dateStr}<br>Temperature: ${cap.temp}°F`);
             });
+
+            document.getElementById('loading').style.display = 'none';
         }
 
-        async function fetchAndDisplayWeatherData(dateStr) {
-            document.getElementById('loader').classList.remove('hidden');
-            document.getElementById('loader').classList.add('flex');
+        function updateDate(newDate) {
+            selectedDate = newDate;
+            document.getElementById('datePicker').value = formatDate(selectedDate);
+            fetchWeather(selectedDate);
+        }
 
-            if (weatherCache[dateStr]) {
-                // Use cached data
-                displayMarkers(weatherCache[dateStr], dateStr);
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('loader').classList.remove('flex');
-                return;
-            }
+        // Grid Logic
+        async function showDataGrid() {
+            const modal = document.getElementById('gridModal');
+            modal.style.display = "block";
             
-            const lats = CAPITALS.map(c => c.lat).join(',');
-            const lons = CAPITALS.map(c => c.lon).join(',');
-
-            try {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto&start_date=${dateStr}&end_date=${dateStr}`;
-                const res = await fetch(url);
-                
-                if (res.status === 429) {
-                    console.warn("Rate limit hit. Retrying after a delay...");
-                    // Simple retry logic (could be more robust with exponential backoff)
-                    setTimeout(() => fetchAndDisplayWeatherData(dateStr), 2000); 
-                    return;
-                }
-
-                const data = await res.json();
-                
-                // Open-Meteo returns array only if multiple coords sent. If single, it's an object.
-                // We always send multiple, so it should be an array of objects.
-                const results = data.daily && data.daily.time ? [data] : data; // Adjust based on actual OpenMeteo behavior for batch
-
-                // Store in cache
-                weatherCache[dateStr] = results; 
-                displayMarkers(results, dateStr);
-
-            } catch (e) {
-                console.error("Error fetching batch weather data", e);
-            } finally {
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('loader').classList.remove('flex');
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            // Generate last 7 days columns (descending)
+            const dates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(selectedDate);
+                d.setDate(d.getDate() - i);
+                dates.push(formatDate(d));
             }
+
+            // Ensure we have data for these dates
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loadingText').innerText = "Preparing Grid Data...";
+            
+            for (const dStr of dates) {
+                if (!weatherDataCache[dStr]) {
+                    const d = new Date(dStr + 'T00:00:00');
+                    await fetchWeatherForCache(d);
+                }
+            }
+            document.getElementById('loading').style.display = 'none';
+
+            // Build Header
+            tableHead.innerHTML = `<tr><th class="state-cell">State / Capital</th>${dates.map(d => `<th>${d}</th>`).join('')}</tr>`;
+            
+            // Build Body
+            tableBody.innerHTML = capitals.map(cap => {
+                const cells = dates.map(dStr => {
+                    const temp = weatherDataCache[dStr] ? weatherDataCache[dStr][cap.name] : '-';
+                    const color = temp !== '-' ? getColor(temp) : 'transparent';
+                    const textColor = temp !== '-' ? getContrastColor(color) : 'black';
+                    return `<td style="background-color: ${color}; color: ${textColor}">${temp !== '-' ? Math.round(temp) + '°' : '-'}</td>`;
+                }).join('');
+                return `<tr><td class="state-cell"><span class="flag">${stateFlags[cap.state]}</span>${cap.state} (${cap.name})</td>${cells}</tr>`;
+            }).join('');
         }
 
-        initMap();
+        async function fetchWeatherForCache(date) {
+            const dateStr = formatDate(date);
+            const promises = capitals.map(async (cap) => {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    const temp = data.daily.temperature_2m_max[0];
+                    if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
+                    weatherDataCache[dateStr][cap.name] = temp;
+                } catch (e) {}
+            });
+            await Promise.all(promises);
+        }
+
+        // Event Listeners
+        document.getElementById('prevDay').onclick = () => {
+            const d = new Date(selectedDate);
+            d.setDate(d.getDate() - 1);
+            updateDate(d);
+        };
+        document.getElementById('nextDay').onclick = () => {
+            const d = new Date(selectedDate);
+            d.setDate(d.getDate() + 1);
+            updateDate(d);
+        };
+        document.getElementById('todayBtn').onclick = () => updateDate(new Date());
+        document.getElementById('datePicker').onchange = (e) => updateDate(new Date(e.target.value + 'T00:00:00'));
+        document.getElementById('showGrid').onclick = showDataGrid;
+        document.getElementById('closeModal').onclick = () => document.getElementById('gridModal').style.display = "none";
+        window.onclick = (event) => {
+            if (event.target == document.getElementById('gridModal')) {
+                document.getElementById('gridModal').style.display = "none";
+            }
+        };
+
+        // Initialize
+        updateDate(new Date());
+
+        // Legend
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            const grades = [32, 50, 65, 80, 95];
+            div.innerHTML = '<strong>Temp (°F)</strong><br>';
+            for (let i = 0; i < grades.length; i++) {
+                const color = getColor(grades[i]);
+                div.innerHTML += `<i style="background:${color}"></i> ${grades[i]}${grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+'}`;
+            }
+            return div;
+        };
+        legend.addTo(map);
+
     </script>
 </body>
 </html>
