@@ -357,7 +357,7 @@
                                 <div class="flex justify-between items-center"><span class="text-xs text-slate-300">Point</span><input type="number" step="0.5" id="score-pts" value="1" class="w-16 bg-slate-800 border-none rounded p-1 text-center text-xs"></div>
                                 <div class="flex justify-between items-center"><span class="text-xs text-slate-300">Assist</span><input type="number" step="0.5" id="score-ast" value="1.5" class="w-16 bg-slate-800 border-none rounded p-1 text-center text-xs"></div>
                                 <div class="flex justify-between items-center"><span class="text-xs text-slate-300">Rebound</span><input type="number" step="0.5" id="score-reb" value="1.2" class="w-16 bg-slate-800 border-none rounded p-1 text-center text-xs"></div>
-                                <div class="flex justify-between items-center"><span class="text-xs text-slate-300">3PM</span><input type="number" step="0.5" id="score-3pm" value="0.5" class="w-16 bg-slate-800 border-none rounded p-1 text-center text-xs"></div>
+                                <div class="flex justify-between items-center"><span class="text-xs text-slate-300">3PM</span><input type="number" step="0.5" id="score-threePM" value="0.5" class="w-16 bg-slate-800 border-none rounded p-1 text-center text-xs"></div>
                             </div>
                         </div>
                         <div class="p-4 bg-slate-900/50 rounded-xl border border-white/5">
@@ -411,7 +411,7 @@
                 auctionBudget: 200,
                 teamConfigs: [],
                 rosterPositions: { PG: 1, SG: 1, SF: 1, PF: 1, C: 1, G: 1, F: 1, UTIL: 3, BENCH: 3 },
-                scoring: { pts: 1, ast: 1.5, reb: 1.2, stl: 3, blk: 3, to: -1.5, '3pm': 0.5 }
+                scoring: { pts: 1, ast: 1.5, reb: 1.2, stl: 3, blk: 3, to: -1.5, threePM: 0.5 }
             },
             draft: { active: false, paused: false, currentPick: 1, round: 1, teams: [], availablePlayers: [], filter: 'ALL', log: [], pickOrders: [] }
         };
@@ -461,8 +461,8 @@
                         group.items.forEach(p => {
                             p.teamAbbr = team.abbreviation;
                             p.teamLogo = team.logos[0].href;
-                            p.stats2025 = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, '3pm': 0, points: 0 };
-                            p.careerStats = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, '3pm': 0, points: 0 };
+                            p.stats2025 = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, threePM: 0, points: 0 };
+                            p.careerStats = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fgm: 0, threePM: 0, points: 0 };
                             appData.players.push(p);
                         });
                     });
@@ -522,7 +522,7 @@
                     if (!categories && data.splits) categories = data.splits.categories;
                     if (!categories) return null;
                     
-                    const s = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, '3pm': 0 };
+                    const s = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, threePM: 0 };
                     
                     categories.forEach(cat => {
                         if (!cat.stats) return;
@@ -535,7 +535,7 @@
                             if (n === 'steals') s.stl = v;
                             if (n === 'blocks') s.blk = v;
                             if (n === 'turnovers') s.to = v;
-                            if (n === 'threePointFieldGoalsMade') s.3pm = v;
+                            if (n === 'threePointFieldGoalsMade') s.threePM = v;
                         });
                     });
                     return s;
@@ -564,7 +564,7 @@
             pts += (stats.stl * s.stl);
             pts += (stats.blk * s.blk);
             pts += (stats.to * s.to);
-            pts += (stats.3pm * s['3pm']);
+            pts += (stats.threePM * s.threePM);
             return Math.round(pts);
         }
 
@@ -833,6 +833,16 @@
             appData.settings.teamsCount = parseInt(document.getElementById('setting-teams').value);
             appData.settings.draftType = document.getElementById('setting-draft-type').value;
             appData.settings.leagueMode = document.getElementById('setting-league-mode').value;
+            
+            const s = appData.settings.scoring;
+            s.pts = parseFloat(document.getElementById('score-pts').value);
+            s.ast = parseFloat(document.getElementById('score-ast').value);
+            s.reb = parseFloat(document.getElementById('score-reb').value);
+            s.threePM = parseFloat(document.getElementById('score-threePM').value);
+            s.stl = parseFloat(document.getElementById('score-stl').value);
+            s.blk = parseFloat(document.getElementById('score-blk').value);
+            s.to = parseFloat(document.getElementById('score-to').value);
+
             Object.keys(appData.settings.posLimits).forEach(pos => { const el = document.getElementById(`limit-${pos}`); if (el) appData.settings.posLimits[pos] = parseInt(el.value); });
             appData.draft.active = false; appData.draft.teams = [];
             setupUI(); switchTab('dashboard'); showToast("Settings Saved", "✅");
@@ -844,7 +854,23 @@
             document.getElementById('pos-limits').innerHTML = Object.entries(appData.settings.posLimits).map(([pos, count]) => `<div class="flex flex-col gap-1"><span class="text-[9px] font-black text-slate-500 uppercase">${pos} MAX</span><input type="number" value="${count}" id="limit-${pos}" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-center outline-none"></div>`).join('');
             document.getElementById('roster-slots').innerHTML = Object.entries(appData.settings.rosterPositions).map(([pos, count]) => `<div class="flex flex-col gap-1"><span class="text-[9px] font-black text-slate-500 uppercase">${pos}</span><input type="number" value="${count}" class="bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-center outline-none"></div>`).join('');
             const tc = appData.settings.teamConfigs.slice(0, appData.settings.teamsCount);
-            document.getElementById('team-division-settings').innerHTML = tc.map(t => `<div class="flex items-center gap-2 bg-slate-900/50 p-2 rounded-xl border border-white/5"><span class="text-[10px] font-black text-slate-500 w-4">${t.id + 1}</span><input type="text" value="${t.name}" class="flex-grow bg-slate-800 border-none rounded-lg px-3 py-1.5 text-xs outline-none"><select class="bg-slate-800 border-none rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none"><option value="East">East</option><option value="West">West</option></select></div>`).join('');
+            document.getElementById('team-division-settings').innerHTML = tc.map(t => `
+                <div class="flex items-center gap-2 bg-slate-900/50 p-2 rounded-xl border border-white/5">
+                    <span class="text-[10px] font-black text-slate-500 w-4">${t.id + 1}</span>
+                    <input type="text" value="${t.name}" onchange="updateTeamConfig(${t.id}, 'name', this.value)" class="flex-grow bg-slate-800 border-none rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-orange-500">
+                    <select onchange="updateTeamConfig(${t.id}, 'division', this.value)" class="bg-slate-800 border-none rounded-lg px-2 py-1.5 text-[10px] font-bold outline-none">
+                        <option value="East" ${t.division === 'East' ? 'selected' : ''}>East</option>
+                        <option value="West" ${t.division === 'West' ? 'selected' : ''}>West</option>
+                        <option value="North" ${t.division === 'North' ? 'selected' : ''}>North</option>
+                        <option value="South" ${t.division === 'South' ? 'selected' : ''}>South</option>
+                    </select>
+                </div>
+            `).join('');
+        }
+
+        function updateTeamConfig(id, field, value) {
+            const team = appData.settings.teamConfigs.find(t => t.id === id);
+            if (team) team[field] = value;
         }
 
         function setDraftFilter(pos) {
