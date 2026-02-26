@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Clipper | Smart Card Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script async src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript"></script>
+    <script src='https://unpkg.com/tesseract.js@v4.0.1/dist/tesseract.min.js'></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00f2ff;
+            --secondary: #7000ff;
+            --bg: #050505;
+        }
+        body { 
+            font-family: 'Space Grotesk', sans-serif; 
+            background-color: var(--bg); 
+            color: #fff;
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(112, 0, 255, 0.05) 0%, transparent 40%);
+        }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .neon-border { box-shadow: 0 0 15px rgba(0, 242, 255, 0.2); border: 1px solid var(--primary); }
+        
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 5px solid #FFF;
+            border-bottom-color: var(--primary);
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #output-canvas { max-width: 100%; border-radius: 12px; }
+        .scanning-animation {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--primary);
+            box-shadow: 0 0 20px var(--primary);
+            animation: scan 2s ease-in-out infinite;
+            z-index: 10;
+            display: none;
+        }
+        @keyframes scan {
+            0%, 100% { top: 0; }
+            50% { top: 100%; }
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg rotate-3">🗃️</div>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tighter">CARD<span class="text-cyan-400">CLIPPER</span></h1>
+                <p class="text-[10px] uppercase tracking-[0.3em] text-slate-500 font-bold">Autonomous Card Extraction Engine</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <label class="group cursor-pointer bg-white text-black px-6 py-3 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl">
+                UPLOAD
+                <input type="file" id="file-input" accept="image/*" class="hidden">
+            </label>
+            <label class="group cursor-pointer bg-cyan-500 text-black px-6 py-3 rounded-full font-bold text-sm transition-all hover:scale-105 active:scale-95 shadow-xl">
+                CAMERA
+                <input type="file" id="camera-input" accept="image/*" capture="environment" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <!-- Processing Section -->
+        <div class="space-y-6">
+            <div id="drop-area" class="glass rounded-3xl p-6 min-h-[400px] flex flex-col items-center justify-center relative overflow-hidden border-2 border-dashed border-white/5">
+                <div id="scan-bar" class="scanning-animation"></div>
+                <div id="status-overlay" class="absolute inset-0 bg-black/60 hidden flex-col items-center justify-center z-20">
+                    <span class="loader mb-4"></span>
+                    <p id="status-text" class="text-cyan-400 font-bold uppercase tracking-widest text-xs">Processing...</p>
+                </div>
+                
+                <canvas id="input-canvas" class="hidden"></canvas>
+                <img id="source-preview" class="max-w-full rounded-xl hidden shadow-2xl">
+                
+                <div id="placeholder" class="text-center">
+                    <div class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4 border border-white/10">
+                        <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <p class="text-slate-400 font-medium">Drop card image or use buttons above</p>
+                </div>
+            </div>
+
+            <div class="glass rounded-3xl p-6">
+                <h3 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Intelligence Settings</h3>
+                <div class="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                    <div>
+                        <p class="font-bold text-sm">Auto-Crop Engine</p>
+                        <p class="text-[10px] text-slate-500 uppercase">Detects edges & corrects perspective</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto-crop" checked class="sr-only peer">
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Section -->
+        <div class="space-y-6">
+            <div class="glass rounded-3xl p-6 border border-cyan-500/20">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500">Clipped Output</h2>
+                    <button id="download-btn" class="hidden text-[10px] font-bold text-cyan-400 uppercase tracking-widest hover:underline">Download Chip</button>
+                </div>
+                <div class="flex justify-center bg-black/40 rounded-2xl p-4 min-h-[250px] items-center">
+                    <canvas id="output-canvas"></canvas>
+                </div>
+            </div>
+
+            <div class="glass rounded-3xl p-6">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">Textual Analysis</h2>
+                <div id="ocr-results" class="bg-black/40 rounded-2xl p-6 min-h-[150px] font-mono text-sm leading-relaxed text-slate-300 italic border border-white/5">
+                    Scan a card to decode text...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const cameraInput = document.getElementById('camera-input');
+        const autoCropToggle = document.getElementById('auto-crop');
+        const statusOverlay = document.getElementById('status-overlay');
+        const statusText = document.getElementById('status-text');
+        const ocrResults = document.getElementById('ocr-results');
+        const scanBar = document.getElementById('scan-bar');
+        const outputCanvas = document.getElementById('output-canvas');
+        const downloadBtn = document.getElementById('download-btn');
+
+        let cvReady = false;
+        
+        // Wait for OpenCV
+        var Module = {
+            onRuntimeInitialized: () => {
+                cvReady = true;
+                console.log('OpenCV.js is ready');
+            }
+        };
+
+        [fileInput, cameraInput].forEach(input => {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) processImage(file);
+            });
+        });
+
+        function processImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    handleProcessing(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function handleProcessing(img) {
+            showLoading('Analyzing Geometry...');
+            document.getElementById('placeholder').classList.add('hidden');
+            document.getElementById('source-preview').src = img.src;
+            document.getElementById('source-preview').classList.remove('hidden');
+
+            // 1. Perspective & Cropping
+            if (autoCropToggle.checked && cvReady) {
+                try {
+                    detectAndWarp(img);
+                } catch (err) {
+                    console.error("Geometry error:", err);
+                    simpleCrop(img);
+                }
+            } else {
+                simpleCrop(img);
+            }
+
+            // 2. OCR
+            showLoading('Decoding Text...');
+            scanBar.style.display = 'block';
+            await runOCR();
+            scanBar.style.display = 'none';
+            
+            hideLoading();
+            downloadBtn.classList.remove('hidden');
+        }
+
+        function showLoading(text) {
+            statusOverlay.classList.remove('hidden');
+            statusOverlay.classList.add('flex');
+            statusText.textContent = text;
+        }
+
+        function hideLoading() {
+            statusOverlay.classList.remove('flex');
+            statusOverlay.classList.add('hidden');
+        }
+
+        function simpleCrop(img) {
+            const ctx = outputCanvas.getContext('2d');
+            outputCanvas.width = img.width;
+            outputCanvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+        }
+
+        function detectAndWarp(img) {
+            const src = cv.imread(img);
+            const dst = new cv.Mat();
+            
+            // Pre-process
+            cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+            cv.GaussianBlur(dst, dst, new cv.Size(5, 5), 0);
+            cv.Canny(dst, dst, 75, 200);
+
+            // Find Contours
+            const contours = new cv.MatVector();
+            const hierarchy = new cv.Mat();
+            cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+            // Find the largest 4-sided contour
+            let maxArea = 0;
+            let cardContour = null;
+
+            for (let i = 0; i < contours.size(); ++i) {
+                const cnt = contours.get(i);
+                const area = cv.contourArea(cnt);
+                const perimeter = cv.arcLength(cnt, true);
+                const approx = new cv.Mat();
+                cv.approxPolyDP(cnt, approx, 0.02 * perimeter, true);
+
+                if (area > maxArea && approx.rows === 4) {
+                    maxArea = area;
+                    cardContour = approx;
+                } else {
+                    approx.delete();
+                }
+            }
+
+            if (cardContour) {
+                // Perspective Transform
+                const points = [];
+                for (let i = 0; i < 4; i++) {
+                    points.push({ x: cardContour.data32S[i * 2], y: cardContour.data32S[i * 2 + 1] });
+                }
+
+                // Sort points: top-left, top-right, bottom-right, bottom-left
+                points.sort((a, b) => a.y - b.y);
+                const topList = points.slice(0, 2).sort((a, b) => a.x - b.x);
+                const bottomList = points.slice(2, 4).sort((a, b) => b.x - a.x);
+                const sortedPoints = [...topList, ...bottomList];
+
+                const width = Math.max(
+                    Math.hypot(sortedPoints[1].x - sortedPoints[0].x, sortedPoints[1].y - sortedPoints[0].y),
+                    Math.hypot(sortedPoints[2].x - sortedPoints[3].x, sortedPoints[2].y - sortedPoints[3].y)
+                );
+                const height = Math.max(
+                    Math.hypot(sortedPoints[3].x - sortedPoints[0].x, sortedPoints[3].y - sortedPoints[0].y),
+                    Math.hypot(sortedPoints[2].x - sortedPoints[1].x, sortedPoints[2].y - sortedPoints[1].y)
+                );
+
+                const srcCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    sortedPoints[0].x, sortedPoints[0].y,
+                    sortedPoints[1].x, sortedPoints[1].y,
+                    sortedPoints[2].x, sortedPoints[2].y,
+                    sortedPoints[3].x, sortedPoints[3].y
+                ]);
+
+                const dstCoords = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                    0, 0, width, 0, width, height, 0, height
+                ]);
+
+                const M = cv.getPerspectiveTransform(srcCoords, dstCoords);
+                const warped = new cv.Mat();
+                cv.warpPerspective(src, warped, M, new cv.Size(width, height));
+                
+                cv.imshow('output-canvas', warped);
+
+                // Clean up
+                srcCoords.delete(); dstCoords.delete(); M.delete(); warped.delete();
+                cardContour.delete();
+            } else {
+                console.log("No card shape found, fallback to simple crop");
+                simpleCrop(img);
+            }
+
+            src.delete(); dst.delete(); contours.delete(); hierarchy.delete();
+        }
+
+        async function runOCR() {
+            const worker = await Tesseract.createWorker({
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        statusText.textContent = `DECODING: ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            
+            const { data: { text } } = await worker.recognize(outputCanvas);
+            
+            if (text.trim().length > 0) {
+                ocrResults.innerHTML = text.split('
+').map(l => `<div>${l}</div>`).join('');
+            } else {
+                ocrResults.textContent = "No legible text discovered on the card.";
+            }
+
+            await worker.terminate();
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'clipped-card.png';
+            link.href = outputCanvas.toDataURL();
+            link.click();
+        });
+
+    </script>
+</body>
+</html>
