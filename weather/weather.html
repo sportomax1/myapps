@@ -251,8 +251,10 @@ main{
         const matrix = {};
         Object.entries(state.data).forEach(([date, val]) => {
           const [y, m] = date.split('-');
-          if (!matrix[y]) matrix[y] = Array(12).fill({sum:0, count:0});
-          matrix[y][parseInt(m)-1] = { sum: matrix[y][parseInt(m)-1].sum + val.t, count: matrix[y][parseInt(m)-1].count + 1 };
+          if (!matrix[y]) matrix[y] = Array(12).fill(null).map(() => ({sum:0, count:0}));
+          const mIdx = parseInt(m)-1;
+          matrix[y][mIdx].sum += val.t;
+          matrix[y][mIdx].count++;
         });
 
         let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th>` + 
@@ -325,7 +327,7 @@ main{
         html += `<tr><td class="year-col">${y}</td>`;
         ['Spring', 'Summer', 'Fall', 'Winter'].forEach(s => {
           const val = seasons[y][s] * factor;
-          html += `<td style="color:${val > 0 ? var('--accent') : 'rgba(255,255,255,0.1)'}">${val > 0 ? val.toFixed(1) + unit : '--'}</td>`;
+          html += `<td style="color:${val > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${val > 0 ? val.toFixed(1) + unit : '--'}</td>`;
         });
         html += '</tr>';
       });
