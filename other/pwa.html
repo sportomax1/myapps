@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>PWA Starter Guide</title>
+
+    <!-- 1. iOS STANDALONE MODE (Required for "App" feel) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CarApp">
+
+    <!-- 2. THE ICON (Using Data URI for this single-file demo) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%233498db'/><text x='50%25' y='65%25' dominant-baseline='central' text-anchor='middle' font-size='60'>🚗</text></svg>">
+
+    <style>
+        :root { 
+            --ios-blue: #007AFF; 
+            --bg: #f2f2f7;
+            --card-bg: #ffffff;
+            --text: #1c1c1e;
+            --secondary-text: #8e8e93;
+            --code-bg: #f8f8f8;
+            --border: #e5e5ea;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 24px;
+        }
+        .icon-preview {
+            font-size: 60px;
+            background: #3498db;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 22px;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        h1, h2, h3 { text-align: center; margin-top: 0; }
+        h2 { border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-top: 30px; text-align: left; font-size: 20px;}
+        
+        .setup-steps {
+            background: #eef7ff;
+            border-left: 4px solid var(--ios-blue);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        pre {
+            background: var(--code-bg);
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            border: 1px solid var(--border);
+            color: #d14;
+        }
+        code { font-family: "SF Mono", Menlo, Consolas, monospace; }
+        
+        .file-tag {
+            display: inline-block;
+            background: #333;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        ul, ol { padding-left: 20px; }
+        li { margin-bottom: 10px; }
+        
+        .highlight { color: var(--ios-blue); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- APP UI SECTION -->
+        <div class="card">
+            <div class="icon-preview">🚗</div>
+            <h1>PWA Template</h1>
+            
+            <div class="setup-steps">
+                <strong>iPhone Installation:</strong>
+                <ol>
+                    <li>Open this in <b>Safari</b>.</li>
+                    <li>Tap <b>Share</b> (square with arrow).</li>
+                    <li>Tap <b>"Add to Home Screen"</b>.</li>
+                </ol>
+            </div>
+            <p style="text-align: center; font-size: 14px; color: var(--secondary-text);">Scroll down for the "How-To" guide.</p>
+        </div>
+
+        <!-- DEVELOPER GUIDE SECTION -->
+        <div class="card">
+            <h2>1. Required File Types</h2>
+            <p>To build a "real" PWA from scratch, you typically need 3 files:</p>
+            <ul>
+                <li><span class="highlight">index.html</span> - The app interface and iOS meta tags.</li>
+                <li><span class="highlight">manifest.json</span> - The "Web App Manifest" for Android/Chrome.</li>
+                <li><span class="highlight">icon.png (or .svg)</span> - The app icon (at least 180x180px for iOS).</li>
+            </ul>
+
+            <h2>2. The HTML Syntax</h2>
+            <p>Place these tags inside your <code>&lt;head&gt;</code> for iOS support:</p>
+            <div class="file-tag">index.html</div>
+            <pre><code>&lt;!-- Enable App Mode --&gt;
+&lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;
+
+&lt;!-- Status Bar Style (default, black, or black-translucent) --&gt;
+&lt;meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"&gt;
+
+&lt;!-- App Title on Desktop --&gt;
+&lt;meta name="apple-mobile-web-app-title" content="My Car App"&gt;
+
+&lt;!-- The Icon (PNG or SVG) --&gt;
+&lt;link rel="apple-touch-icon" href="icon.png"&gt;</code></pre>
+
+            <h2>3. The Manifest File</h2>
+            <p>Android and Chrome use a JSON file to define the app behavior.</p>
+            <div class="file-tag">manifest.json</div>
+            <pre><code>{
+  "name": "My Car App",
+  "short_name": "CarApp",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#007AFF",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}</code></pre>
+            <p><small>Link it in HTML: <code>&lt;link rel="manifest" href="manifest.json"&gt;</code></small></p>
+
+            <h2>4. Choosing Your Icon</h2>
+            <table style="width:100%; font-size: 14px; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <th style="text-align: left; padding: 8px;">Type</th>
+                    <th style="text-align: left; padding: 8px;">Syntax</th>
+                }
+                <tr>
+                    <td style="padding: 8px;"><b>PNG</b></td>
+                    <td style="padding: 8px;"><code>href="icon.png"</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><b>SVG</b></td>
+                    <td style="padding: 8px;"><code>href="icon.svg"</code></td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><b>Data URI</b></td>
+                    <td style="padding: 8px;"><code>href="data:image/svg+xml,..."</code></td>
+                </tr>
+            </table>
+            <p><small><i>Note: iOS requires <b>apple-touch-icon</b> specifically. Android uses the <b>manifest.json</b> icons array.</i></small></p>
+        </div>
+
+        <div style="text-align: center; color: var(--secondary-text); font-size: 12px; padding-bottom: 40px;">
+            This single file demo uses the "Data URI" method for the icon.
+        </div>
+    </div>
+
+</body>
+</html>

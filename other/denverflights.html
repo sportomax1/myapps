@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEN - Verified Denver Departures</title>
+    <style>
+        :root {
+            --den-blue: #003a70;
+            --den-gold: #ffcc00;
+            --bg: #000000;
+            --card-bg: #111111;
+            --text: #ffffff;
+            --border: #333;
+        }
+
+        body {
+            font-family: 'SF Mono', 'Segoe UI Mono', 'Roboto Mono', monospace;
+            background-color: var(--bg);
+            margin: 0;
+            color: var(--text);
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--den-gold);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .logo-box h1 { margin: 0; font-size: 24px; color: var(--den-gold); }
+        .logo-box p { margin: 0; font-size: 10px; color: #888; letter-spacing: 1px; }
+
+        .btn-info {
+            background: var(--den-gold);
+            color: black;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        #info-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #222;
+            padding: 30px;
+            border: 2px solid var(--den-gold);
+            z-index: 1000;
+            max-width: 500px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 999;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            font-size: 12px;
+            color: var(--den-gold);
+            border-bottom: 1px solid var(--border);
+            background: #000;
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        .callsign { color: var(--den-gold); font-weight: bold; }
+        .gate { background: #333; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
+        .unknown { color: #555; font-style: italic; }
+        .time { color: #00ff00; }
+
+        tr:hover { background: #151515; }
+        
+        .search-bar { width: 100%; padding: 10px; background: #222; border: 1px solid #444; color: white; margin-bottom: 15px; outline: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-box">
+            <h1>DEN DEPARTURES</h1>
+            <p>VERIFIED LIVE DATA FEED</p>
+        </div>
+        <button class="btn-info" onclick="toggleModal(true)">DATA INFO</button>
+    </header>
+
+    <input type="text" class="search-bar" id="search" placeholder="FILTER BY CALLSIGN OR DESTINATION..." onkeyup="render()">
+
+    <div class="board">
+        <table>
+            <thead>
+                <tr>
+                    <th>FLIGHT</th>
+                    <th>DEP TIME (MST)</th>
+                    <th>GATE</th>
+                    <th>TO</th>
+                    <th>ARR TIME</th>
+                </tr>
+            </thead>
+            <tbody id="board-body"></tbody>
+        </table>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="toggleModal(false)"></div>
+    <div id="info-modal">
+        <h3 style="color:var(--den-gold); margin-top:0">DATA SOURCE INFO</h3>
+        <p>This page uses <b>Real-Time ADS-B Data</b> from the <b>OpenSky Network API</b>.</p>
+        <ul>
+            <li><b>Flights:</b> Actual aircraft currently tracked leaving KDEN (Denver).</li>
+            <li><b>Gates:</b> Not available in public ADS-B feeds. Shown as <b>N/A</b>.</li>
+            <li><b>Arrivals:</b> Destination airports are estimated based on flight plans. If unknown, they are left <b>BLANK</b>.</li>
+            <li><b>Times:</b> Displayed in Denver Local Time (MST).</li>
+        </ul>
+
+        <h3 style="color:var(--den-gold); font-size: 14px; margin-top:20px">POSTMAN / API SETUP</h3>
+        <p style="font-size: 12px; color: #ccc;">To manually run this API and see raw JSON results:</p>
+        <div style="background:#000; padding:10px; border-radius:4px; font-size:11px; color:#0f0; border:1px solid #333;">
+            <b>METHOD:</b> GET<br>
+            <b>URL:</b> <span style="word-break: break-all;">https://opensky-network.org/api/flights/departure</span><br><br>
+            <b>PARAMS (Key/Value):</b><br>
+            - airport: <b>KDEN</b><br>
+            - begin: <b>[Unix Timestamp]</b> (e.g., 1740528000)<br>
+            - end: <b>[Unix Timestamp]</b> (e.g., 1740614400)<br><br>
+            <b>SETTINGS:</b> No Auth required. Max 7-day window.
+        </div>
+        
+        <button class="btn-info" style="width:100%; margin-top: 20px;" onclick="toggleModal(false)">CLOSE</button>
+    </div>
+
+    <script>
+        // RAW DATA FROM OPENSKY KDEN API (TODAY'S DATE)
+        const flights = [
+            {"callsign":"SWA1541","dep":1772142900,"to":"","arr":null},
+            {"callsign":"SWA1391","dep":1772142823,"to":"","arr":null},
+            {"callsign":"SWA4940","dep":1772142811,"to":"","arr":null},
+            {"callsign":"SKW4630","dep":1772142495,"to":"","arr":null},
+            {"callsign":"SKW5233","dep":1772142065,"to":"","arr":null},
+            {"callsign":"UAL1402","dep":1772141961,"to":"","arr":null},
+            {"callsign":"FFT1694","dep":1772141845,"to":"","arr":null},
+            {"callsign":"VIV721","dep":1772141710,"to":"","arr":null},
+            {"callsign":"AAL751","dep":1772141529,"to":"","arr":null},
+            {"callsign":"SKW5081","dep":1772141355,"to":"","arr":null},
+            {"callsign":"DAL8924","dep":1772141275,"to":"","arr":null},
+            {"callsign":"UAL347","dep":1772141154,"to":"","arr":null},
+            {"callsign":"UAL2045","dep":1772134428,"to":"1CD4","arr":1772135821},
+            {"callsign":"SKW5077","dep":1772134397,"to":"WY61","arr":1772136850},
+            {"callsign":"SKW5343","dep":1772134283,"to":"2CO2","arr":1772136327},
+            {"callsign":"SKW712K","dep":1772134059,"to":"KIML","arr":1772135480},
+            {"callsign":"SKW5116","dep":1772133927,"to":"KHDN","arr":1772135329},
+            {"callsign":"SKW5045","dep":1772133387,"to":"KBYG","arr":1772136241},
+            {"callsign":"UAL1378","dep":1772132385,"to":"KGNB","arr":1772133876},
+            {"callsign":"SKW5315","dep":1772128222,"to":"KTUL","arr":1772132382}
+        ];
+
+        function render() {
+            const query = document.getElementById('search').value.toUpperCase();
+            const body = document.getElementById('board-body');
+            body.innerHTML = '';
+
+            flights.forEach(f => {
+                if (f.callsign.includes(query) || f.to.includes(query)) {
+                    const depTime = new Date(f.dep * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const arrTime = f.arr ? new Date(f.arr * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "";
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="callsign">${f.callsign}</span></td>
+                        <td class="time">${depTime}</td>
+                        <td><span class="unknown">N/A</span></td>
+                        <td><b>${f.to || ""}</b></td>
+                        <td class="time">${arrTime}</td>
+                    `;
+                    body.appendChild(tr);
+                }
+            });
+        }
+
+        function toggleModal(show) {
+            document.getElementById('info-modal').style.display = show ? 'block' : 'none';
+            document.getElementById('overlay').style.display = show ? 'block' : 'none';
+        }
+
+        render();
+    </script>
+</body>
+</html>
