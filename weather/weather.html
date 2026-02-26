@@ -10,7 +10,7 @@
 :root{
   --bg: #000;
   --card-bg: #1c1c1e;
-  --header-bg: rgba(28, 28, 30, 0.85);
+  --header-bg: rgba(20, 20, 22, 0.85);
   --text: #fff;
   --text-secondary: #8e8e93;
   --accent: #0a84ff;
@@ -22,96 +22,123 @@ body{
   margin:0; font-family: -apple-system, system-ui, sans-serif;
   background: var(--bg); color: var(--text); overflow: hidden;
 }
+
+/* Compact & High-Z Header */
 header{
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: var(--header-bg); backdrop-filter: blur(20px);
-  padding: max(env(safe-area-inset-top), 10px) 15px 10px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  background: var(--header-bg); backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  padding: max(env(safe-area-inset-top), 8px) 12px 8px;
   border-bottom: 0.5px solid var(--separator);
+  height: 70px;
+  display: flex; flex-direction: column; justify-content: center;
 }
-.header-top{ display: flex; align-items: center; justify-content: space-between; gap: 5px; }
-.btn-icon{ background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 5px; color: var(--accent); }
+.header-top{ display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.btn-icon{ background: transparent; border: none; font-size: 18px; cursor: pointer; padding: 6px; color: var(--accent); transition: opacity 0.2s; }
+.btn-icon:active{ opacity: 0.5; }
+
+h1{ margin: 0; font-size: 13px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; }
+#locationLabel{ font-size: 10px; color: var(--text-secondary); font-weight: 500; margin-top: 1px; }
 
 main{
-  position: fixed; top: 85px; bottom: 0; left: 0; right: 0;
-  overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px;
+  position: fixed; top: 70px; bottom: 0; left: 0; right: 0;
+  overflow-y: auto; -webkit-overflow-scrolling: touch; 
+  padding: 12px; scroll-behavior: smooth;
 }
-.months-container{ display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; }
+.months-container{ display: flex; flex-direction: column; gap: 24px; max-width: 500px; margin: 0 auto; }
 
-.month-section{ background: var(--card-bg); border-radius: 12px; padding: 12px; }
-.month-header{ font-size: 15px; font-weight: 700; text-align: center; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.month-section{ background: var(--card-bg); border-radius: 16px; padding: 14px; border: 0.5px solid var(--separator); }
+.month-header{ font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 12px; color: var(--text-secondary); letter-spacing: 0.3px; }
 
-.calendar-grid{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.weekday{ font-size: 9px; color: var(--text-secondary); text-align: center; padding-bottom: 5px; font-weight: 700; }
+.calendar-grid{ display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.weekday{ font-size: 8px; color: var(--text-secondary); text-align: center; padding-bottom: 6px; font-weight: 800; text-transform: uppercase; }
 .day-cell{
-  aspect-ratio: 1; background: rgba(255,255,255,0.03); border-radius: 4px;
+  aspect-ratio: 1; background: rgba(255,255,255,0.02); border-radius: 6px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-size: 11px; position: relative;
+  font-size: 10px; position: relative; border: 0.5px solid transparent;
 }
-.day-num{ font-weight: 400; font-size: 9px; color: var(--text-secondary); position: absolute; top: 2px; left: 3px; }
-.day-temp{ font-weight: 700; font-size: 12px; }
-.day-prec{ font-size: 8px; color: #64d2ff; }
-.today{ outline: 1.5px solid var(--today); outline-offset: -1.5px; }
+.day-num{ font-weight: 400; font-size: 8px; color: rgba(255,255,255,0.4); position: absolute; top: 2px; left: 3px; }
+.day-temp{ font-weight: 800; font-size: 11px; color: #fff; }
+.day-prec{ font-size: 7px; color: #64d2ff; font-weight: 700; margin-top: 1px; }
+.today{ outline: 2px solid var(--today); outline-offset: -2px; background: rgba(255, 159, 10, 0.1); }
 
-/* Thermal Table */
-.thermal-table-wrap{ overflow-x: auto; margin-top: 10px; }
-.thermal-table{ width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; }
-.thermal-table th{ padding: 4px; background: var(--bg); position: sticky; top: 0; z-index: 2; font-size: 9px; color: var(--text-secondary); }
-.thermal-table td{ padding: 6px 2px; border: 0.5px solid var(--separator); font-weight: 700; }
-.year-col{ background: var(--bg); position: sticky; left: 0; font-weight: 800; color: var(--text-secondary); }
+/* Thermal Tables */
+.thermal-table-wrap{ overflow-x: auto; margin-top: 10px; border-radius: 12px; border: 0.5px solid var(--separator); }
+.thermal-table{ width: 100%; border-collapse: collapse; font-size: 10px; text-align: center; background: #000; }
+.thermal-table th{ padding: 6px; background: #1c1c1e; position: sticky; top: 0; z-index: 2; font-size: 9px; color: var(--text-secondary); border-bottom: 0.5px solid var(--separator); }
+.thermal-table td{ padding: 8px 2px; border: 0.5px solid var(--separator); font-weight: 700; }
+.year-col{ background: #1c1c1e; position: sticky; left: 0; font-weight: 800; color: var(--accent); z-index: 1; }
 
-/* Modals */
+/* Modals - Clean Layering */
 .modal-overlay{
-  position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(15px);
-  z-index: 200; display: none; align-items: center; justify-content: center; padding: 15px;
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 1000; display: none; align-items: center; justify-content: center; padding: 16px;
 }
 .modal-overlay.active{ display: flex; }
 .modal{
-  background: var(--card-bg); border-radius: 16px; width: 100%; max-width: 650px;
-  max-height: 90vh; display: flex; flex-direction: column; border: 0.5px solid var(--separator);
+  background: var(--card-bg); border-radius: 24px; width: 100%; max-width: 600px;
+  max-height: 85vh; display: flex; flex-direction: column; border: 0.5px solid var(--separator);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
-.modal-header{ padding: 15px; border-bottom: 0.5px solid var(--separator); }
-.modal-tabs{ display: flex; background: rgba(255,255,255,0.05); padding: 3px; border-radius: 8px; gap: 2px; margin-top: 10px; }
+.modal-header{ padding: 20px; border-bottom: 0.5px solid var(--separator); flex-shrink: 0; }
+.modal-tabs{ display: flex; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; gap: 4px; margin-top: 12px; }
 .tab-btn{
   flex: 1; background: transparent; border: none; color: var(--text-secondary);
-  padding: 6px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer;
+  padding: 8px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer;
 }
 .tab-btn.active{ background: var(--accent); color: #fff; }
-.modal-body{ padding: 15px; overflow-y: auto; flex: 1; }
+.modal-body{ padding: 16px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
 
-.stat-row{ display: flex; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--separator); font-size: 12px; }
-.bar-wrap{ flex: 1; height: 10px; background: rgba(255,255,255,0.05); border-radius: 2px; margin: 0 10px; overflow: hidden; }
-.bar-fill{ height: 100%; background: var(--accent); }
+.stat-row{ display: flex; align-items: center; padding: 10px 0; border-bottom: 0.5px solid var(--separator); font-size: 12px; }
+.bar-wrap{ flex: 1; height: 10px; background: rgba(255,255,255,0.05); border-radius: 5px; margin: 0 12px; overflow: hidden; }
+.bar-fill{ height: 100%; background: var(--accent); border-radius: 5px; }
 
 /* Color Scales */
-.t-freezing{ background: #1e3a8a; }
-.t-cold{ background: #1d4ed8; }
-.t-mild{ background: #065f46; }
-.t-warm{ background: #92400e; }
-.t-hot{ background: #991b1b; }
+.t-freezing{ background: rgba(30, 58, 138, 0.4); }
+.t-cold{ background: rgba(29, 78, 216, 0.3); }
+.t-mild{ background: rgba(6, 95, 70, 0.3); }
+.t-warm{ background: rgba(146, 64, 14, 0.3); }
+.t-hot{ background: rgba(153, 27, 27, 0.4); }
+
+#loadingOverlay {
+    position: fixed; inset: 0; background: #000; z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 15px; font-weight: 700; color: var(--accent);
+}
   </style>
 </head>
 <body>
+
+  <div id="loadingOverlay">
+      <div style="font-size: 40px; animation: pulse 1.5s infinite">🌍</div>
+      <div id="loadingText">Syncing Parallel History...</div>
+  </div>
+
   <header>
     <div class="header-top">
       <button class="btn-icon" id="locBtn">📍</button>
       <div style="flex:1;text-align:center">
-        <h1 id="monthLabel">WEATHER EXPLORER</h1>
-        <div id="locationLabel" style="font-size:10px;color:var(--text-secondary)">80134</div>
+        <h1>Weather History Explorer</h1>
+        <div id="locationLabel">GPS Acquisition...</div>
       </div>
-      <button class="btn-icon" onclick="openModal('precipModal')">💧</button>
-      <button class="btn-icon" onclick="openModal('snowSeasonModal')">📊</button>
-      <button class="btn-icon" onclick="openModal('tempModal')">🌡️</button>
-      <button class="btn-icon" id="todayBtn">⊙</button>
+      <div style="display:flex; gap: 2px">
+        <button class="btn-icon" onclick="openModal('precipModal')" title="Precipitation">💧</button>
+        <button class="btn-icon" onclick="openModal('snowSeasonModal')" title="Seasonal">📊</button>
+        <button class="btn-icon" onclick="openModal('tempModal')" title="Temperature">🌡️</button>
+        <button class="btn-icon" id="todayBtn">⊙</button>
+      </div>
     </div>
   </header>
 
-  <main><div class="months-container" id="monthsContainer"></div></main>
+  <main id="mainScroll"><div class="months-container" id="monthsContainer"></div></main>
 
+  <!-- Modals -->
   <div class="modal-overlay" id="tempModal">
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">TEMPERATURE TRENDS</span>
+          <span style="font-weight:800; font-size: 16px">TEMPERATURE TRENDS</span>
           <button class="btn-icon" onclick="closeModal('tempModal')">×</button>
         </div>
         <div class="modal-tabs">
@@ -128,7 +155,7 @@ main{
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">PRECIPITATION TRENDS</span>
+          <span style="font-weight:800; font-size: 16px">PRECIPITATION TRENDS</span>
           <button class="btn-icon" onclick="closeModal('precipModal')">×</button>
         </div>
         <div class="modal-tabs">
@@ -149,7 +176,7 @@ main{
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">SEASONAL MOISTURE MATRIX</span>
+          <span style="font-weight:800; font-size: 16px">SEASONAL MOISTURE MATRIX</span>
           <button class="btn-icon" onclick="closeModal('snowSeasonModal')">×</button>
         </div>
         <div class="modal-tabs">
@@ -168,20 +195,19 @@ main{
     let state = { lat: 39.5, lon: -104.7, data: {}, tempTab: 'daily', precipType: 'rain', precipView: 'daily', moistureTab: 'combined' };
 
     const getTColor = (t) => {
-      if (t >= 95) return 'rgb(255, 0, 0)';
-      if (t >= 80) return 'rgb(255, 100, 0)';
-      if (t >= 65) return 'rgb(255, 200, 0)';
-      if (t >= 50) return 'rgb(0, 200, 100)';
-      if (t >= 32) return 'rgb(0, 150, 255)';
-      return 'rgb(100, 100, 255)';
+      if (t >= 95) return '#ff3b30';
+      if (t >= 80) return '#ff9500';
+      if (t >= 65) return '#ffcc00';
+      if (t >= 50) return '#34c759';
+      if (t >= 32) return '#5ac8fa';
+      return '#007aff';
     };
 
     const getPColor = (v, type) => {
-      if (v === 0) return 'transparent';
+      if (v === 0) return 'rgba(255,255,255,0.05)';
       const max = type === 'rain' ? 5 : 20;
       const ratio = Math.min(1, v / max);
-      const intensity = Math.round(255 * (1 - ratio));
-      return `rgb(${intensity}, ${intensity}, 255)`;
+      return `rgba(10, 132, 255, ${0.2 + ratio * 0.8})`;
     };
 
     const getTClass = (t) => {
@@ -202,10 +228,13 @@ main{
 
     async function loadData() {
       const years = [];
-      for (let y = START_YEAR; y <= new Date().getFullYear(); y++) years.push(y);
+      const currentYear = new Date().getFullYear();
+      for (let y = START_YEAR; y <= currentYear; y++) years.push(y);
       
+      document.getElementById('loadingText').innerText = `Syncing ${years.length} Years of History...`;
+
       const results = await Promise.all(years.map(async y => {
-        const start = `${y}-01-01`, end = y === new Date().getFullYear() ? END_DATE : `${y}-12-31`;
+        const start = `${y}-01-01`, end = y === currentYear ? END_DATE : `${y}-12-31`;
         const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${state.lat}&longitude=${state.lon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,precipitation_sum,rain_sum,snowfall_sum&temperature_unit=fahrenheit&timezone=auto`;
         try { return await (await fetch(url)).json(); } catch { return null; }
       }));
@@ -222,6 +251,8 @@ main{
           };
         });
       });
+      
+      document.getElementById('loadingOverlay').style.display = 'none';
       renderCalendar();
     }
 
@@ -229,7 +260,15 @@ main{
       const container = document.getElementById('monthsContainer');
       container.innerHTML = '';
       const today = new Date();
-      for (let i = 0; i < 6; i++) {
+      const start = new Date(START_YEAR, 0, 1);
+      
+      // Calculate total months since START_YEAR
+      const diffMonths = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth()) + 1;
+
+      // Create a fragment for better performance with 300+ elements
+      const fragment = document.createDocumentFragment();
+
+      for (let i = 0; i < diffMonths; i++) {
         const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
         const section = document.createElement('div');
         section.className = 'month-section';
@@ -241,20 +280,24 @@ main{
         const first = new Date(d.getFullYear(), d.getMonth(), 1).getDay();
         const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         for (let j = 0; j < first; j++) grid.innerHTML += '<div></div>';
+        
         for (let day = 1; day <= days; day++) {
           const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
           const e = state.data[key];
           const isToday = key === END_DATE;
-          grid.innerHTML += `
-            <div class="day-cell ${e?getTClass(e.t):''} ${isToday?'today':''}">
-              <span class="day-num">${day}</span>
-              <span class="day-temp">${e?Math.round(e.t):'--'}°</span>
-              ${e?.s>0?`<span class="day-prec">❄️${(e.s*0.39).toFixed(1)}</span>`:e?.p>0?`<span class="day-prec">💧${(e.p*0.04).toFixed(1)}</span>`:''}
-            </div>`;
+          const cell = document.createElement('div');
+          cell.className = `day-cell ${e ? getTClass(e.t) : ''} ${isToday ? 'today' : ''}`;
+          cell.innerHTML = `
+            <span class="day-num">${day}</span>
+            <span class="day-temp">${e ? Math.round(e.t) : '--'}°</span>
+            ${e?.s > 0 ? `<span class="day-prec">❄️${(e.s*0.39).toFixed(1)}</span>` : e?.p > 0 ? `<span class="day-prec">💧${(e.p*0.04).toFixed(1)}</span>` : ''}
+          `;
+          grid.appendChild(cell);
         }
         section.appendChild(grid);
-        container.appendChild(section);
+        fragment.appendChild(section);
       }
+      container.appendChild(fragment);
     }
 
     function renderTempHistory() {
@@ -270,7 +313,7 @@ main{
           matrix[y][mIdx].count++;
         });
 
-        let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th>` + 
+        let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th class="year-col">Year</th>` + 
           ['J','F','M','A','M','J','J','A','S','O','N','D'].map(m => `<th>${m}</th>`).join('') + `</tr></thead><tbody>`;
         
         Object.keys(matrix).sort((a,b)=>b-a).forEach(y => {
@@ -293,9 +336,9 @@ main{
         sorted.forEach(([label, val]) => {
           body.innerHTML += `
             <div class="stat-row">
-              <span style="width:60px">${label}</span>
+              <span style="width:60px; font-weight: 600">${label}</span>
               <div class="bar-wrap"><div class="bar-fill" style="width:${(val/110)*100}%; background:linear-gradient(90deg, #0a84ff, #ff4500)"></div></div>
-              <span style="font-weight:700; width:30px">${Math.round(val)}°</span>
+              <span style="font-weight:800; width:35px; text-align:right">${Math.round(val)}°</span>
             </div>`;
         });
       }
@@ -316,7 +359,7 @@ main{
           matrix[y][parseInt(m)-1] += val[key];
         });
 
-        let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th>` + 
+        let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th class="year-col">Year</th>` + 
           ['J','F','M','A','M','J','J','A','S','O','N','D'].map(m => `<th>${m}</th>`).join('') + `</tr></thead><tbody>`;
         
         Object.keys(matrix).sort((a,b)=>b-a).forEach(y => {
@@ -342,9 +385,9 @@ main{
           const displayVal = val * factor;
           body.innerHTML += `
             <div class="stat-row">
-              <span style="width:70px">${label}</span>
+              <span style="width:70px; font-weight: 600">${label}</span>
               <div class="bar-wrap"><div class="bar-fill" style="width:${(val/maxVal)*100}%"></div></div>
-              <span style="font-weight:700">${displayVal.toFixed(2)}${unit}</span>
+              <span style="font-weight:800; text-align:right">${displayVal.toFixed(2)}${unit}</span>
             </div>`;
         });
       }
@@ -355,25 +398,25 @@ main{
       const seasons = {};
       const key = state.moistureTab === 'rain' ? 'r' : (state.moistureTab === 'snow' ? 's' : 'p');
       const factor = state.moistureTab === 'snow' ? 0.39 : 0.04;
-      const unit = state.moistureTab === 'snow' ? '"' : '"';
+      const unit = '"';
 
       Object.entries(state.data).forEach(([date, val]) => {
         const d = new Date(date + 'T00:00:00');
         const s = getSeason(d);
         let year = d.getFullYear();
-        if (s === 'Winter' && d.getMonth() + 1 === 12) year++; // Group Dec with following year's winter
+        if (s === 'Winter' && d.getMonth() + 1 === 12) year++; 
         
         if (!seasons[year]) seasons[year] = { Spring: 0, Summer: 0, Fall: 0, Winter: 0 };
         seasons[year][s] += val[key];
       });
 
-      let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th><th>🌸 Spr</th><th>☀️ Sum</th><th>🍂 Fall</th><th>❄️ Win</th></tr></thead><tbody>`;
+      let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th class="year-col">Year</th><th>🌸 Spr</th><th>☀️ Sum</th><th>🍂 Fall</th><th>❄️ Win</th></tr></thead><tbody>`;
       
       Object.keys(seasons).sort((a,b)=>b-a).forEach(y => {
         html += `<tr><td class="year-col">${y}</td>`;
         ['Spring', 'Summer', 'Fall', 'Winter'].forEach(s => {
           const val = seasons[y][s] * factor;
-          html += `<td style="color:${val > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}">${val > 0 ? val.toFixed(1) + unit : '--'}</td>`;
+          html += `<td style="color:${val > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.05)'}">${val > 0 ? val.toFixed(1) + unit : '--'}</td>`;
         });
         html += '</tr>';
       });
@@ -409,12 +452,26 @@ main{
       b.classList.add('active'); renderSeasonal();
     }
 
-    document.getElementById('todayBtn').onclick = () => document.querySelector('.months-container').firstElementChild.scrollIntoView({behavior:'smooth'});
+    document.getElementById('todayBtn').onclick = () => document.getElementById('mainScroll').scrollTop = 0;
+    
+    document.getElementById('locBtn').onclick = () => {
+        navigator.geolocation.getCurrentPosition(p => {
+            state.lat = p.coords.latitude; state.lon = p.coords.longitude;
+            document.getElementById('locationLabel').innerText = `${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            loadData();
+        });
+    };
+
+    // Auto-init with default coords, then try to upgrade to GPS
     navigator.geolocation.getCurrentPosition(p => {
       state.lat = p.coords.latitude; state.lon = p.coords.longitude;
       document.getElementById('locationLabel').innerText = `${state.lat.toFixed(2)}, ${state.lon.toFixed(2)}`;
       loadData();
-    }, () => loadData());
+    }, () => {
+      document.getElementById('locationLabel').innerText = `Parker, CO (Default)`;
+      loadData();
+    });
   </script>
 </body>
 </html>
