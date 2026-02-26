@@ -3,16 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parker to Lakewood Drive</title>
+    <title>Drive Game: Random Navigator</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --accent: #007aff;
-            --bg: #f5f5f7;
-            --panel-bg: rgba(255, 255, 255, 0.9);
+            --bg: #000;
+            --panel-bg: rgba(28, 28, 30, 0.9);
+            --text: #fff;
         }
-        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); overflow: hidden; }
-        #map { height: 100vh; width: 100%; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); overflow: hidden; color: var(--text); }
+        #map { height: 100vh; width: 100%; filter: grayscale(0.5) invert(1) hue-rotate(180deg); }
+        
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+        .setup-card {
+            background: #1c1c1e;
+            padding: 30px;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #38383a;
+        }
+        input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            background: #2c2c2e;
+            color: white;
+            margin: 15px 0;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
         
         .control-panel {
             position: fixed;
@@ -22,213 +54,240 @@
             z-index: 1000;
             background: var(--panel-bg);
             backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             padding: 20px;
             border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             width: 90%;
-            max-width: 400px;
+            max-width: 450px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            border: 1px solid rgba(255,255,255,0.3);
+            gap: 12px;
+            border: 1px solid #38383a;
         }
 
-        .stats {
-            display: flex;
-            justify-content: space-between;
+        .stats { display: flex; justify-content: space-between; text-align: center; }
+        .stat-label { font-size: 10px; text-transform: uppercase; color: #8e8e93; font-weight: 600; }
+        .stat-value { font-size: 18px; font-weight: 700; }
+
+        .decision-alert {
+            background: var(--accent);
+            padding: 10px;
+            border-radius: 12px;
+            font-weight: 800;
             text-align: center;
+            animation: pulse 1s infinite;
+            display: none;
         }
-        .stat-item { flex: 1; }
-        .stat-label { font-size: 10px; text-transform: uppercase; color: #86868b; font-weight: 600; letter-spacing: 0.5px; }
-        .stat-value { font-size: 18px; font-weight: 700; color: #1d1d1f; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        .progress-container {
-            width: 100%;
-            height: 6px;
-            background: rgba(0,0,0,0.05);
-            border-radius: 3px;
-            overflow: hidden;
+        .btn {
+            background: var(--accent); color: white; border: none; padding: 14px;
+            border-radius: 14px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s;
         }
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: var(--accent);
-            transition: width 0.1s linear;
-        }
+        .btn-secondary { background: #2c2c2e; margin-top: 10px; width: 100%; }
+        .btn:active { transform: scale(0.98); }
 
-        .btn-start {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 14px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-start:active { transform: scale(0.98); opacity: 0.9; }
-        .btn-start:disabled { background: #d2d2d7; cursor: not-allowed; }
-
-        .location-badge {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+        .log {
             font-size: 12px;
-            font-weight: 600;
-            backdrop-filter: blur(10px);
+            color: #8e8e93;
+            max-height: 60px;
+            overflow-y: auto;
+            text-align: left;
+            font-family: monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 8px;
         }
     </style>
 </head>
 <body>
 
-    <div class="location-badge" id="currentLoc">Parker ➔ Lakewood</div>
+    <div class="overlay" id="setupOverlay">
+        <div class="setup-card">
+            <h2 style="margin-top:0">Start Your Drive</h2>
+            <p style="color: #8e8e93; font-size: 14px;">Enter a starting address or use your current location to begin the random drive game.</p>
+            <input type="text" id="startAddr" placeholder="Enter Address (e.g. Parker, CO)">
+            <button class="btn" style="width:100%" id="goBtn">Go</button>
+            <button class="btn btn-secondary" id="locBtn">📍 Use My Location</button>
+        </div>
+    </div>
     
     <div id="map"></div>
 
-    <div class="control-panel">
+    <div class="control-panel" id="ui" style="display:none">
+        <div id="decisionUI" class="decision-alert">INTERSECTION AHEAD: DECIDING...</div>
+        
         <div class="stats">
             <div class="stat-item">
-                <div class="stat-label">Distance</div>
-                <div class="stat-value" id="distVal">-- mi</div>
+                <div class="stat-label">Action</div>
+                <div class="stat-value" id="actionVal">Cruising</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">Time</div>
-                <div class="stat-value" id="timeVal">-- min</div>
+                <div class="stat-label">Odo</div>
+                <div class="stat-value" id="odoVal">0.0 mi</div>
             </div>
             <div class="stat-item">
-                <div class="stat-label">Speed</div>
-                <div class="stat-value" id="speedVal">0 mph</div>
+                <div class="stat-label">Direction</div>
+                <div class="stat-value" id="dirVal">--</div>
             </div>
         </div>
 
-        <div class="progress-container">
-            <div class="progress-bar" id="progressBar"></div>
-        </div>
+        <div class="log" id="driveLog">Initializing navigation engine...</div>
 
-        <button class="btn-start" id="startBtn">Start Drive</button>
+        <button class="btn" id="driveBtn">Start Random Drive</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Coordinates
-        const parker = [39.5186, -104.7614];
-        const lakewood = [39.7047, -105.0814];
+        let map, carMarker, routeLine;
+        let isDriving = false;
+        let currentPos = null;
+        let routeSteps = [];
+        let currentIndex = 0;
+        let totalMiles = 0;
+        let animationFrame;
 
-        // Initialize Map
-        const map = L.map('map', {
-            zoomControl: false
-        }).setView(parker, 11);
+        // Init Map
+        map = L.map('map', { zoomControl: false }).setView([39.5186, -104.7614], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; OpenStreetMap'
-        }).addTo(map);
-
-        // Custom Car Marker
         const carIcon = L.divIcon({
-            html: `<div style="font-size: 24px; transform: rotate(90deg); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3))">🚗</div>`,
-            className: 'car-icon',
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
+            html: `<div id="car" style="font-size: 28px; transition: transform 0.3s">🚗</div>`,
+            className: 'car-icon', iconSize: [30, 30], iconAnchor: [15, 15]
         });
 
-        let marker = L.marker(parker, { icon: carIcon }).addTo(map);
-        let routeLine;
-        let routeCoords = [];
-        let animationFrame;
-        let isDriving = false;
-        let currentIndex = 0;
+        // Geocoding via Open-Meteo (Search)
+        async function geocode(query) {
+            const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`);
+            const data = await res.json();
+            return data.results ? [data.results[0].latitude, data.results[0].longitude] : null;
+        }
 
-        // Fetch Route from OSRM
-        async function getRoute() {
-            const url = `https://router.project-osrm.org/route/v1/driving/${parker[1]},${parker[0]};${lakewood[1]},${lakewood[0]}?overview=full&geometries=geojson`;
+        async function startAt(coords) {
+            currentPos = coords;
+            document.getElementById('setupOverlay').style.display = 'none';
+            document.getElementById('ui').style.display = 'flex';
+            
+            map.setView(coords, 17);
+            if (carMarker) map.removeLayer(carMarker);
+            carMarker = L.marker(coords, { icon: carIcon }).addTo(map);
+            
+            log("Engine started at " + coords[0].toFixed(4) + ", " + coords[1].toFixed(4));
+            await planNewPath();
+        }
+
+        function log(msg) {
+            const el = document.getElementById('driveLog');
+            el.innerHTML = `> ${msg}<br>${el.innerHTML}`;
+        }
+
+        // Logic to plan a route to a random destination nearby
+        async function planNewPath(directionPreference = null) {
+            // Pick a random point ~2-3 miles away
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 0.04; // roughly 2-3 miles in lat/lon degrees
+            const dest = [
+                currentPos[0] + Math.sin(angle) * dist,
+                currentPos[1] + Math.cos(angle) * dist
+            ];
+
+            const url = `https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
+            
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-                const route = data.routes[0];
-                
-                routeCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-                
-                // Draw route line
-                if (routeLine) map.removeLayer(routeLine);
-                routeLine = L.polyline(routeCoords, {
-                    color: '#007aff',
-                    weight: 5,
-                    opacity: 0.6,
-                    lineJoin: 'round'
-                }).addTo(map);
+                if (!data.routes) return;
 
-                // Update Stats
-                document.getElementById('distVal').innerText = (route.distance / 1609.34).toFixed(1) + ' mi';
-                document.getElementById('timeVal').innerText = Math.round(route.duration / 60) + ' min';
+                const route = data.routes[0];
+                routeSteps = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                currentIndex = 0;
+
+                if (routeLine) map.removeLayer(routeLine);
+                routeLine = L.polyline(routeSteps, { color: '#007aff', weight: 4, opacity: 0.3 }).addTo(map);
                 
-                // Fit bounds
-                map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
-            } catch (error) {
-                console.error("Routing error:", error);
+                log("New route calculated. Heading: " + route.legs[0].steps[0].maneuver.instruction);
+            } catch (e) {
+                log("Nav Error. Retrying...");
+                setTimeout(planNewPath, 1000);
             }
         }
 
-        function animate() {
-            if (!isDriving || currentIndex >= routeCoords.length) {
-                isDriving = false;
-                document.getElementById('startBtn').innerText = 'Reset Drive';
-                document.getElementById('speedVal').innerText = '0 mph';
+        function drive() {
+            if (!isDriving || currentIndex >= routeSteps.length) {
+                if (currentIndex >= routeSteps.length) planNewPath();
                 return;
             }
 
-            const current = routeCoords[currentIndex];
-            const next = routeCoords[currentIndex + 1];
+            const now = routeSteps[currentIndex];
+            const next = routeSteps[currentIndex + 1];
 
-            marker.setLatLng(current);
-            map.panTo(current, { animate: true, duration: 0.1 });
+            // Update Map/Marker
+            currentPos = now;
+            carMarker.setLatLng(now);
+            map.panTo(now, { animate: true, duration: 0.1 });
 
-            // Calculate rotation
-            if (next) {
-                const angle = Math.atan2(next[0] - current[0], next[1] - current[1]) * 180 / Math.PI;
-                marker.getElement().style.transform += ` rotate(${90 - angle}deg)`;
+            // Stats
+            totalMiles += 0.01; // Fake increment
+            document.getElementById('odoVal').innerText = totalMiles.toFixed(1) + " mi";
+
+            // Decision Logic (Every ~20 nodes or at maneuvers)
+            if (currentIndex > 0 && currentIndex % 30 === 0) {
+                pauseAndDecide();
+                return;
             }
 
-            // Update Progress
-            const progress = (currentIndex / routeCoords.length) * 100;
-            document.getElementById('progressBar').style.width = progress + '%';
-            document.getElementById('speedVal').innerText = '65 mph';
+            // Rotate Car
+            if (next) {
+                const angle = Math.atan2(next[0] - now[0], next[1] - now[1]) * 180 / Math.PI;
+                document.getElementById('car').style.transform = `rotate(${90 - angle}deg)`;
+                
+                const dirs = ["North", "NE", "East", "SE", "South", "SW", "West", "NW"];
+                const dIdx = Math.round(((angle %= 360) < 0 ? angle + 360 : angle) / 45) % 8;
+                document.getElementById('dirVal').innerText = dirs[dIdx];
+            }
 
             currentIndex++;
-            animationFrame = setTimeout(() => requestAnimationFrame(animate), 50);
+            animationFrame = setTimeout(drive, 150);
         }
 
-        document.getElementById('startBtn').onclick = () => {
-            if (currentIndex >= routeCoords.length) {
-                // Reset
-                currentIndex = 0;
-                marker.setLatLng(parker);
-                document.getElementById('progressBar').style.width = '0%';
-                document.getElementById('startBtn').innerText = 'Start Drive';
-                map.setView(parker, 11);
-                return;
-            }
+        function pauseAndDecide() {
+            isDriving = false;
+            const alert = document.getElementById('decisionUI');
+            alert.style.display = 'block';
+            
+            const choices = ["LEFT", "RIGHT", "STRAIGHT"];
+            const choice = choices[Math.floor(Math.random() * choices.length)];
+            
+            log("Intersection detected. Decision: " + choice);
+            document.getElementById('actionVal').innerText = choice;
 
-            if (!isDriving) {
+            setTimeout(async () => {
+                alert.style.display = 'none';
+                document.getElementById('actionVal').innerText = "Driving";
+                await planNewPath(); // Reroute based on new "decision"
                 isDriving = true;
-                document.getElementById('startBtn').innerText = 'Pause';
-                animate();
-            } else {
-                isDriving = false;
-                document.getElementById('startBtn').innerText = 'Resume';
-                clearTimeout(animationFrame);
-            }
+                drive();
+            }, 2000);
+        }
+
+        // Event Handlers
+        document.getElementById('goBtn').onclick = async () => {
+            const addr = document.getElementById('startAddr').value;
+            if (!addr) return alert("Please enter an address");
+            const coords = await geocode(addr);
+            if (coords) startAt(coords);
+            else alert("Location not found");
         };
 
-        // Initialize
-        getRoute();
+        document.getElementById('locBtn').onclick = () => {
+            navigator.geolocation.getCurrentPosition(p => startAt([p.coords.latitude, p.coords.longitude]));
+        };
+
+        document.getElementById('driveBtn').onclick = () => {
+            isDriving = !isDriving;
+            document.getElementById('driveBtn').innerText = isDriving ? "Pause" : "Resume Drive";
+            if (isDriving) drive();
+        };
 
     </script>
 </body>
