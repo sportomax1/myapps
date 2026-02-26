@@ -27,8 +27,8 @@
         .game-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; font-size: 11px; padding: 2px; }
         .status-scheduled { color: #64748b; font-weight: 600; font-size: 10px; }
         .status-live { color: #ea580c; font-weight: 800; animation: pulse 1.5s infinite; font-size: 11px; }
-        .status-win { color: #15803d; font-weight: 800; background: #dcfce7; width: 100%; height: 100%; font-size: 12px; }
-        .status-loss { color: #b91c1c; font-weight: 800; background: #fee2e2; width: 100%; height: 100%; font-size: 12px; }
+        .status-win { color: #15803d; font-weight: 800; background: #dcfce7 !important; width: 100%; height: 100%; font-size: 12px; }
+        .status-loss { color: #b91c1c; font-weight: 800; background: #fee2e2 !important; width: 100%; height: 100%; font-size: 12px; }
         .today-highlight { background-color: #eff6ff !important; }
         .today-highlight-border { border-left: 4px solid #3b82f6 !important; background-color: #eff6ff !important; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
@@ -76,7 +76,7 @@
             </div>
             <div class="p-4 border-b bg-white">
                 <div class="flex gap-2 mb-2">
-                    <input type="text" id="search-input" placeholder="Search team name..." class="flex-1 border rounded-lg px-3 py-2 text-sm">
+                    <input type="text" id="search-input" placeholder="Search team name..." class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
                     <button onclick="searchTeams()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Search</button>
                 </div>
                 <div id="search-results" class="max-h-40 overflow-y-auto space-y-1"></div>
@@ -85,22 +85,18 @@
                 <ul id="team-list" class="space-y-2"></ul>
             </div>
             <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold">Cancel</button>
-                <button onclick="saveAndReload()" class="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg">Save</button>
+                <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">Cancel</button>
+                <button onclick="saveAndReload()" class="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-sm">Save</button>
             </div>
         </div>
     </div>
 
     <script>
         const LEAGUES = [
-            { s: 'basketball', l: 'nba' },
-            { s: 'basketball', l: 'wnba' },
-            { s: 'football', l: 'nfl' },
-            { s: 'football', l: 'college-football' },
-            { s: 'basketball', l: 'mens-college-basketball' },
-            { s: 'basketball', l: 'womens-college-basketball' },
-            { s: 'baseball', l: 'mlb' },
-            { s: 'baseball', l: 'college-baseball' },
+            { s: 'basketball', l: 'nba' }, { s: 'basketball', l: 'wnba' },
+            { s: 'football', l: 'nfl' }, { s: 'football', l: 'college-football' },
+            { s: 'basketball', l: 'mens-college-basketball' }, { s: 'basketball', l: 'womens-college-basketball' },
+            { s: 'baseball', l: 'mlb' }, { s: 'baseball', l: 'college-baseball' },
             { s: 'hockey', l: 'nhl' }
         ];
 
@@ -138,7 +134,7 @@
                         isAway: them.homeAway === 'home',
                         state: ev.status.type.state,
                         score: `${us.score?.value || 0}-${them.score?.value || 0}`,
-                        result: ev.status.type.state === 'post' ? (parseInt(us.score.value) > parseInt(them.score.value) ? 'W' : 'L') : null,
+                        result: ev.status.type.state === 'post' ? (parseInt(us.score.value) > parseInt(them.score.value) ? 'W' : (parseInt(us.score.value) < parseInt(them.score.value) ? 'L' : 'T')) : null,
                         network: comp.broadcasts?.[0]?.media?.shortName
                     };
                 });
@@ -150,8 +146,10 @@
             const gameDates = new Set();
             Object.values(SCHEDULES).forEach(s => Object.keys(s).forEach(d => gameDates.add(d)));
             const gameDatesArr = Array.from(gameDates).sort();
-            if (HIDE_EMPTY) { SORTED_DATES = gameDatesArr; } else {
-                if (gameDatesArr.length === 0) return;
+            
+            if (HIDE_EMPTY) { 
+                SORTED_DATES = gameDatesArr; 
+            } else if (gameDatesArr.length > 0) {
                 const min = new Date(gameDatesArr[0] + 'T12:00:00'), max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00'), range = [];
                 for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toLocaleDateString('en-CA'));
                 SORTED_DATES = range;
@@ -162,28 +160,30 @@
             document.getElementById('main-table').className = IS_FLIPPED ? 'mode-flipped' : 'mode-standard';
 
             if (!IS_FLIPPED) {
-                thead.innerHTML = `<tr><th>DATE</th>${TEAMS.map(t => `<th><img src="${t.logo}" class="w-8 h-8 mx-auto"></th>`).join('')}</tr>`;
+                thead.innerHTML = `<tr><th style="min-width:70px">DATE</th>${TEAMS.map(t => `<th><img src="${t.logo}" class="w-8 h-8 mx-auto object-contain"></th>`).join('')}</tr>`;
                 tbody.innerHTML = SORTED_DATES.map(date => {
                     const d = new Date(date + 'T12:00:00');
-                    let html = `<tr id="row-${date}" class="${date===today?'today-highlight':''}">
-                        <td class="bg-slate-50 ${date===today?'today-highlight-border':''}">
+                    const isToday = date === today;
+                    let html = `<tr id="row-${date}" class="${isToday ? 'today-highlight' : ''}">
+                        <td class="${isToday ? 'today-highlight-border' : ''} bg-slate-50">
                             <div class="text-[8px] font-black text-blue-500">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
                             <div class="text-xs font-bold">${d.getDate()}</div>
                             <div class="text-[8px] text-slate-400 uppercase">${d.toLocaleDateString('en-US',{month:'short'})}</div>
                         </td>`;
-                    TEAMS.forEach(t => html += renderCell(SCHEDULES[`${t.id}-${t.league}`]?.[date], date < today));
+                    TEAMS.forEach(t => html += renderCell(SCHEDULES[`${t.id}-${t.league}`]?.[date], date < today, isToday));
                     return html + '</tr>';
                 }).join('');
             } else {
-                thead.innerHTML = `<tr><th>TEAM</th>${SORTED_DATES.map(date => {
+                thead.innerHTML = `<tr><th class="bg-slate-50">TEAM</th>${SORTED_DATES.map(date => {
                     const d = new Date(date + 'T12:00:00');
-                    return `<th id="col-${date}" class="${date===today?'today-highlight':''}">
+                    const isToday = date === today;
+                    return `<th id="col-${date}" class="${isToday ? 'today-highlight' : ''}">
                         <div class="text-[9px] font-black text-blue-500">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
                         <div class="text-xs">${d.getDate()} ${d.toLocaleDateString('en-US',{month:'short'})}</div>
                     </th>`;
                 }).join('')}</tr>`;
                 tbody.innerHTML = TEAMS.map(t => {
-                    let html = `<tr><td class="bg-slate-50"><img src="${t.logo}" class="w-8 h-8 mx-auto"></td>`;
+                    let html = `<tr><td class="bg-slate-50"><img src="${t.logo}" class="w-8 h-8 mx-auto object-contain"></td>`;
                     SORTED_DATES.forEach(date => html += renderCell(SCHEDULES[`${t.id}-${t.league}`]?.[date], date < today, date === today));
                     return html + '</tr>';
                 }).join('');
@@ -191,13 +191,14 @@
         }
 
         function renderCell(g, isPast, isToday) {
-            if (!g) return `<td class="${isToday?'today-highlight':''}"><span class="text-slate-100">.</span></td>`;
+            const highlightClass = isToday ? 'today-highlight' : '';
+            if (!g) return `<td class="${highlightClass}"><span class="text-slate-100 text-[4px]">.</span></td>`;
             const showScore = g.state === 'in' || g.state === 'post' || isPast;
             const cls = g.state === 'in' ? 'status-live' : (g.result === 'W' ? 'status-win' : (g.result === 'L' ? 'status-loss' : ''));
-            return `<td class="${isToday?'today-highlight':''}">
+            return `<td class="${highlightClass}">
                 <div class="game-content ${cls}">
-                    <div class="flex items-center gap-1"><span class="opacity-50 text-[8px]">${g.isAway?'@':'vs'}</span><img src="${g.oppLogo}" class="w-6 h-6"></div>
-                    <div class="font-black">${showScore ? g.score : g.time}</div>
+                    <div class="flex items-center gap-1 mb-0.5"><span class="opacity-50 text-[8px]">${g.isAway?'@':'vs'}</span><img src="${g.oppLogo}" class="w-6 h-6 object-contain"></div>
+                    <div class="font-black leading-tight">${showScore ? g.score : g.time}</div>
                     ${g.network && !showScore ? `<div class="text-[8px] opacity-60">${g.network}</div>` : ''}
                 </div>
             </td>`;
@@ -206,22 +207,25 @@
         async function searchTeams() {
             const q = document.getElementById('search-input').value.toLowerCase();
             const resBox = document.getElementById('search-results');
-            resBox.innerHTML = '<div class="p-2 text-center text-xs">Searching...</div>';
+            if (!q) return;
+            resBox.innerHTML = '<div class="p-2 text-center text-xs font-bold text-slate-400">SEARCHING...</div>';
             const hits = [];
             const results = await Promise.all(LEAGUES.map(l => fetch(`https://site.api.espn.com/apis/site/v2/sports/${l.s}/${l.l}/teams${l.l.includes('college')?'?limit=1000':''}`).then(r=>r.json())));
             results.forEach((d, i) => {
-                d.sports?.[0]?.leagues?.[0]?.teams?.forEach(t => {
-                    if (t.team.displayName.toLowerCase().includes(q)) {
-                        hits.push({ id: t.team.id, name: t.team.shortDisplayName, league: LEAGUES[i].l, sport: LEAGUES[i].s, logo: t.team.logos[0].href });
+                const group = d.sports?.[0]?.leagues?.[0]?.teams || [];
+                group.forEach(item => {
+                    if (item.team.displayName.toLowerCase().includes(q) || item.team.name.toLowerCase().includes(q)) {
+                        hits.push({ id: item.team.id, name: item.team.shortDisplayName, league: LEAGUES[i].l, sport: LEAGUES[i].s, logo: item.team.logos?.[0]?.href });
                     }
                 });
             });
-            resBox.innerHTML = hits.map(t => `<div class="flex justify-between p-2 border-b text-sm" onclick='addTeam(${JSON.stringify(t)})'><span>${t.name} (${t.league})</span><span class="text-blue-600">+</span></div>`).join('');
+            resBox.innerHTML = hits.map(t => `<div class="flex justify-between items-center p-2 border-b hover:bg-slate-50 cursor-pointer" onclick='addTeam(${JSON.stringify(t)})'><div class="flex items-center gap-2"><img src="${t.logo}" class="w-5 h-5"><span>${t.name} <small class="text-slate-400 uppercase">(${t.league})</small></span></div><span class="text-blue-600 font-bold">+</span></div>`).join('');
+            if (hits.length === 0) resBox.innerHTML = '<div class="p-2 text-center text-xs text-slate-400">No teams found</div>';
         }
 
         function addTeam(t) { if(!TEAMS.find(x => x.id===t.id && x.league===t.league)) TEAMS.push(t); renderTeamList(); }
         function removeTeam(i) { TEAMS.splice(i, 1); renderTeamList(); }
-        function renderTeamList() { document.getElementById('team-list').innerHTML = TEAMS.map((t, i) => `<li class="flex justify-between p-2 border rounded"><span>${t.name}</span><button onclick="removeTeam(${i})" class="text-red-500 text-xs">X</button></li>`).join(''); }
+        function renderTeamList() { document.getElementById('team-list').innerHTML = TEAMS.map((t, i) => `<li class="flex justify-between items-center bg-white p-2 border rounded shadow-sm"><div class="flex items-center gap-2"><img src="${t.logo}" class="w-6 h-6"><span>${t.name}</span></div><button onclick="removeTeam(${i})" class="text-red-500 text-xs font-bold">X</button></li>`).join(''); }
         function openModal() { document.getElementById('manage-modal').classList.remove('hidden'); renderTeamList(); }
         function closeModal() { document.getElementById('manage-modal').classList.add('hidden'); }
         function saveAndReload() { localStorage.setItem('my_sports_teams', JSON.stringify(TEAMS)); location.reload(); }
