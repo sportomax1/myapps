@@ -124,7 +124,6 @@
 
     .main-content { padding: 15px; }
     
-    /* Horizontal Scroll for Leagues on Desktop */
     .lanes { 
       display: flex;
       flex-wrap: nowrap;
@@ -174,7 +173,8 @@
       font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--muted);
     }
     .status-live { color: var(--danger); font-weight: 900; display: flex; align-items: center; gap: 4px; }
-    .status-live::before { content: ''; width: 6px; height: 6px; background: var(--danger); border-radius: 50%; }
+    .status-live::before { content: ''; width: 6px; height: 6px; background: var(--danger); border-radius: 50%; animation: pulse 1s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
     .team-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
     .team-info { display: flex; align-items: center; gap: 10px; }
@@ -192,6 +192,9 @@
     .rank-badge {
       font-size: 9px; background: #fbbf24; color: #000; padding: 1px 5px; border-radius: 4px; font-weight: 900;
     }
+    .league-rank {
+      font-size: 9px; background: var(--accent); color: #fff; padding: 1px 5px; border-radius: 4px; font-weight: 900;
+    }
 
     .win-bar-container { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
     .win-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -204,23 +207,23 @@
 
     .modal {
       display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px); z-index: 200; align-items: center; justify-content: center;
+      backdrop-filter: blur(8px); z-index: 200; align-items: center; justify-content: center; padding: 20px;
     }
     .modal.active { display: flex; }
     .modal-content {
-      background: var(--surface); border-radius: 20px; width: 90%; max-width: 450px;
+      background: var(--surface); border-radius: 20px; width: 100%; max-width: 450px;
       padding: 25px; border: 1px solid var(--border);
     }
     
     .setting-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--card); border-radius: 12px; margin-bottom: 8px; }
+    .setting-item input { width: 18px; height: 18px; }
 
     ::-webkit-scrollbar { height: 8px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--card); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--border); }
   </style>
 </head>
-<body>
+<body class="mobile-combined">
   <header>
     <div class="header-container">
       <div class="header-top">
@@ -255,21 +258,22 @@
       <h3 style="margin-top:0">Settings</h3>
       <label class="setting-item"><span>Show Records</span><input type="checkbox" id="chkRecord" checked></label>
       <label class="setting-item"><span>Show Matchup Quality</span><input type="checkbox" id="chkPct" checked></label>
+      <label class="setting-item"><span>Live Games First (Mobile)</span><input type="checkbox" id="chkLiveFirst" checked></label>
       <button class="action-btn" style="width:100%; margin-top:15px; background:var(--accent); border:none; color:white; padding:12px; font-weight:900" onclick="saveSettings()">Save Preferences</button>
     </div>
   </div>
 
   <script>
     const LANES = [
-      {id:'nfl', label:'NFL', league:'football/nfl', icon:'🏈'},
-      {id:'ncaaf', label:'CFB', league:'football/college-football', icon:'🎓'},
-      {id:'nba', label:'NBA', league:'basketball/nba', icon:'🏀'},
-      {id:'wnba', label:'WNBA', league:'basketball/wnba', icon:'🏀'},
-      {id:'ncaam', label:'CBB(M)', league:'basketball/mens-college-basketball', icon:'🎓'},
-      {id:'ncaaw', label:'CBB(W)', league:'basketball/womens-college-basketball', icon:'🎓'},
-      {id:'mlb', label:'MLB', league:'baseball/mlb', icon:'⚾'},
-      {id:'ncaab', label:'C-Base', league:'baseball/college-baseball', icon:'⚾'},
-      {id:'nhl', label:'NHL', league:'hockey/nhl', icon:'🏒'},
+      {id:'nfl', label:'NFL', league:'football/nfl', core:'nfl', sport:'football', icon:'🏈'},
+      {id:'ncaaf', label:'CFB', league:'football/college-football', core:null, sport:'football', icon:'🎓'},
+      {id:'nba', label:'NBA', league:'basketball/nba', core:'nba', sport:'basketball', icon:'🏀'},
+      {id:'wnba', label:'WNBA', league:'basketball/wnba', core:'wnba', sport:'basketball', icon:'🏀'},
+      {id:'ncaam', label:'CBB(M)', league:'basketball/mens-college-basketball', core:null, sport:'basketball', icon:'🎓'},
+      {id:'ncaaw', label:'CBB(W)', league:'basketball/womens-college-basketball', core:null, sport:'basketball', icon:'🎓'},
+      {id:'mlb', label:'MLB', league:'baseball/mlb', core:'mlb', sport:'baseball', icon:'⚾'},
+      {id:'ncaab', label:'C-Base', league:'baseball/college-baseball', core:null, sport:'baseball', icon:'⚾'},
+      {id:'nhl', label:'NHL', league:'hockey/nhl', core:'nhl', sport:'hockey', icon:'🏒'},
       {id:'soccer', label:'Soccer', league:'soccer/all', icon:'⚽'},
       {id:'golf', label:'Golf', league:'golf/pga', icon:'⛳'},
       {id:'mma', label:'MMA', league:'mma/ufc', icon:'🥊'},
@@ -280,7 +284,8 @@
     let selectedDate = new Date();
     let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 767;
     let selectedSports = JSON.parse(localStorage.getItem('gd_selectedSports')) || { nfl:true, nba:true, mlb:true, nhl:true };
-    let settings = JSON.parse(localStorage.getItem('gd_settings')) || { record:true, pct:true };
+    let settings = JSON.parse(localStorage.getItem('gd_settings')) || { record:true, pct:true, liveFirst:true };
+    const standingsCache = {};
 
     function buildTabs() {
       const tabContainer = document.getElementById('sportTabs');
@@ -291,6 +296,32 @@
         tab.innerHTML = `${lane.icon} ${lane.label}`;
         tabContainer.appendChild(tab);
       });
+    }
+
+    async function fetchGlobalStandings(lane) {
+      if (!lane.core || standingsCache[lane.id]) return;
+      try {
+        const res = await fetch(`https://site.api.espn.com/apis/v2/sports/${lane.sport}/${lane.core}/standings`);
+        const data = await res.json();
+        let entries = [];
+        const findEntries = (obj) => {
+          if (obj.standings && obj.standings.entries) entries.push(...obj.standings.entries);
+          if (obj.children) obj.children.forEach(findEntries);
+        };
+        findEntries(data);
+        const teams = entries.map(item => {
+          const s = item.stats;
+          const wins = s.find(x => x.name === 'wins')?.value || 0;
+          const losses = s.find(x => x.name === 'losses')?.value || 0;
+          const ties = s.find(x => x.name === 'ties')?.value || 0;
+          const total = wins + losses + ties;
+          return { id: item.team.id, pct: total > 0 ? wins/total : 0.5 };
+        });
+        teams.sort((a,b) => b.pct - a.pct);
+        const map = {};
+        teams.forEach((t, i) => map[t.id] = { rank: i + 1, pct: t.pct });
+        standingsCache[lane.id] = map;
+      } catch (e) { console.warn(`Standings fetch failed for ${lane.id}`); }
     }
 
     async function fetchLaneData(lane, dateStr) {
@@ -307,20 +338,31 @@
       } catch (e) { return { lane, games: [] }; }
     }
 
-    function getTeamData(comp, type) {
+    function getTeamData(comp, type, laneId) {
       const t = comp.competitors.find(c => c.homeAway === type);
       const rec = t.records?.find(r => r.type === 'total')?.summary || '0-0';
-      const recArr = rec.split('-').map(Number);
-      const wins = recArr[0] || 0;
-      const losses = recArr[1] || 0;
-      const pct = (wins + losses) > 0 ? wins / (wins + losses) : 0.5;
+      const curatedRank = t.curatedRank?.current < 99 ? t.curatedRank.current : null;
+      let winPct = 0.5;
+      let leagueRank = null;
+
+      if (standingsCache[laneId]?.[t.id]) {
+        winPct = standingsCache[laneId][t.id].pct;
+        leagueRank = standingsCache[laneId][t.id].rank;
+      } else {
+        const recArr = rec.split('-').map(Number);
+        const total = (recArr[0]||0) + (recArr[1]||0);
+        if (total > 0) winPct = recArr[0] / total;
+      }
+
       return {
+        id: t.id,
         name: t.team.shortDisplayName || t.team.abbreviation,
         logo: t.team.logo,
         score: t.score || '0',
         record: rec,
-        rank: t.curatedRank?.current < 99 ? t.curatedRank.current : null,
-        winPct: pct
+        curatedRank: curatedRank,
+        leagueRank: leagueRank,
+        winPct: winPct
       };
     }
 
@@ -332,6 +374,7 @@
       const dateStr = selectedDate.getFullYear() + String(selectedDate.getMonth() + 1).padStart(2, '0') + String(selectedDate.getDate()).padStart(2, '0');
       container.innerHTML = '<div style="flex:1; text-align:center; padding:60px; color:var(--muted); font-weight:800">SYNCING DATA...</div>';
 
+      await Promise.all(LANES.map(l => fetchGlobalStandings(l)));
       const results = await Promise.all(LANES.map(l => fetchLaneData(l, dateStr)));
       container.innerHTML = '';
 
@@ -341,12 +384,22 @@
           if (!games || !selectedSports[lane.id]) return;
           games.forEach(game => {
             const comp = game.competitions[0];
-            const h = getTeamData(comp, 'home');
-            const a = getTeamData(comp, 'away');
-            allGames.push({ game, home:h, away:a, lane, quality: (h.winPct + a.winPct) / 2 });
+            const h = getTeamData(comp, 'home', lane.id);
+            const a = getTeamData(comp, 'away', lane.id);
+            allGames.push({ 
+              game, home:h, away:a, lane, 
+              quality: (h.winPct + a.winPct) / 2,
+              isLive: game.status.type.state === 'in'
+            });
           });
         });
-        allGames.sort((a,b) => b.quality - a.quality);
+
+        // Toggle Sort: Live First, then by Matchup Quality
+        allGames.sort((a,b) => {
+          if (settings.liveFirst && a.isLive !== b.isLive) return a.isLive ? -1 : 1;
+          return b.quality - a.quality;
+        });
+
         const laneEl = document.createElement('div');
         laneEl.className = 'lane';
         laneEl.innerHTML = `<div class="lane-header"><h3>COMBINED FEED</h3><span style="font-size:11px; font-weight:800; color:var(--accent)">${allGames.length} GAMES</span></div>`;
@@ -360,8 +413,8 @@
           laneEl.innerHTML = `<div class="lane-header"><h3>${lane.label}</h3><span style="font-size:11px; font-weight:800; color:var(--accent)">${games.length}</span></div>`;
           games.forEach(game => {
             const comp = game.competitions[0];
-            const h = getTeamData(comp, 'home');
-            const a = getTeamData(comp, 'away');
+            const h = getTeamData(comp, 'home', lane.id);
+            const a = getTeamData(comp, 'away', lane.id);
             laneEl.appendChild(createCard(game, h, a, lane, (h.winPct + a.winPct) / 2));
           });
           container.appendChild(laneEl);
@@ -374,6 +427,11 @@
       const qScore = Math.round(quality * 100);
       const card = document.createElement('div');
       card.className = 'game-card';
+      
+      const homeRank = home.leagueRank || home.curatedRank;
+      const awayRank = away.leagueRank || away.curatedRank;
+      const isLeagueRank = !!home.leagueRank;
+
       card.innerHTML = `
         <div class="game-header">
           <div class="game-status ${state==='in'?'status-live':''}">
@@ -385,11 +443,11 @@
           <div class="team-info">
             <div class="team-logo-wrapper"><img src="${away.logo}" class="team-logo"></div>
             <div class="team-name">
-              ${away.rank?`<span class="rank-badge">#${away.rank}</span>`:''}
+              ${awayRank?`<span class="${isLeagueRank?'league-rank':'rank-badge'}">#${awayRank}</span>`:''}
               ${away.name}
             </div>
           </div>
-          <div class="team-score" style="${state==='post' && away.score < home.score ? 'opacity:0.4' : ''}">${away.score}</div>
+          <div class="team-score" style="${state==='post' && parseInt(away.score) < parseInt(home.score) ? 'opacity:0.4' : ''}">${away.score}</div>
         </div>
         ${settings.record ? `<div class="team-meta" style="margin-top:-10px; margin-left:48px; margin-bottom:10px;">${away.record}</div>` : ''}
         
@@ -397,11 +455,11 @@
           <div class="team-info">
             <div class="team-logo-wrapper"><img src="${home.logo}" class="team-logo"></div>
             <div class="team-name">
-              ${home.rank?`<span class="rank-badge">#${home.rank}</span>`:''}
+              ${homeRank?`<span class="${isLeagueRank?'league-rank':'rank-badge'}">#${homeRank}</span>`:''}
               ${home.name}
             </div>
           </div>
-          <div class="team-score" style="${state==='post' && home.score < away.score ? 'opacity:0.4' : ''}">${home.score}</div>
+          <div class="team-score" style="${state==='post' && parseInt(home.score) < parseInt(away.score) ? 'opacity:0.4' : ''}">${home.score}</div>
         </div>
         ${settings.record ? `<div class="team-meta" style="margin-top:-10px; margin-left:48px; margin-bottom:12px;">${home.record}</div>` : ''}
 
@@ -438,10 +496,19 @@
     document.getElementById('nextDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()+1); renderDashboard(); };
     document.getElementById('jumpToday').onclick = () => { selectedDate = new Date(); renderDashboard(); };
     document.getElementById('refreshBtn').onclick = () => location.reload();
-    document.getElementById('settingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('active');
+    document.getElementById('settingsBtn').onclick = () => {
+      document.getElementById('chkRecord').checked = settings.record;
+      document.getElementById('chkPct').checked = settings.pct;
+      document.getElementById('chkLiveFirst').checked = settings.liveFirst;
+      document.getElementById('settingsModal').classList.add('active');
+    };
     
     function saveSettings() {
-      settings = { record: document.getElementById('chkRecord').checked, pct: document.getElementById('chkPct').checked };
+      settings = { 
+        record: document.getElementById('chkRecord').checked, 
+        pct: document.getElementById('chkPct').checked,
+        liveFirst: document.getElementById('chkLiveFirst').checked
+      };
       localStorage.setItem('gd_settings', JSON.stringify(settings));
       document.getElementById('settingsModal').classList.remove('active');
       renderDashboard();
