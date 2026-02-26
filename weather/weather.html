@@ -78,19 +78,9 @@ main{
 .tab-btn.active{ background: var(--accent); color: #fff; }
 .modal-body{ padding: 15px; overflow-y: auto; flex: 1; }
 
-/* Stat Lists */
-.stat-item{ padding: 8px 0; border-bottom: 0.5px solid var(--separator); cursor: pointer; }
-.stat-row{ display: flex; align-items: center; font-size: 12px; }
+.stat-row{ display: flex; align-items: center; padding: 8px 0; border-bottom: 0.5px solid var(--separator); font-size: 12px; }
 .bar-wrap{ flex: 1; height: 10px; background: rgba(255,255,255,0.05); border-radius: 2px; margin: 0 10px; overflow: hidden; }
 .bar-fill{ height: 100%; background: var(--accent); }
-.stat-breakdown{ display: none; background: rgba(255,255,255,0.03); border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 10px; }
-.stat-breakdown.active{ display: block; }
-.breakdown-line{ display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
-
-/* Filters */
-.filters{ display: flex; gap: 5px; margin-top: 10px; }
-.filter-btn{ flex: 1; padding: 6px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 0.5px solid var(--separator); font-size: 9px; color: var(--text-secondary); text-align: center; cursor: pointer; }
-.filter-btn.active{ background: rgba(10, 132, 255, 0.2); border-color: var(--accent); color: #fff; }
 
 /* Color Scales */
 .t-freezing{ background: #1e3a8a; }
@@ -154,14 +144,13 @@ main{
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">SEASONAL TOTALS</span>
+          <span style="font-weight:700">SEASONAL MOISTURE MATRIX</span>
           <button class="btn-icon" onclick="closeModal('snowSeasonModal')">×</button>
         </div>
-        <div class="filters" id="seasonFilters">
-          <div class="filter-btn active" data-s="Spring">🌸 Spring</div>
-          <div class="filter-btn active" data-s="Summer">☀️ Summer</div>
-          <div class="filter-btn active" data-s="Fall">🍂 Fall</div>
-          <div class="filter-btn active" data-s="Winter">❄️ Winter</div>
+        <div class="modal-tabs">
+          <button class="tab-btn" onclick="setMoistureTab('rain', this)">Rain</button>
+          <button class="tab-btn" onclick="setMoistureTab('snow', this)">Snow</button>
+          <button class="tab-btn active" onclick="setMoistureTab('combined', this)">Combined</button>
         </div>
       </div>
       <div class="modal-body" id="snowSeasonModalBody"></div>
@@ -171,7 +160,7 @@ main{
   <script>
     const START_YEAR = 2000;
     const END_DATE = new Date().toISOString().split('T')[0];
-    let state = { lat: 39.5, lon: -104.7, data: {}, tempTab: 'daily', precipTab: 'rain', sFilters: {Spring:1, Summer:1, Fall:1, Winter:1} };
+    let state = { lat: 39.5, lon: -104.7, data: {}, tempTab: 'daily', precipTab: 'rain', moistureTab: 'combined' };
 
     const getTColor = (t) => {
       if (t >= 95) return 'rgb(255, 0, 0)';
@@ -204,7 +193,7 @@ main{
       
       const results = await Promise.all(years.map(async y => {
         const start = `${y}-01-01`, end = y === new Date().getFullYear() ? END_DATE : `${y}-12-31`;
-        const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${state.lat}&longitude=${state.lon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&timezone=auto`;
+        const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${state.lat}&longitude=${state.lon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,precipitation_sum,rain_sum,snowfall_sum&temperature_unit=fahrenheit&timezone=auto`;
         try { return await (await fetch(url)).json(); } catch { return null; }
       }));
 
@@ -212,7 +201,12 @@ main{
       results.forEach(r => {
         if (!r?.daily) return;
         r.daily.time.forEach((t, i) => {
-          state.data[t] = { t: r.daily.temperature_2m_max[i], r: r.daily.precipitation_sum[i], s: r.daily.snowfall_sum[i] };
+          state.data[t] = { 
+            t: r.daily.temperature_2m_max[i], 
+            p: r.daily.precipitation_sum[i], 
+            r: r.daily.rain_sum[i], 
+            s: r.daily.snowfall_sum[i] 
+          };
         });
       });
       renderCalendar();
@@ -242,7 +236,7 @@ main{
             <div class="day-cell ${e?getTClass(e.t):''} ${isToday?'today':''}">
               <span class="day-num">${day}</span>
               <span class="day-temp">${e?Math.round(e.t):'--'}°</span>
-              ${e?.s>0?`<span class="day-prec">❄️${(e.s*0.39).toFixed(1)}</span>`:e?.r>0?`<span class="day-prec">💧${(e.r*0.04).toFixed(1)}</span>`:''}
+              ${e?.s>0?`<span class="day-prec">❄️${(e.s*0.39).toFixed(1)}</span>`:e?.p>0?`<span class="day-prec">💧${(e.p*0.04).toFixed(1)}</span>`:''}
             </div>`;
         }
         section.appendChild(grid);
@@ -310,58 +304,32 @@ main{
 
     function renderSeasonal() {
       const body = document.getElementById('snowSeasonModalBody');
-      const seasonal = {};
+      const seasons = {};
+      const key = state.moistureTab === 'rain' ? 'r' : (state.moistureTab === 'snow' ? 's' : 'p');
+      const factor = state.moistureTab === 'snow' ? 0.39 : 0.04;
+      const unit = state.moistureTab === 'snow' ? '"' : '"';
+
       Object.entries(state.data).forEach(([date, val]) => {
-        if (val.s <= 0) return;
         const d = new Date(date + 'T00:00:00');
         const s = getSeason(d);
-        if (!state.sFilters[s]) return;
+        let year = d.getFullYear();
+        if (s === 'Winter' && d.getMonth() + 1 === 12) year++; // Group Dec with following year's winter
         
-        let label;
-        if (s === 'Winter') {
-          const y = d.getFullYear();
-          const start = (d.getMonth() + 1 === 12) ? y : y - 1;
-          label = `❄️ Winter ${start}-${start+1}`;
-        } else {
-          const emoji = s === 'Spring' ? '🌸' : s === 'Summer' ? '☀️' : '🍂';
-          label = `${emoji} ${s} ${d.getFullYear()}`;
-        }
-
-        if (!seasonal[label]) seasonal[label] = { total: 0, days: [] };
-        seasonal[label].total += val.s;
-        seasonal[label].days.push({ d: date, val: val.s * 0.39 });
+        if (!seasons[year]) seasons[year] = { Spring: 0, Summer: 0, Fall: 0, Winter: 0 };
+        seasons[year][s] += val[key];
       });
 
-      body.innerHTML = '';
-      const sorted = Object.entries(seasonal).sort((a,b) => {
-        const yA = a[0].match(/\d{4}/), yB = b[0].match(/\d{4}/);
-        const yearDiff = yB - yA;
-        if (yearDiff !== 0) return yearDiff;
-        // If same year, sort by season order (Winter, Fall, Summer, Spring)
-        const order = { Winter: 4, Fall: 3, Summer: 2, Spring: 1 };
-        const sA = a[0].split(' ')[1], sB = b[0].split(' ')[1];
-        return (order[sB] || 0) - (order[sA] || 0);
+      let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th><th>🌸 Spr</th><th>☀️ Sum</th><th>🍂 Fall</th><th>❄️ Win</th></tr></thead><tbody>`;
+      
+      Object.keys(seasons).sort((a,b)=>b-a).forEach(y => {
+        html += `<tr><td class="year-col">${y}</td>`;
+        ['Spring', 'Summer', 'Fall', 'Winter'].forEach(s => {
+          const val = seasons[y][s] * factor;
+          html += `<td style="color:${val > 0 ? var('--accent') : 'rgba(255,255,255,0.1)'}">${val > 0 ? val.toFixed(1) + unit : '--'}</td>`;
+        });
+        html += '</tr>';
       });
-
-      sorted.forEach(([label, data]) => {
-        const item = document.createElement('div');
-        item.className = 'stat-item';
-        const totalIn = data.total * 0.39;
-        item.innerHTML = `
-          <div class="stat-row">
-            <span style="width:130px; font-weight:700">${label}</span>
-            <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100, (totalIn/100)*100)}%"></div></div>
-            <span style="font-weight:700; width:40px; text-align:right">${totalIn.toFixed(1)}"</span>
-          </div>
-          <div class="stat-breakdown">
-            ${data.days.sort((a,b)=>b.d.localeCompare(a.d)).map(day => `
-              <div class="breakdown-line"><span>${day.d}</span><span>${day.val.toFixed(2)}"</span></div>
-            `).join('')}
-          </div>
-        `;
-        item.onclick = () => item.querySelector('.stat-breakdown').classList.toggle('active');
-        body.appendChild(item);
-      });
+      body.innerHTML = html + '</tbody></table></div>';
     }
 
     function openModal(id) { 
@@ -382,15 +350,11 @@ main{
       b.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       b.classList.add('active'); renderPrecipModal();
     }
-
-    document.getElementById('seasonFilters').onclick = (e) => {
-      const btn = e.target.closest('.filter-btn');
-      if (!btn) return;
-      const s = btn.dataset.s;
-      state.sFilters[s] = !state.sFilters[s];
-      btn.classList.toggle('active');
-      renderSeasonal();
-    };
+    function setMoistureTab(t, b) {
+      state.moistureTab = t;
+      b.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      b.classList.add('active'); renderSeasonal();
+    }
 
     document.getElementById('todayBtn').onclick = () => document.querySelector('.months-container').firstElementChild.scrollIntoView({behavior:'smooth'});
     navigator.geolocation.getCurrentPosition(p => {
