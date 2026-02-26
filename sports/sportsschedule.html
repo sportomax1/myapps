@@ -61,7 +61,7 @@
     <div id="content-area">
         <div id="loading" class="absolute inset-0 bg-white z-50 flex flex-col items-center justify-center">
             <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Syncing Data...</span>
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Syncing Intelligence...</span>
         </div>
         <div id="table-container" class="table-view hidden">
             <table id="main-table"><thead id="table-head"></thead><tbody id="table-body"></tbody></table>
@@ -76,7 +76,7 @@
             </div>
             <div class="p-4 border-b bg-white">
                 <div class="flex gap-2 mb-2">
-                    <input type="text" id="search-input" placeholder="Search team name..." class="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    <input type="text" id="search-input" placeholder="Search team name..." class="flex-1 border rounded-lg px-3 py-2 text-sm">
                     <button onclick="searchTeams()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Search</button>
                 </div>
                 <div id="search-results" class="max-h-40 overflow-y-auto space-y-1"></div>
@@ -85,8 +85,8 @@
                 <ul id="team-list" class="space-y-2"></ul>
             </div>
             <div class="p-4 border-t flex justify-end gap-2">
-                <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold hover:bg-slate-50 rounded-lg">Cancel</button>
-                <button onclick="saveAndReload()" class="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg hover:bg-slate-800 shadow-sm">Save</button>
+                <button onclick="closeModal()" class="px-4 py-2 text-slate-500 font-bold">Cancel</button>
+                <button onclick="saveAndReload()" class="px-6 py-2 bg-slate-900 text-white font-bold rounded-lg">Save</button>
             </div>
         </div>
     </div>
@@ -100,10 +100,22 @@
             { s: 'hockey', l: 'nhl' }
         ];
 
+        // Ensure teams have the correct sport mapped to their league
+        function getSportForLeague(league) {
+            const entry = LEAGUES.find(item => item.l === league);
+            return entry ? entry.s : 'basketball'; // fallback
+        }
+
         let TEAMS = JSON.parse(localStorage.getItem('my_sports_teams')) || [
             { id: "7", sport: "football", league: "nfl", name: "Broncos", logo: "https://a.espncdn.com/i/teamlogos/nfl/500/den.png" },
             { id: "7", sport: "basketball", league: "nba", name: "Nuggets", logo: "https://a.espncdn.com/i/teamlogos/nba/500/den.png" }
         ];
+
+        // Migration step: ensure all teams have 'sport'
+        TEAMS = TEAMS.map(t => {
+            if (!t.sport) t.sport = getSportForLeague(t.league);
+            return t;
+        });
 
         let SCHEDULES = {};
         let IS_FLIPPED = false;
@@ -113,7 +125,9 @@
         async function init() {
             document.getElementById('loading').classList.remove('hidden');
             const results = await Promise.all(TEAMS.map(fetchSchedule));
-            TEAMS.forEach((team, i) => { SCHEDULES[`${team.id}-${team.league}`] = results[i]; });
+            TEAMS.forEach((team, i) => { 
+                SCHEDULES[`${team.id}-${team.league}`] = results[i]; 
+            });
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('table-container').classList.remove('hidden');
             render();
@@ -122,19 +136,29 @@
 
         async function fetchSchedule(team) {
             try {
-                const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/schedule`);
+                const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/schedule`;
+                const res = await fetch(url);
                 const data = await res.json();
                 const map = {};
-                data.events?.forEach(ev => {
-                    const d = new Date(ev.date), k = d.toLocaleDateString('en-CA'), comp = ev.competitions[0];
-                    const us = comp.competitors.find(c => c.id === team.id), them = comp.competitors.find(c => c.id !== team.id);
+                if (!data.events) return {};
+                
+                data.events.forEach(ev => {
+                    const d = new Date(ev.date);
+                    const k = d.toISOString().split('T')[0]; // Reliable YYYY-MM-DD
+                    const comp = ev.competitions?.[0];
+                    if (!comp) return;
+                    
+                    const us = comp.competitors?.find(c => c.id == team.id);
+                    const them = comp.competitors?.find(c => c.id != team.id);
+                    if (!us || !them) return;
+
                     map[k] = {
                         time: d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}),
-                        oppLogo: them.team.logos?.[0]?.href,
+                        oppLogo: them.team?.logos?.[0]?.href,
                         isAway: them.homeAway === 'home',
-                        state: ev.status.type.state,
-                        score: `${us.score?.value || 0}-${them.score?.value || 0}`,
-                        result: ev.status.type.state === 'post' ? (parseInt(us.score.value) > parseInt(them.score.value) ? 'W' : (parseInt(us.score.value) < parseInt(them.score.value) ? 'L' : 'T')) : null,
+                        state: ev.status?.type?.state || 'pre',
+                        score: `${us.score?.displayValue || us.score?.value || 0}-${them.score?.displayValue || them.score?.value || 0}`,
+                        result: ev.status?.type?.state === 'post' ? (parseInt(us.score?.value) > parseInt(them.score?.value) ? 'W' : (parseInt(us.score?.value) < parseInt(them.score?.value) ? 'L' : 'T')) : null,
                         network: comp.broadcasts?.[0]?.media?.shortName
                     };
                 });
@@ -150,12 +174,14 @@
             if (HIDE_EMPTY) { 
                 SORTED_DATES = gameDatesArr; 
             } else if (gameDatesArr.length > 0) {
-                const min = new Date(gameDatesArr[0] + 'T12:00:00'), max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00'), range = [];
-                for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toLocaleDateString('en-CA'));
+                const min = new Date(gameDatesArr[0] + 'T12:00:00');
+                const max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00');
+                const range = [];
+                for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toISOString().split('T')[0]);
                 SORTED_DATES = range;
             }
 
-            const today = new Date().toLocaleDateString('en-CA');
+            const today = new Date().toISOString().split('T')[0];
             const thead = document.getElementById('table-head'), tbody = document.getElementById('table-body');
             document.getElementById('main-table').className = IS_FLIPPED ? 'mode-flipped' : 'mode-standard';
 
@@ -208,31 +234,31 @@
             const q = document.getElementById('search-input').value.toLowerCase();
             const resBox = document.getElementById('search-results');
             if (!q) return;
-            resBox.innerHTML = '<div class="p-2 text-center text-xs font-bold text-slate-400">SEARCHING...</div>';
+            resBox.innerHTML = '<div class="p-2 text-center text-xs font-bold text-slate-400 uppercase tracking-widest">Syncing API Data...</div>';
             const hits = [];
             const results = await Promise.all(LEAGUES.map(l => fetch(`https://site.api.espn.com/apis/site/v2/sports/${l.s}/${l.l}/teams${l.l.includes('college')?'?limit=1000':''}`).then(r=>r.json())));
             results.forEach((d, i) => {
                 const group = d.sports?.[0]?.leagues?.[0]?.teams || [];
                 group.forEach(item => {
-                    if (item.team.displayName.toLowerCase().includes(q) || item.team.name.toLowerCase().includes(q)) {
+                    if (item.team?.displayName?.toLowerCase().includes(q) || item.team?.name?.toLowerCase().includes(q)) {
                         hits.push({ id: item.team.id, name: item.team.shortDisplayName, league: LEAGUES[i].l, sport: LEAGUES[i].s, logo: item.team.logos?.[0]?.href });
                     }
                 });
             });
-            resBox.innerHTML = hits.map(t => `<div class="flex justify-between items-center p-2 border-b hover:bg-slate-50 cursor-pointer" onclick='addTeam(${JSON.stringify(t)})'><div class="flex items-center gap-2"><img src="${t.logo}" class="w-5 h-5"><span>${t.name} <small class="text-slate-400 uppercase">(${t.league})</small></span></div><span class="text-blue-600 font-bold">+</span></div>`).join('');
+            resBox.innerHTML = hits.map(t => `<div class="flex justify-between items-center p-2 border-b hover:bg-slate-50 cursor-pointer" onclick='addTeam(${JSON.stringify(t)})'><div class="flex items-center gap-2"><img src="${t.logo}" class="w-5 h-5"><span>${t.name} <small class="text-slate-400 uppercase">(${t.league})</small></span></div><span class="text-blue-600 font-bold">+ ADD</span></div>`).join('');
             if (hits.length === 0) resBox.innerHTML = '<div class="p-2 text-center text-xs text-slate-400">No teams found</div>';
         }
 
-        function addTeam(t) { if(!TEAMS.find(x => x.id===t.id && x.league===t.league)) TEAMS.push(t); renderTeamList(); }
+        function addTeam(t) { if(!TEAMS.find(x => x.id==t.id && x.league==t.league)) TEAMS.push(t); renderTeamList(); }
         function removeTeam(i) { TEAMS.splice(i, 1); renderTeamList(); }
-        function renderTeamList() { document.getElementById('team-list').innerHTML = TEAMS.map((t, i) => `<li class="flex justify-between items-center bg-white p-2 border rounded shadow-sm"><div class="flex items-center gap-2"><img src="${t.logo}" class="w-6 h-6"><span>${t.name}</span></div><button onclick="removeTeam(${i})" class="text-red-500 text-xs font-bold">X</button></li>`).join(''); }
+        function renderTeamList() { document.getElementById('team-list').innerHTML = TEAMS.map((t, i) => `<li class="flex justify-between items-center bg-white p-2 border rounded shadow-sm"><div class="flex items-center gap-2"><img src="${t.logo}" class="w-6 h-6"><span>${t.name}</span></div><button onclick="removeTeam(${i})" class="text-red-500 text-xs font-bold">REMOVE</button></li>`).join(''); }
         function openModal() { document.getElementById('manage-modal').classList.remove('hidden'); renderTeamList(); }
         function closeModal() { document.getElementById('manage-modal').classList.add('hidden'); }
         function saveAndReload() { localStorage.setItem('my_sports_teams', JSON.stringify(TEAMS)); location.reload(); }
         function toggleFlip() { IS_FLIPPED = !IS_FLIPPED; render(); scrollToToday(); }
         function toggleHideEmpty() { HIDE_EMPTY = !HIDE_EMPTY; localStorage.setItem('hide_empty', HIDE_EMPTY); document.getElementById('hide-label').textContent = HIDE_EMPTY ? "Show All" : "Hide Empty"; render(); scrollToToday(); }
         function scrollToToday() {
-            const today = new Date().toLocaleDateString('en-CA'), container = document.getElementById('table-container');
+            const today = new Date().toISOString().split('T')[0], container = document.getElementById('table-container');
             const target = document.getElementById(IS_FLIPPED ? `col-${today}` : `row-${today}`) || document.getElementById(IS_FLIPPED ? `col-${SORTED_DATES.find(d=>d>=today)}` : `row-${SORTED_DATES.find(d=>d>=today)}`);
             if (target) IS_FLIPPED ? container.scrollLeft = target.offsetLeft - 80 : container.scrollTop = target.offsetTop - 80;
         }
