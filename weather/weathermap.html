@@ -38,7 +38,7 @@
             padding: 0 15px;
             box-sizing: border-box;
         }
-        .controls button, .controls input {
+        .controls button, .controls input, .controls select {
             padding: 8px 12px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -49,10 +49,25 @@
         .controls button:hover {
             background: #f8f9fa;
         }
-        .controls button.active {
-            background: var(--primary-color);
-            color: white;
-            border-color: var(--primary-color);
+        .toggle-group {
+            display: flex;
+            background: #f1f3f5;
+            padding: 4px;
+            border-radius: 6px;
+            margin-right: 10px;
+        }
+        .toggle-group button {
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            background: transparent;
+            font-weight: 600;
+            color: #495057;
+        }
+        .toggle-group button.active {
+            background: white;
+            color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .legend {
             background: white;
@@ -153,11 +168,16 @@
 </head>
 <body>
     <div class="controls">
-        <button id="prevDay">&lt; Prev</button>
+        <div class="toggle-group">
+            <button id="typeCurrent" class="active">Current</button>
+            <button id="typeHigh">High</button>
+            <button id="typeLow">Low</button>
+        </div>
+        <button id="prevDay">&lt;</button>
         <input type="date" id="datePicker">
         <button id="todayBtn">Today</button>
-        <button id="nextDay">Next &gt;</button>
-        <button id="showGrid" style="margin-left: 20px; background: #28a745; color: white;">View Data Grid</button>
+        <button id="nextDay">&gt;</button>
+        <button id="showGrid" style="margin-left: 20px; background: #28a745; color: white;">Grid</button>
     </div>
 
     <div id="loading" class="loading-overlay">
@@ -170,7 +190,7 @@
     <div id="gridModal" class="modal">
         <div class="modal-content">
             <span class="close" id="closeModal">&times;</span>
-            <h2>Capital Weather Data Grid</h2>
+            <h2>Capital Weather Data Grid (Daily Highs)</h2>
             <div style="overflow-x: auto;">
                 <table class="grid-table" id="dataTable">
                     <thead id="tableHead"></thead>
@@ -235,8 +255,6 @@
             { name: "Cheyenne", state: "Wyoming", lat: 41.1400, lon: -104.8202 }
         ];
 
-        // Map state flags (using US flag for all as individual state flag emojis are not standard)
-        // However, we can use the "State Flag" emoji sequences if supported, but 🇺🇸 is the safe fallback.
         const stateFlags = {
             "Alabama": "🇺🇸", "Alaska": "🇺🇸", "Arizona": "🇺🇸", "Arkansas": "🇺🇸", "California": "🇺🇸",
             "Colorado": "🇺🇸", "Connecticut": "🇺🇸", "Delaware": "🇺🇸", "Florida": "🇺🇸", "Georgia": "🇺🇸",
@@ -251,8 +269,9 @@
         };
 
         let selectedDate = new Date();
+        let selectedType = 'current'; // 'current', 'high', 'low'
         const markersGroup = L.layerGroup();
-        let weatherDataCache = {}; // { dateString: { capitalName: temp } }
+        let weatherDataCache = {}; // { dateString: { capitalName: { current, high, low } } }
 
         const map = L.map('map').setView([39.8283, -98.5795], 4);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -280,34 +299,37 @@
 
         async function fetchWeather(date) {
             const dateStr = formatDate(date);
+            const isToday = dateStr === formatDate(new Date());
+            
+            // Adjust type if not today (historical current isn't meaningful in the same way)
+            if (!isToday && selectedType === 'current') {
+                selectedType = 'high';
+                updateToggleUI();
+            }
+
             document.getElementById('loading').style.display = 'flex';
-            document.getElementById('loadingText').innerText = `Fetching weather for ${dateStr}...`;
+            document.getElementById('loadingText').innerText = `Fetching ${selectedType} weather for ${dateStr}...`;
             
             markersGroup.clearLayers();
-            const isToday = dateStr === formatDate(new Date());
 
+            // Run API calls concurrently
             const promises = capitals.map(async (cap) => {
-                let url;
-                if (isToday) {
-                    url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&current_weather=true&temperature_unit=fahrenheit`;
-                } else {
-                    url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
-                }
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&start_date=${dateStr}&end_date=${dateStr}&temperature_unit=fahrenheit&timezone=auto`;
 
                 try {
                     const response = await fetch(url);
                     const data = await response.json();
-                    let temp;
-                    if (isToday) {
-                        temp = data.current_weather.temperature;
-                    } else {
-                        temp = data.daily.temperature_2m_max[0];
-                    }
+                    
+                    const weather = {
+                        current: isToday ? data.current_weather.temperature : data.daily.temperature_2m_max[0],
+                        high: data.daily.temperature_2m_max[0],
+                        low: data.daily.temperature_2m_min[0]
+                    };
                     
                     if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
-                    weatherDataCache[dateStr][cap.name] = temp;
+                    weatherDataCache[dateStr][cap.name] = weather;
 
-                    return { ...cap, temp };
+                    return { ...cap, temp: weather[selectedType] };
                 } catch (e) {
                     return { ...cap, temp: null };
                 }
@@ -316,7 +338,7 @@
             const results = await Promise.all(promises);
             
             results.forEach(cap => {
-                if (cap.temp === null) return;
+                if (cap.temp === null || cap.temp === undefined) return;
                 const color = getColor(cap.temp);
                 const textColor = getContrastColor(color);
                 
@@ -329,7 +351,7 @@
 
                 L.marker([cap.lat, cap.lon], { icon: icon })
                     .addTo(markersGroup)
-                    .bindPopup(`<b>${cap.name}, ${cap.state}</b><br>Date: ${dateStr}<br>Temperature: ${cap.temp}°F`);
+                    .bindPopup(`<b>${cap.name}, ${cap.state}</b><br>Date: ${dateStr}<br>${selectedType.toUpperCase()} Temp: ${cap.temp}°F`);
             });
 
             document.getElementById('loading').style.display = 'none';
@@ -341,6 +363,25 @@
             fetchWeather(selectedDate);
         }
 
+        function setType(type) {
+            selectedType = type;
+            updateToggleUI();
+            fetchWeather(selectedDate);
+        }
+
+        function updateToggleUI() {
+            document.querySelectorAll('.toggle-group button').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.id === 'type' + selectedType.charAt(0).toUpperCase() + selectedType.slice(1)) {
+                    btn.classList.add('active');
+                }
+            });
+            // Disable 'Current' if not today
+            const isToday = formatDate(selectedDate) === formatDate(new Date());
+            document.getElementById('typeCurrent').disabled = !isToday;
+            document.getElementById('typeCurrent').style.opacity = isToday ? '1' : '0.5';
+        }
+
         // Grid Logic
         async function showDataGrid() {
             const modal = document.getElementById('gridModal');
@@ -349,7 +390,6 @@
             const tableHead = document.getElementById('tableHead');
             const tableBody = document.getElementById('tableBody');
             
-            // Generate last 7 days columns (descending)
             const dates = [];
             for (let i = 0; i < 7; i++) {
                 const d = new Date(selectedDate);
@@ -357,25 +397,26 @@
                 dates.push(formatDate(d));
             }
 
-            // Ensure we have data for these dates
             document.getElementById('loading').style.display = 'flex';
             document.getElementById('loadingText').innerText = "Preparing Grid Data...";
             
-            for (const dStr of dates) {
+            // Concurrent cache fetching for all dates
+            const cachePromises = dates.map(async (dStr) => {
                 if (!weatherDataCache[dStr]) {
                     const d = new Date(dStr + 'T00:00:00');
                     await fetchWeatherForCache(d);
                 }
-            }
+            });
+            await Promise.all(cachePromises);
+
             document.getElementById('loading').style.display = 'none';
 
-            // Build Header
             tableHead.innerHTML = `<tr><th class="state-cell">State / Capital</th>${dates.map(d => `<th>${d}</th>`).join('')}</tr>`;
             
-            // Build Body
             tableBody.innerHTML = capitals.map(cap => {
                 const cells = dates.map(dStr => {
-                    const temp = weatherDataCache[dStr] ? weatherDataCache[dStr][cap.name] : '-';
+                    const weather = weatherDataCache[dStr] ? weatherDataCache[dStr][cap.name] : null;
+                    const temp = weather ? weather.high : '-';
                     const color = temp !== '-' ? getColor(temp) : 'transparent';
                     const textColor = temp !== '-' ? getContrastColor(color) : 'black';
                     return `<td style="background-color: ${color}; color: ${textColor}">${temp !== '-' ? Math.round(temp) + '°' : '-'}</td>`;
@@ -387,13 +428,15 @@
         async function fetchWeatherForCache(date) {
             const dateStr = formatDate(date);
             const promises = capitals.map(async (cap) => {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&start_date=${dateStr}&end_date=${dateStr}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&daily=temperature_2m_max,temperature_2m_min&start_date=${dateStr}&end_date=${dateStr}&temperature_unit=fahrenheit&timezone=auto`;
                 try {
                     const response = await fetch(url);
                     const data = await response.json();
-                    const temp = data.daily.temperature_2m_max[0];
                     if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
-                    weatherDataCache[dateStr][cap.name] = temp;
+                    weatherDataCache[dateStr][cap.name] = {
+                        high: data.daily.temperature_2m_max[0],
+                        low: data.daily.temperature_2m_min[0]
+                    };
                 } catch (e) {}
             });
             await Promise.all(promises);
@@ -414,6 +457,11 @@
         document.getElementById('datePicker').onchange = (e) => updateDate(new Date(e.target.value + 'T00:00:00'));
         document.getElementById('showGrid').onclick = showDataGrid;
         document.getElementById('closeModal').onclick = () => document.getElementById('gridModal').style.display = "none";
+        
+        document.getElementById('typeCurrent').onclick = () => setType('current');
+        document.getElementById('typeHigh').onclick = () => setType('high');
+        document.getElementById('typeLow').onclick = () => setType('low');
+
         window.onclick = (event) => {
             if (event.target == document.getElementById('gridModal')) {
                 document.getElementById('gridModal').style.display = "none";
@@ -423,7 +471,6 @@
         // Initialize
         updateDate(new Date());
 
-        // Legend
         const legend = L.control({position: 'bottomright'});
         legend.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'info legend');
