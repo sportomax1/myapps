@@ -322,8 +322,7 @@
             const { data: { text } } = await worker.recognize(outputCanvas);
             
             if (text.trim().length > 0) {
-                ocrResults.innerHTML = text.split('
-').map(l => `<div>${l}</div>`).join('');
+                ocrResults.innerHTML = text.split('\n').map(l => `<div>${l}</div>`).join('');
             } else {
                 ocrResults.textContent = "No legible text discovered on the card.";
             }
