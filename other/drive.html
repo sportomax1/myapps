@@ -3,82 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autonomous Explorer</title>
+    <title>Autonomous Navigator</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --accent: #30d158; /* Green for GO */
+            --accent: #30d158;
             --bg: #000;
             --panel-bg: rgba(28, 28, 30, 0.95);
             --text: #fff;
         }
         body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); overflow: hidden; color: var(--text); }
-        #map { height: 100vh; width: 100%; filter: saturate(1.2) brightness(0.8); }
+        #map { height: 100vh; width: 100%; filter: brightness(0.7) contrast(1.2); }
         
-        /* Setup UI */
+        /* Overlay for Initial Setup */
         .overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000;
-            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(20px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(15px);
         }
         .setup-card {
-            background: #1c1c1e; padding: 40px; border-radius: 32px; width: 90%; max-width: 420px;
-            text-align: center; border: 1px solid #38383a; box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            background: #1c1c1e; padding: 30px; border-radius: 28px; width: 90%; max-width: 400px;
+            text-align: center; border: 1px solid #38383a;
         }
         input {
-            width: 100%; padding: 18px; border-radius: 16px; border: 1px solid #38383a;
-            background: #2c2c2e; color: white; margin: 25px 0; font-size: 18px; box-sizing: border-box;
-            outline: none; text-align: center;
+            width: 100%; padding: 16px; border-radius: 14px; border: 1px solid #38383a;
+            background: #2c2c2e; color: white; margin: 20px 0; font-size: 16px; box-sizing: border-box; text-align: center;
         }
         
-        /* Main UI */
         .control-panel {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; background: var(--panel-bg); backdrop-filter: blur(30px);
-            padding: 24px; border-radius: 32px; box-shadow: 0 10px 50px rgba(0,0,0,0.7);
-            width: 92%; max-width: 500px; display: flex; flex-direction: column; gap: 16px;
+            z-index: 1000; background: var(--panel-bg); backdrop-filter: blur(25px);
+            padding: 24px; border-radius: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            width: 90%; max-width: 480px; display: flex; flex-direction: column; gap: 16px;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
         .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-        .stat-box { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 20px; text-align: center; }
-        .stat-label { font-size: 9px; text-transform: uppercase; color: #8e8e93; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
-        .stat-value { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+        .stat-box { background: rgba(255,255,255,0.05); padding: 12px; border-radius: 18px; text-align: center; }
+        .stat-label { font-size: 9px; text-transform: uppercase; color: #8e8e93; font-weight: 700; margin-bottom: 4px; }
+        .stat-value { font-size: 16px; font-weight: 800; }
 
-        .instruction-banner {
-            background: #007aff; color: white; padding: 14px; border-radius: 18px;
-            font-weight: 800; text-align: center; font-size: 15px; margin-bottom: 5px;
-            box-shadow: 0 4px 15px rgba(0,122,255,0.3);
+        .decision-ui {
+            background: #007aff; color: white; padding: 12px; border-radius: 16px;
+            font-weight: 900; text-align: center; text-transform: uppercase;
+            display: none; animation: slideUp 0.3s ease;
         }
+        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .btn {
-            background: var(--accent); color: #000; border: none; padding: 18px;
-            border-radius: 20px; font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s;
-            text-transform: uppercase; letter-spacing: 1px;
+            background: var(--accent); color: #000; border: none; padding: 16px;
+            border-radius: 18px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
         }
-        .btn-secondary { background: #2c2c2e; color: white; margin-top: 12px; width: 100%; font-size: 14px; padding: 14px; }
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-secondary { background: #2c2c2e; color: white; margin-top: 12px; width: 100%; }
+        .btn:active { transform: scale(0.96); }
 
         .log-container {
-            background: rgba(0,0,0,0.4); border-radius: 20px; padding: 15px;
-            max-height: 120px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);
-            display: flex; flex-direction: column-reverse; gap: 6px;
+            background: rgba(0,0,0,0.3); border-radius: 16px; padding: 12px;
+            max-height: 80px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);
+            display: flex; flex-direction: column-reverse;
         }
-        .log-entry { font-size: 12px; font-family: 'SF Mono', monospace; color: #8e8e93; border-left: 2px solid transparent; padding-left: 8px; }
-        .log-entry.turn { border-left-color: #007aff; color: #fff; font-weight: 600; }
-        .log-entry.sys { color: var(--accent); }
-
-        .pulse { animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(48, 209, 88, 0); } 100% { box-shadow: 0 0 0 0 rgba(48, 209, 88, 0); } }
+        .log-entry { font-size: 11px; font-family: monospace; color: #8e8e93; margin-bottom: 4px; }
+        .log-entry.turn { color: #007aff; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="overlay" id="setupOverlay">
         <div class="setup-card">
-            <div style="font-size: 50px; margin-bottom: 10px;">🏎️</div>
-            <h2 style="margin-top:0; font-size: 28px;">Engine Start</h2>
-            <input type="text" id="startAddr" placeholder="Enter starting city/address" value="Parker, CO">
-            <button class="btn" style="width:100%" id="goBtn">Initialize Drive</button>
+            <div style="font-size: 40px; margin-bottom: 10px;">🚗</div>
+            <h2 style="margin-top:0">Set Destination</h2>
+            <input type="text" id="startAddr" placeholder="City or Address">
+            <button class="btn" style="width:100%" id="goBtn">Set Location</button>
             <button class="btn btn-secondary" id="locBtn">📍 Use Current GPS</button>
         </div>
     </div>
@@ -86,58 +80,71 @@
     <div id="map"></div>
 
     <div class="control-panel" id="ui" style="display:none">
-        <div id="instruction" class="instruction-banner">System Ready. Press Start.</div>
+        <div id="decisionUI" class="decision-ui">APPROACHING INTERSECTION...</div>
         
         <div class="stats-grid">
             <div class="stat-box">
-                <div class="stat-label">Miles</div>
+                <div class="stat-label">ODO</div>
                 <div class="stat-value" id="odoVal">0.00</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Compass</div>
+                <div class="stat-label">HEADING</div>
                 <div class="stat-value" id="dirVal">N</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Zoom</div>
-                <div class="stat-value" id="zoomVal">17</div>
+                <div class="stat-label">STATUS</div>
+                <div class="stat-value" id="statusVal" style="color:var(--accent)">READY</div>
             </div>
         </div>
 
         <div class="log-container" id="driveLog"></div>
 
-        <button class="btn pulse" id="driveBtn">Start Autonomous Drive</button>
+        <button class="btn" id="driveBtn">Start Drive</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map, carMarker, activePath, trailPath;
+        let map, carMarker, trail;
         let isDriving = false;
         let currentPos = null;
         let routeCoords = [];
-        let routeManeuvers = [];
+        let maneuvers = [];
         let currentIndex = 0;
         let totalMiles = 0;
-        let driveInterval;
+        let driveTimeout;
         let currentBearing = 0;
 
-        // Init Map
+        // Initialize Map
         map = L.map('map', { zoomControl: false, attributionControl: false }).setView([39.5186, -104.7614], 17);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
         const carIcon = L.divIcon({
-            html: `<div id="car" style="font-size: 36px; transition: transform 0.1s linear;">🚗</div>`,
+            html: `<div id="car" style="font-size: 32px; transition: transform 0.1s linear;">🚗</div>`,
             className: 'car-icon', iconSize: [40, 40], iconAnchor: [20, 20]
         });
+
+        // Load saved location
+        window.onload = () => {
+            const saved = localStorage.getItem('drive_last_loc');
+            if (saved) {
+                const coords = JSON.parse(saved);
+                document.getElementById('startAddr').value = coords.label;
+            }
+        };
 
         async function geocode(query) {
             try {
                 const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`);
                 const data = await res.json();
-                return data.results ? [data.results[0].latitude, data.results[0].longitude] : null;
+                if (data.results) {
+                    const loc = data.results[0];
+                    localStorage.setItem('drive_last_loc', JSON.stringify({ lat: loc.latitude, lon: loc.longitude, label: query }));
+                    return [loc.latitude, loc.longitude];
+                }
             } catch (e) { return null; }
         }
 
-        async function startAt(coords) {
+        async function initCar(coords) {
             currentPos = coords;
             document.getElementById('setupOverlay').style.display = 'none';
             document.getElementById('ui').style.display = 'flex';
@@ -145,96 +152,79 @@
             map.setView(coords, 17);
             if (carMarker) map.removeLayer(carMarker);
             carMarker = L.marker(coords, { icon: carIcon }).addTo(map);
+            trail = L.polyline([], { color: '#30d158', weight: 3, opacity: 0.4 }).addTo(map);
             
-            trailPath = L.polyline([], { color: '#8e8e93', weight: 3, opacity: 0.3 }).addTo(map);
-            
-            log("System engaged at " + coords[0].toFixed(4) + ", " + coords[1].toFixed(4), "sys");
-            await fetchNextSegment();
+            log("Engine initialized.");
+            await planRoute();
         }
 
         function log(msg, type = "") {
             const el = document.getElementById('driveLog');
             const entry = document.createElement('div');
             entry.className = "log-entry " + type;
-            entry.innerText = msg;
-            el.appendChild(entry);
-            el.scrollTop = el.scrollHeight;
+            entry.innerText = `> ${msg}`;
+            el.insertBefore(entry, el.firstChild);
         }
 
-        async function fetchNextSegment() {
-            // Pick a random direction avoiding U-turns (roughly)
-            const angleChoices = [0, -90, 90, 45, -45]; // Straight, L, R, Slight L, Slight R
+        async function planRoute() {
+            // Pick a random destination roughly 2km away in current or random bearing
+            const angleChoices = [0, -90, 90, 45, -45];
             const turn = angleChoices[Math.floor(Math.random() * angleChoices.length)];
             const targetAngle = (currentBearing + turn) * (Math.PI / 180);
             
-            const dist = 0.02; // ~2km
             const dest = [
-                currentPos[0] + Math.cos(targetAngle) * dist,
-                currentPos[1] + Math.sin(targetAngle) * dist
+                currentPos[0] + Math.cos(targetAngle) * 0.02,
+                currentPos[1] + Math.sin(targetAngle) * 0.02
             ];
 
             const url = `https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
             
             try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (!data.routes || data.routes.length === 0) return fetchNextSegment();
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!data.routes || data.routes.length === 0) return planRoute();
 
                 const route = data.routes[0];
                 routeCoords = route.geometry.coordinates.map(c => [c[1], c[0]]);
-                routeManeuvers = route.legs[0].steps;
+                maneuvers = route.legs[0].steps.map(s => ({
+                    loc: [s.maneuver.location[1], s.maneuver.location[0]],
+                    instruction: s.maneuver.instruction
+                }));
                 currentIndex = 0;
-
-                if (activePath) map.removeLayer(activePath);
-                activePath = L.polyline(routeCoords, { color: '#007aff', weight: 6, opacity: 0.6 }).addTo(map);
-                
-                log("New segment planned: " + (route.distance / 1609.34).toFixed(2) + " mi", "sys");
-            } catch (e) {
-                setTimeout(fetchNextSegment, 1000);
-            }
+                log("Path updated. Exploration continues...");
+            } catch (e) { setTimeout(planRoute, 1000); }
         }
 
-        function driveTick() {
+        function driveLoop() {
             if (!isDriving) return;
 
             if (currentIndex >= routeCoords.length) {
-                // Seamless handoff
-                fetchNextSegment().then(() => {
-                    if (isDriving) driveTick();
-                });
+                planRoute().then(() => driveLoop());
                 return;
             }
 
             const now = routeCoords[currentIndex];
             const next = routeCoords[currentIndex + 1];
 
-            // Movement
-            currentPos = now;
-            carMarker.setLatLng(now);
-            trailPath.addLatLng(now);
-            
-            // Camera Logic: Follow and Zoom
-            const zoom = map.getZoom();
-            map.setView(now, zoom, { animate: true, duration: 0.1 });
-            document.getElementById('zoomVal').innerText = zoom;
+            // Intersection Check: Does current coord match a maneuver point?
+            const atIntersection = maneuvers.find(m => 
+                Math.abs(m.loc[0] - now[0]) < 0.0001 && Math.abs(m.loc[1] - now[1]) < 0.0001
+            );
 
-            // Update Stats
-            totalMiles += 0.003; 
-            document.getElementById('odoVal').innerText = totalMiles.toFixed(2);
-
-            // Turn Logging Logic
-            const maneuver = routeManeuvers.find(m => {
-                const stepCoord = [m.maneuver.location[1], m.maneuver.location[0]];
-                return Math.abs(stepCoord[0] - now[0]) < 0.0001 && Math.abs(stepCoord[1] - now[1]) < 0.0001;
-            });
-
-            if (maneuver && maneuver.maneuver.type !== 'depart') {
-                const instruction = maneuver.maneuver.instruction;
-                document.getElementById('instruction').innerText = instruction;
-                log(instruction, "turn");
+            if (atIntersection && currentIndex > 0) {
+                handleDecision(atIntersection.instruction);
+                return;
             }
 
-            // Rotation & Compass
+            // Update State
+            currentPos = now;
+            carMarker.setLatLng(now);
+            trail.addLatLng(now);
+            map.panTo(now, { animate: true, duration: 0.1 });
+
+            totalMiles += 0.004;
+            document.getElementById('odoVal').innerText = totalMiles.toFixed(2);
+
             if (next) {
                 const angle = Math.atan2(next[1] - now[1], next[0] - now[0]) * 180 / Math.PI;
                 currentBearing = angle;
@@ -246,30 +236,53 @@
             }
 
             currentIndex++;
-            driveInterval = setTimeout(driveTick, 100);
+            driveTimeout = setTimeout(driveLoop, 120);
         }
 
-        // Handlers
+        function handleDecision(instruction) {
+            isDriving = false;
+            const ui = document.getElementById('decisionUI');
+            ui.style.display = 'block';
+            document.getElementById('statusVal').innerText = "DECIDING";
+            document.getElementById('statusVal').style.color = "#007aff";
+
+            const choices = ["Turn Left", "Turn Right", "Go Straight"];
+            const choice = choices[Math.floor(Math.random() * choices.length)];
+            
+            log(choice + " here...", "turn");
+
+            setTimeout(async () => {
+                ui.style.display = 'none';
+                document.getElementById('statusVal').innerText = "DRIVING";
+                document.getElementById('statusVal').style.color = "#30d158";
+                
+                // If decision is a turn, re-plan route immediately
+                if (choice !== "Go Straight") await planRoute();
+                
+                isDriving = true;
+                driveLoop();
+            }, 1500);
+        }
+
+        // UI Handlers
         document.getElementById('goBtn').onclick = async () => {
             const addr = document.getElementById('startAddr').value;
             const coords = await geocode(addr);
-            if (coords) startAt(coords);
-            else alert("Location not found.");
+            if (coords) initCar(coords);
+            else alert("Could not find location.");
         };
 
         document.getElementById('locBtn').onclick = () => {
-            navigator.geolocation.getCurrentPosition(p => startAt([p.coords.latitude, p.coords.longitude]));
+            navigator.geolocation.getCurrentPosition(p => initCar([p.coords.latitude, p.coords.longitude]));
         };
 
         document.getElementById('driveBtn').onclick = () => {
             isDriving = !isDriving;
             const btn = document.getElementById('driveBtn');
-            btn.innerText = isDriving ? "Pause Engine" : "Resume Drive";
+            btn.innerText = isDriving ? "Pause Engine" : "Drive";
             btn.style.background = isDriving ? "#ff3b30" : "#30d158";
-            btn.classList.toggle('pulse', !isDriving);
-            
-            if (isDriving) driveTick();
-            else clearTimeout(driveInterval);
+            if (isDriving) driveLoop();
+            else clearTimeout(driveTimeout);
         };
 
     </script>
