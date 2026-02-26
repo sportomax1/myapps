@@ -128,12 +128,17 @@ main{
     <div class="modal">
       <div class="modal-header">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-weight:700">PRECIPITATION HISTORY</span>
+          <span style="font-weight:700">PRECIPITATION TRENDS</span>
           <button class="btn-icon" onclick="closeModal('precipModal')">×</button>
         </div>
         <div class="modal-tabs">
-          <button class="tab-btn active" onclick="setPrecipTab('rain', this)">Rain</button>
-          <button class="tab-btn" onclick="setPrecipTab('snow', this)">Snow</button>
+          <button class="tab-btn active" onclick="setPrecipType('rain', this)">Rain</button>
+          <button class="tab-btn" onclick="setPrecipType('snow', this)">Snow</button>
+        </div>
+        <div class="modal-tabs" style="margin-top:8px">
+          <button class="tab-btn active" onclick="setPrecipView('daily', this)">Daily</button>
+          <button class="tab-btn" onclick="setPrecipView('monthly', this)">Monthly</button>
+          <button class="tab-btn" onclick="setPrecipView('compare', this)">Yearly Matrix</button>
         </div>
       </div>
       <div class="modal-body" id="precipModalBody"></div>
@@ -160,7 +165,7 @@ main{
   <script>
     const START_YEAR = 2000;
     const END_DATE = new Date().toISOString().split('T')[0];
-    let state = { lat: 39.5, lon: -104.7, data: {}, tempTab: 'daily', precipTab: 'rain', moistureTab: 'combined' };
+    let state = { lat: 39.5, lon: -104.7, data: {}, tempTab: 'daily', precipType: 'rain', precipView: 'daily', moistureTab: 'combined' };
 
     const getTColor = (t) => {
       if (t >= 95) return 'rgb(255, 0, 0)';
@@ -169,6 +174,14 @@ main{
       if (t >= 50) return 'rgb(0, 200, 100)';
       if (t >= 32) return 'rgb(0, 150, 255)';
       return 'rgb(100, 100, 255)';
+    };
+
+    const getPColor = (v, type) => {
+      if (v === 0) return 'transparent';
+      const max = type === 'rain' ? 5 : 20;
+      const ratio = Math.min(1, v / max);
+      const intensity = Math.round(255 * (1 - ratio));
+      return `rgb(${intensity}, ${intensity}, 255)`;
     };
 
     const getTClass = (t) => {
@@ -290,18 +303,51 @@ main{
 
     function renderPrecipModal() {
       const body = document.getElementById('precipModalBody');
-      const key = state.precipTab === 'rain' ? 'r' : 's';
-      const factor = state.precipTab === 'rain' ? 0.04 : 0.39;
       body.innerHTML = '';
-      Object.entries(state.data).filter(([_,v]) => v[key]>0).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,200).forEach(([date, val]) => {
-        const amount = val[key] * factor;
-        body.innerHTML += `
-          <div class="stat-row">
-            <span style="width:70px">${date}</span>
-            <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100, amount*20)}%"></div></div>
-            <span style="font-weight:700">${amount.toFixed(2)}"</span>
-          </div>`;
-      });
+      const key = state.precipType === 'rain' ? 'r' : 's';
+      const factor = state.precipType === 'rain' ? 0.04 : 0.39;
+      const unit = state.precipType === 'rain' ? '"' : '"';
+
+      if (state.precipView === 'compare') {
+        const matrix = {};
+        Object.entries(state.data).forEach(([date, val]) => {
+          const [y, m] = date.split('-');
+          if (!matrix[y]) matrix[y] = Array(12).fill(0);
+          matrix[y][parseInt(m)-1] += val[key];
+        });
+
+        let html = `<div class="thermal-table-wrap"><table class="thermal-table"><thead><tr><th>Year</th>` + 
+          ['J','F','M','A','M','J','J','A','S','O','N','D'].map(m => `<th>${m}</th>`).join('') + `</tr></thead><tbody>`;
+        
+        Object.keys(matrix).sort((a,b)=>b-a).forEach(y => {
+          html += `<tr><td class="year-col">${y}</td>`;
+          matrix[y].forEach(mVal => {
+            const displayVal = mVal * factor;
+            html += `<td style="color:${displayVal > 0 ? getPColor(displayVal, state.precipType) : 'transparent'}">${displayVal > 0 ? displayVal.toFixed(1) : '--'}</td>`;
+          });
+          html += '</tr>';
+        });
+        body.innerHTML = html + '</tbody></table></div>';
+      } else {
+        const list = state.precipView === 'daily' ? 
+          Object.entries(state.data).filter(([_,v]) => v[key]>0).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,100).map(([k,v])=>[k,v[key]]) :
+          Object.entries(state.data).reduce((acc, [k,v]) => {
+            const m = k.slice(0,7); acc[m] = (acc[m] || 0) + v[key]; return acc;
+          }, {});
+        
+        const sorted = state.precipView === 'daily' ? list : Object.entries(list).sort((a,b)=>b[0].localeCompare(a[0]));
+        const maxVal = Math.max(...sorted.map(item => item[1])) || 1;
+
+        sorted.forEach(([label, val]) => {
+          const displayVal = val * factor;
+          body.innerHTML += `
+            <div class="stat-row">
+              <span style="width:70px">${label}</span>
+              <div class="bar-wrap"><div class="bar-fill" style="width:${(val/maxVal)*100}%"></div></div>
+              <span style="font-weight:700">${displayVal.toFixed(2)}${unit}</span>
+            </div>`;
+        });
+      }
     }
 
     function renderSeasonal() {
@@ -347,8 +393,13 @@ main{
       b.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       b.classList.add('active'); renderTempHistory();
     }
-    function setPrecipTab(t, b) {
-      state.precipTab = t;
+    function setPrecipType(t, b) {
+      state.precipType = t;
+      b.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      b.classList.add('active'); renderPrecipModal();
+    }
+    function setPrecipView(v, b) {
+      state.precipView = v;
       b.parentElement.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       b.classList.add('active'); renderPrecipModal();
     }
