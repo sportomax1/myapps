@@ -23,7 +23,7 @@
             background: var(--bg);
             color: var(--text);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            padding-bottom: 40px;
+            padding-bottom: 80px;
         }
 
         header {
@@ -197,6 +197,16 @@
             display: none;
         }
 
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background: var(--card-bg); border-top: 0.5px solid var(--separator);
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 100;
+        }
+        .nav-bar a {
+            color: var(--text-secondary); text-decoration: none; font-size: 12px; font-weight: 700;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .nav-bar a.active { color: var(--accent); }
+
         @media (max-width: 600px) {
             .location-info h1 { font-size: 20px; }
             .daily-row { font-size: 14px; padding: 12px; }
@@ -258,6 +268,12 @@
             </div>
         </section>
     </main>
+
+    <nav class="nav-bar">
+        <a href="weatherforecast.html" class="active"><span>📊</span>Details</a>
+        <a href="weathermap.html"><span>🗺️</span>Map</a>
+        <a href="weatherradar.html"><span>📡</span>Radar</a>
+    </nav>
 
     <script>
         let currentLat = 39.7392;
@@ -322,8 +338,8 @@
                     const high = Math.round(data.daily.temperature_2m_max[i]);
                     const low = Math.round(data.daily.temperature_2m_min[i]);
                     
-                    const left = ((low - minAll) / rangeAll) * 100;
-                    const width = ((high - low) / rangeAll) * 100;
+                    const left = rangeAll === 0 ? 0 : ((low - minAll) / rangeAll) * 100;
+                    const width = rangeAll === 0 ? 100 : ((high - low) / rangeAll) * 100;
 
                     dailyCont.innerHTML += `
                         <div class="daily-row">
@@ -398,8 +414,6 @@
                     // Reverse geocoding (approximate)
                     try {
                         loaderText.innerText = "Identifying location...";
-                        // Using a simple reverse geocode or just coordinates if needed
-                        // For a better experience, we can use an open reverse geocoder
                         const revUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
                         const response = await fetch(revUrl);
                         const data = await response.json();

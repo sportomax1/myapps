@@ -3,87 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>USA Capital Weather Explorer</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <title>Global Weather Explorer</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
+        :root { --primary: #007bff; --bg: #f8fafc; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; overflow: hidden; background: var(--bg); }
+
+        /* CONTROLS HEADER */
+        .header {
+            position: fixed; top: 0; left: 0; width: 100%; height: 110px;
+            background: #fff; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; padding: 10px 20px; box-sizing: border-box;
         }
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
+
+        .control-row { display: flex; align-items: center; justify-content: center; gap: 10px; height: 45px; }
+
+        .btn-group { display: flex; background: #f1f3f5; padding: 4px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .btn-group button {
+            border: none; padding: 6px 12px; border-radius: 6px; background: transparent;
+            font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; transition: 0.2s;
+            white-space: nowrap;
         }
-        #map {
-            height: calc(100vh - 60px);
-            width: 100%;
-            margin-top: 60px;
-        }
-        .controls {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            background: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 1000;
-            padding: 0 15px;
-            box-sizing: border-box;
-        }
-        .controls button, .controls input, .controls select {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .controls button:hover {
-            background: #f8f9fa;
-        }
-        .toggle-group {
-            display: flex;
-            background: #f1f3f5;
-            padding: 4px;
-            border-radius: 6px;
-            margin-right: 10px;
-        }
-        .toggle-group button {
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            background: transparent;
-            font-weight: 600;
-            color: #495057;
-        }
-        .toggle-group button.active {
-            background: white;
-            color: var(--primary-color);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .legend {
-            background: white;
-            padding: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.2);
-            line-height: 18px;
-            color: #555;
-        }
-        .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.7;
-        }
+        .btn-group button.active { background: #fff; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+
+        .nav-btn { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 6px 12px; font-weight: bold; cursor: pointer; }
+        .nav-btn:hover { background: #f8f9fa; }
+        input[type="date"] { padding: 5px 8px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; font-weight: 600; }
+
+        /* MAP AREA */
+        #map { height: calc(100vh - 160px); width: 100%; margin-top: 110px; z-index: 1; }
+
+        /* RESTORED ORIGINAL GITHUB CIRCLE STYLE */
         .temp-marker {
             border: 1px solid #333;
             border-radius: 50%;
@@ -93,196 +43,184 @@
             font-weight: bold;
             font-size: 11px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            width: 30px; height: 30px;
         }
+
         .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            font-size: 18px;
+            position: fixed; inset: 0; background: rgba(255,255,255,0.85);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; font-weight: bold; color: var(--primary);
         }
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 2000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
+
+        .legend { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 15px rgba(0,0,0,0.2); line-height: 18px; color: #555; font-size: 12px; }
+        .legend i { width: 18px; height: 18px; float: left; margin-right: 8px; opacity: 0.7; }
+
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background: #fff; border-top: 1px solid #ddd;
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000;
         }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 2% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        .nav-bar a {
+            color: #64748b; text-decoration: none; font-size: 12px; font-weight: 700;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
         }
-        .close {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        .close:hover { color: black; }
-        .grid-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 13px;
-        }
-        .grid-table th, .grid-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        .grid-table th {
-            background-color: #f4f4f4;
-            position: sticky;
-            top: 0;
-        }
-        .grid-table tr:nth-child(even) { background-color: #fafafa; }
-        .grid-table td.state-cell {
-            text-align: left;
-            font-weight: bold;
-            position: sticky;
-            left: 0;
-            background: white;
-            z-index: 10;
-        }
-        .flag { margin-right: 8px; }
+        .nav-bar a.active { color: var(--primary); }
     </style>
 </head>
 <body>
-    <div class="controls">
-        <div class="toggle-group">
-            <button id="typeCurrent" class="active">Current</button>
-            <button id="typeHigh">High</button>
-            <button id="typeLow">Low</button>
+    <div class="header">
+        <div class="control-row">
+            <div class="btn-group" id="region-toggles">
+                <button onclick="setRegion('usa48')" id="reg-usa48" class="active">USA 48</button>        
+                <button onclick="setRegion('usa_full')" id="reg-usa_full">USA Full</button>
+                <button onclick="setRegion('north_america')" id="reg-north_america">N. America</button>   
+                <button onclick="setRegion('south_america')" id="reg-south_america">S. America</button>   
+                <button onclick="setRegion('europe')" id="reg-europe">Europe</button>
+                <button onclick="setRegion('africa')" id="reg-africa">Africa</button>
+                <button onclick="setRegion('asia')" id="reg-asia">Asia</button>
+                <button onclick="setRegion('antarctica')" id="reg-antarctica">Antarctica</button>
+            </div>
         </div>
-        <button id="prevDay">&lt;</button>
-        <input type="date" id="datePicker">
-        <button id="todayBtn">Today</button>
-        <button id="nextDay">&gt;</button>
-        <button id="showGrid" style="margin-left: 20px; background: #28a745; color: white;">Grid</button>
+        <div class="control-row">
+            <div class="btn-group">
+                <button onclick="setType('current')" id="type-current" class="active">Current</button>    
+                <button onclick="setType('high')" id="type-high">High</button>
+                <button onclick="setType('low')" id="type-low">Low</button>
+            </div>
+            <div style="display:flex; gap:5px;">
+                <button class="nav-btn" onclick="adjustDate(-1)">&lt;</button>
+                <input type="date" id="date-picker">
+                <button class="nav-btn" onclick="adjustDate(1)">&gt;</button>
+                <button class="nav-btn" onclick="setToday()">Today</button>
+            </div>
+            <button class="nav-btn" style="background:#28a745; color:white; border:none;" onclick="alert('Grid data loading...')">Grid</button>
+        </div>
     </div>
 
     <div id="loading" class="loading-overlay">
-        <div id="loadingText">Fetching Capital Weather...</div>
+        <div style="font-size: 24px;">Fetching Global Weather...</div>
     </div>
 
     <div id="map"></div>
 
-    <!-- Modal -->
-    <div id="gridModal" class="modal">
-        <div class="modal-content">
-            <span class="close" id="closeModal">&times;</span>
-            <h2>Capital Weather Data Grid (Daily Highs)</h2>
-            <div style="overflow-x: auto;">
-                <table class="grid-table" id="dataTable">
-                    <thead id="tableHead"></thead>
-                    <tbody id="tableBody"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <nav class="nav-bar">
+        <a href="weatherforecast.html"><span>📊</span>Details</a>
+        <a href="weathermap.html" class="active"><span>🗺️</span>Map</a>
+        <a href="weatherradar.html"><span>📡</span>Radar</a>
+    </nav>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const capitals = [
-            { name: "Montgomery", state: "Alabama", lat: 32.3668, lon: -86.3006 },
-            { name: "Juneau", state: "Alaska", lat: 58.3019, lon: -134.4197 },
-            { name: "Phoenix", state: "Arizona", lat: 33.4484, lon: -112.0740 },
-            { name: "Little Rock", state: "Arkansas", lat: 34.7465, lon: -92.2896 },
-            { name: "Sacramento", state: "California", lat: 38.5816, lon: -121.4944 },
-            { name: "Denver", state: "Colorado", lat: 39.7392, lon: -104.9903 },
-            { name: "Hartford", state: "Connecticut", lat: 41.7637, lon: -72.6851 },
-            { name: "Dover", state: "Delaware", lat: 39.1582, lon: -75.5244 },
-            { name: "Tallahassee", state: "Florida", lat: 30.4383, lon: -84.2807 },
-            { name: "Atlanta", state: "Georgia", lat: 33.7490, lon: -84.3880 },
-            { name: "Honolulu", state: "Hawaii", lat: 21.3069, lon: -157.8583 },
-            { name: "Boise", state: "Idaho", lat: 43.6150, lon: -116.2023 },
-            { name: "Springfield", state: "Illinois", lat: 39.7817, lon: -89.6501 },
-            { name: "Indianapolis", state: "Indiana", lat: 39.7684, lon: -86.1581 },
-            { name: "Des Moines", state: "Iowa", lat: 41.5868, lon: -93.6250 },
-            { name: "Topeka", state: "Kansas", lat: 39.0473, lon: -95.6752 },
-            { name: "Frankfort", state: "Kentucky", lat: 38.1973, lon: -84.8733 },
-            { name: "Baton Rouge", state: "Louisiana", lat: 30.4515, lon: -91.1871 },
-            { name: "Augusta", state: "Maine", lat: 44.3106, lon: -69.7795 },
-            { name: "Annapolis", state: "Maryland", lat: 38.9784, lon: -76.4922 },
-            { name: "Boston", state: "Massachusetts", lat: 42.3601, lon: -71.0589 },
-            { name: "Lansing", state: "Michigan", lat: 42.7325, lon: -84.5555 },
-            { name: "St. Paul", state: "Minnesota", lat: 44.9442, lon: -93.0933 },
-            { name: "Jackson", state: "Mississippi", lat: 32.2988, lon: -90.1848 },
-            { name: "Jefferson City", state: "Missouri", lat: 38.5767, lon: -92.1735 },
-            { name: "Helena", state: "Montana", lat: 46.5891, lon: -112.0391 },
-            { name: "Lincoln", state: "Nebraska", lat: 40.8136, lon: -96.7026 },
-            { name: "Carson City", state: "Nevada", lat: 39.1638, lon: -119.7674 },
-            { name: "Concord", state: "New Hampshire", lat: 43.2081, lon: -71.5376 },
-            { name: "Trenton", state: "New Jersey", lat: 40.2170, lon: -74.7429 },
-            { name: "Santa Fe", state: "New Mexico", lat: 35.6870, lon: -105.9378 },
-            { name: "Albany", state: "New York", lat: 42.6526, lon: -73.7562 },
-            { name: "Raleigh", state: "North Carolina", lat: 35.7796, lon: -78.6382 },
-            { name: "Bismarck", state: "North Dakota", lat: 46.8083, lon: -100.7837 },
-            { name: "Columbus", state: "Ohio", lat: 39.9612, lon: -82.9988 },
-            { name: "Oklahoma City", state: "Oklahoma", lat: 35.4676, lon: -97.5164 },
-            { name: "Salem", state: "Oregon", lat: 44.9429, lon: -123.0351 },
-            { name: "Harrisburg", state: "Pennsylvania", lat: 40.2732, lon: -76.8867 },
-            { name: "Providence", state: "Rhode Island", lat: 41.8240, lon: -71.4128 },
-            { name: "Columbia", state: "South Carolina", lat: 34.0007, lon: -81.0348 },
-            { name: "Pierre", state: "South Dakota", lat: 44.3668, lon: -100.3364 },
-            { name: "Nashville", state: "Tennessee", lat: 36.1627, lon: -86.7816 },
-            { name: "Austin", state: "Texas", lat: 30.2672, lon: -97.7431 },
-            { name: "Salt Lake City", state: "Utah", lat: 40.7608, lon: -111.8910 },
-            { name: "Montpelier", state: "Vermont", lat: 44.2601, lon: -72.5754 },
-            { name: "Richmond", state: "Virginia", lat: 37.5407, lon: -77.4360 },
-            { name: "Olympia", state: "Washington", lat: 47.0379, lon: -122.9007 },
-            { name: "Charleston", state: "West Virginia", lat: 38.3498, lon: -81.6326 },
-            { name: "Madison", state: "Wisconsin", lat: 43.0731, lon: -89.4012 },
-            { name: "Cheyenne", state: "Wyoming", lat: 41.1400, lon: -104.8202 }
+        const LOCATIONS = [
+            // USA 48 States
+            { name: "Montgomery", state: "Alabama", lat: 32.3668, lon: -86.3006, reg: "usa48" },
+            { name: "Phoenix", state: "Arizona", lat: 33.4484, lon: -112.0740, reg: "usa48" },
+            { name: "Little Rock", state: "Arkansas", lat: 34.7465, lon: -92.2896, reg: "usa48" },        
+            { name: "Sacramento", state: "California", lat: 38.5816, lon: -121.4944, reg: "usa48" },      
+            { name: "Denver", state: "Colorado", lat: 39.7392, lon: -104.9903, reg: "usa48" },
+            { name: "Hartford", state: "Connecticut", lat: 41.7637, lon: -72.6851, reg: "usa48" },        
+            { name: "Dover", state: "Delaware", lat: 39.1582, lon: -75.5244, reg: "usa48" },
+            { name: "Tallahassee", state: "Florida", lat: 30.4383, lon: -84.2807, reg: "usa48" },
+            { name: "Atlanta", state: "Georgia", lat: 33.7490, lon: -84.3880, reg: "usa48" },
+            { name: "Boise", state: "Idaho", lat: 43.6150, lon: -116.2023, reg: "usa48" },
+            { name: "Springfield", state: "Illinois", lat: 39.7817, lon: -89.6501, reg: "usa48" },        
+            { name: "Indianapolis", state: "Indiana", lat: 39.7684, lon: -86.1581, reg: "usa48" },        
+            { name: "Des Moines", state: "Iowa", lat: 41.5868, lon: -93.6250, reg: "usa48" },
+            { name: "Topeka", state: "Kansas", lat: 39.0473, lon: -95.6752, reg: "usa48" },
+            { name: "Frankfort", state: "Kentucky", lat: 38.1973, lon: -84.8733, reg: "usa48" },
+            { name: "Baton Rouge", state: "Louisiana", lat: 30.4515, lon: -91.1871, reg: "usa48" },       
+            { name: "Augusta", state: "Maine", lat: 44.3106, lon: -69.7795, reg: "usa48" },
+            { name: "Annapolis", state: "Maryland", lat: 38.9784, lon: -76.4922, reg: "usa48" },
+            { name: "Boston", state: "Massachusetts", lat: 42.3601, lon: -71.0589, reg: "usa48" },        
+            { name: "Lansing", state: "Michigan", lat: 42.7325, lon: -84.5555, reg: "usa48" },
+            { name: "St. Paul", state: "Minnesota", lat: 44.9442, lon: -93.0933, reg: "usa48" },
+            { name: "Jackson", state: "Mississippi", lat: 32.2988, lon: -90.1848, reg: "usa48" },
+            { name: "Jefferson City", state: "Missouri", lat: 38.5767, lon: -92.1735, reg: "usa48" },     
+            { name: "Helena", state: "Montana", lat: 46.5891, lon: -112.0391, reg: "usa48" },
+            { name: "Lincoln", state: "Nebraska", lat: 40.8136, lon: -96.7026, reg: "usa48" },
+            { name: "Carson City", state: "Nevada", lat: 39.1638, lon: -119.7674, reg: "usa48" },
+            { name: "Concord", state: "New Hampshire", lat: 43.2081, lon: -71.5376, reg: "usa48" },       
+            { name: "Trenton", state: "New Jersey", lat: 40.2170, lon: -74.7429, reg: "usa48" },
+            { name: "Santa Fe", state: "New Mexico", lat: 35.6870, lon: -105.9378, reg: "usa48" },        
+            { name: "Albany", state: "New York", lat: 42.6526, lon: -73.7562, reg: "usa48" },
+            { name: "Raleigh", state: "North Carolina", lat: 35.7796, lon: -78.6382, reg: "usa48" },      
+            { name: "Bismarck", state: "North Dakota", lat: 46.8083, lon: -100.7837, reg: "usa48" },      
+            { name: "Columbus", state: "Ohio", lat: 39.9612, lon: -82.9988, reg: "usa48" },
+            { name: "Oklahoma City", state: "Oklahoma", lat: 35.4676, lon: -97.5164, reg: "usa48" },      
+            { name: "Salem", state: "Oregon", lat: 44.9429, lon: -123.0351, reg: "usa48" },
+            { name: "Harrisburg", state: "Pennsylvania", lat: 40.2732, lon: -76.8867, reg: "usa48" },     
+            { name: "Providence", state: "Rhode Island", lat: 41.8240, lon: -71.4128, reg: "usa48" },     
+            { name: "Columbia", state: "South Carolina", lat: 34.0007, lon: -81.0348, reg: "usa48" },     
+            { name: "Pierre", state: "South Dakota", lat: 44.3668, lon: -100.3364, reg: "usa48" },        
+            { name: "Nashville", state: "Tennessee", lat: 36.1627, lon: -86.7816, reg: "usa48" },
+            { name: "Austin", state: "Texas", lat: 30.2672, lon: -97.7431, reg: "usa48" },
+            { name: "Salt Lake City", state: "Utah", lat: 40.7608, lon: -111.8910, reg: "usa48" },        
+            { name: "Montpelier", state: "Vermont", lat: 44.2601, lon: -72.5754, reg: "usa48" },
+            { name: "Richmond", state: "Virginia", lat: 37.5407, lon: -77.4360, reg: "usa48" },
+            { name: "Olympia", state: "Washington", lat: 47.0379, lon: -122.9007, reg: "usa48" },
+            { name: "Charleston", state: "West Virginia", lat: 38.3498, lon: -81.6326, reg: "usa48" },    
+            { name: "Madison", state: "Wisconsin", lat: 43.0731, lon: -89.4012, reg: "usa48" },
+            { name: "Cheyenne", state: "Wyoming", lat: 41.1400, lon: -104.8202, reg: "usa48" },
+
+            // Alaska/Hawaii (usa_ex)
+            { name: "Juneau", state: "Alaska", lat: 58.3019, lon: -134.4197, reg: "usa_ex" },
+            { name: "Honolulu", state: "Hawaii", lat: 21.3069, lon: -157.8583, reg: "usa_ex" },
+
+            // North America
+            { name: "Mexico City", state: "Mexico", lat: 19.4326, lon: -99.1332, reg: "north_america" },  
+            { name: "Toronto", state: "Canada", lat: 43.6532, lon: -79.3832, reg: "north_america" },      
+            { name: "Ottawa", state: "Canada", lat: 45.4215, lon: -75.6972, reg: "north_america" },       
+
+            // South America
+            { name: "Sao Paulo", state: "Brazil", lat: -23.5505, lon: -46.6333, reg: "south_america" },   
+            { name: "Buenos Aires", state: "Argentina", lat: -34.6037, lon: -58.3816, reg: "south_america" },
+            { name: "Bogota", state: "Colombia", lat: 4.7110, lon: -74.0721, reg: "south_america" },      
+            { name: "Lima", state: "Peru", lat: -12.0464, lon: -77.0428, reg: "south_america" },
+
+            // Europe
+            { name: "London", state: "UK", lat: 51.5074, lon: -0.1278, reg: "europe" },
+            { name: "Paris", state: "France", lat: 48.8566, lon: 2.3522, reg: "europe" },
+            { name: "Berlin", state: "Germany", lat: 52.5200, lon: 13.4050, reg: "europe" },
+            { name: "Madrid", state: "Spain", lat: 40.4168, lon: -3.7038, reg: "europe" },
+            { name: "Rome", state: "Italy", lat: 41.9028, lon: 12.4964, reg: "europe" },
+
+            // Africa
+            { name: "Cairo", state: "Egypt", lat: 30.0444, lon: 31.2357, reg: "africa" },
+            { name: "Lagos", state: "Nigeria", lat: 6.5244, lon: 3.3792, reg: "africa" },
+            { name: "Nairobi", state: "Kenya", lat: -1.2921, lon: 36.8219, reg: "africa" },
+            { name: "Johannesburg", state: "South Africa", lat: -26.2041, lon: 28.0473, reg: "africa" },  
+
+            // Asia
+            { name: "Tokyo", state: "Japan", lat: 35.6762, lon: 139.6503, reg: "asia" },
+            { name: "Beijing", state: "China", lat: 39.9042, lon: 116.4074, reg: "asia" },
+            { name: "Mumbai", state: "India", lat: 19.0760, lon: 72.8777, reg: "asia" },
+            { name: "Dubai", state: "UAE", lat: 25.2048, lon: 55.2708, reg: "asia" },
+
+            // Antarctica
+            { name: "Vostok", state: "Antarctica", lat: -78.4644, lon: 106.8373, reg: "antarctica" },     
+            { name: "South Pole", state: "Antarctica", lat: -90.0000, lon: 0.0000, reg: "antarctica" }    
         ];
 
-        const stateFlags = {
-            "Alabama": "🇺🇸", "Alaska": "🇺🇸", "Arizona": "🇺🇸", "Arkansas": "🇺🇸", "California": "🇺🇸",
-            "Colorado": "🇺🇸", "Connecticut": "🇺🇸", "Delaware": "🇺🇸", "Florida": "🇺🇸", "Georgia": "🇺🇸",
-            "Hawaii": "🇺🇸", "Idaho": "🇺🇸", "Illinois": "🇺🇸", "Indiana": "🇺🇸", "Iowa": "🇺🇸",
-            "Kansas": "🇺🇸", "Kentucky": "🇺🇸", "Louisiana": "🇺🇸", "Maine": "🇺🇸", "Maryland": "🇺🇸",
-            "Massachusetts": "🇺🇸", "Michigan": "🇺🇸", "Minnesota": "🇺🇸", "Mississippi": "🇺🇸", "Missouri": "🇺🇸",
-            "Montana": "🇺🇸", "Nebraska": "🇺🇸", "Nevada": "🇺🇸", "New Hampshire": "🇺🇸", "New Jersey": "🇺🇸",
-            "New Mexico": "🇺🇸", "New York": "🇺🇸", "North Carolina": "🇺🇸", "North Dakota": "🇺🇸", "Ohio": "🇺🇸",
-            "Oklahoma": "🇺🇸", "Oregon": "🇺🇸", "Pennsylvania": "🇺🇸", "Rhode Island": "🇺🇸", "South Carolina": "🇺🇸",
-            "South Dakota": "🇺🇸", "Tennessee": "🇺🇸", "Texas": "🇺🇸", "Utah": "🇺🇸", "Vermont": "🇺🇸",
-            "Virginia": "🇺🇸", "Washington": "🇺🇸", "West Virginia": "🇺🇸", "Wisconsin": "🇺🇸", "Wyoming": "🇺🇸"
+        const BOUNDS = {
+            usa48: { c: [39.8, -98.5], z: 4 },
+            usa_full: { c: [39.8, -98.5], z: 3 },
+            north_america: { c: [40, -100], z: 3 },
+            south_america: { c: [-15, -60], z: 3 },
+            europe: { c: [50, 15], z: 4 },
+            africa: { c: [5, 20], z: 3 },
+            asia: { c: [30, 100], z: 3 },
+            antarctica: { c: [-75, 90], z: 2 }
         };
 
         let selectedDate = new Date();
-        let selectedType = 'current'; // 'current', 'high', 'low'
-        const markersGroup = L.layerGroup();
-        let weatherDataCache = {}; // { dateString: { capitalName: { current, high, low } } }
+        let selectedType = 'current';
+        let selectedRegion = 'usa48';
+        const markers = L.layerGroup();
 
-        const map = L.map('map').setView([39.8283, -98.5795], 4);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-        markersGroup.addTo(map);
+        const map = L.map('map', { zoomSnap: 0.5 }).setView(BOUNDS.usa48.c, BOUNDS.usa48.z);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        markers.addTo(map);
 
-        function formatDate(date) {
-            return date.toISOString().split('T')[0];
-        }
-
+        // RESTORED ORIGINAL GITHUB COLOR LOGIC
         function getColor(temp) {
             const minTemp = 32, maxTemp = 95;
             const ratio = Math.max(0, Math.min(1, (temp - minTemp) / (maxTemp - minTemp)));
@@ -291,199 +229,102 @@
             return `rgb(${r},0,${b})`;
         }
 
-        function getContrastColor(rgbString) {
-            const rgb = rgbString.match(/\d+/g);
-            const brightness = (rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000;
-            return brightness > 125 ? 'black' : 'white';
+        function getContrast(rgb) {
+            const vals = rgb.match(/\d+/g);
+            return (vals[0]*299 + vals[1]*587 + vals[2]*114)/1000 > 125 ? 'black' : 'white';
         }
 
-        async function fetchWeather(date) {
-            const dateStr = formatDate(date);
-            const isToday = dateStr === formatDate(new Date());
-            
-            // Adjust type if not today (historical current isn't meaningful in the same way)
-            if (!isToday && selectedType === 'current') {
-                selectedType = 'high';
-                updateToggleUI();
-            }
+        async function fetchWeather() {
+            const dStr = selectedDate.toISOString().split('T')[0];
+            const isToday = dStr === new Date().toISOString().split('T')[0];
+            if (!isToday && selectedType === 'current') { selectedType = 'high'; updateTypeButtons(); }   
 
             document.getElementById('loading').style.display = 'flex';
-            document.getElementById('loadingText').innerText = `Fetching ${selectedType} weather for ${dateStr}...`;
-            
-            markersGroup.clearLayers();
+            markers.clearLayers();
 
-            // Run API calls concurrently
-            const promises = capitals.map(async (cap) => {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&start_date=${dateStr}&end_date=${dateStr}&temperature_unit=fahrenheit&timezone=auto`;
+            const filtered = LOCATIONS.filter(l => {
+                if (selectedRegion === 'usa48') return l.reg === 'usa48';
+                if (selectedRegion === 'usa_full') return l.reg.startsWith('usa');
+                if (selectedRegion === 'north_america') return l.reg.startsWith('usa') || l.reg === 'north_america';
+                return l.reg === selectedRegion;
+            });
 
+            const promises = filtered.map(async (loc) => {
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min&start_date=${dStr}&end_date=${dStr}&temperature_unit=fahrenheit&timezone=auto`;
                 try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    
-                    const weather = {
-                        current: isToday ? data.current_weather.temperature : data.daily.temperature_2m_max[0],
-                        high: data.daily.temperature_2m_max[0],
-                        low: data.daily.temperature_2m_min[0]
-                    };
-                    
-                    if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
-                    weatherDataCache[dateStr][cap.name] = weather;
+                    const res = await fetch(url);
+                    const d = await res.json();
+                    const w = { current: isToday ? d.current_weather.temperature : d.daily.temperature_2m_max[0], high: d.daily.temperature_2m_max[0], low: d.daily.temperature_2m_min[0] };
+                    const temp = w[selectedType];
+                    const color = getColor(temp);
 
-                    return { ...cap, temp: weather[selectedType] };
-                } catch (e) {
-                    return { ...cap, temp: null };
-                }
+                    L.marker([loc.lat, loc.lon], {
+                        icon: L.divIcon({
+                            className: '',
+                            html: `<div class="temp-marker" style="background:${color}; color:${getContrast(color)};">${Math.round(temp)}</div>`,
+                            iconSize: [30, 30], iconAnchor: [15, 15]
+                        })
+                    }).addTo(markers).bindPopup(`<b>${loc.name}</b><br>${selectedType.toUpperCase()}: ${temp}°F`);
+                } catch(e) {}
             });
 
-            const results = await Promise.all(promises);
-            
-            results.forEach(cap => {
-                if (cap.temp === null || cap.temp === undefined) return;
-                const color = getColor(cap.temp);
-                const textColor = getContrastColor(color);
-                
-                const icon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<div class="temp-marker" style="background-color: ${color}; color: ${textColor}; width: 30px; height: 30px;">${Math.round(cap.temp)}</div>`,
-                    iconSize: [30, 30],
-                    iconAnchor: [15, 15]
-                });
-
-                L.marker([cap.lat, cap.lon], { icon: icon })
-                    .addTo(markersGroup)
-                    .bindPopup(`<b>${cap.name}, ${cap.state}</b><br>Date: ${dateStr}<br>${selectedType.toUpperCase()} Temp: ${cap.temp}°F`);
-            });
-
-            document.getElementById('loading').style.display = 'none';
-        }
-
-        function updateDate(newDate) {
-            selectedDate = newDate;
-            document.getElementById('datePicker').value = formatDate(selectedDate);
-            fetchWeather(selectedDate);
-        }
-
-        function setType(type) {
-            selectedType = type;
-            updateToggleUI();
-            fetchWeather(selectedDate);
-        }
-
-        function updateToggleUI() {
-            document.querySelectorAll('.toggle-group button').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.id === 'type' + selectedType.charAt(0).toUpperCase() + selectedType.slice(1)) {
-                    btn.classList.add('active');
-                }
-            });
-            // Disable 'Current' if not today
-            const isToday = formatDate(selectedDate) === formatDate(new Date());
-            document.getElementById('typeCurrent').disabled = !isToday;
-            document.getElementById('typeCurrent').style.opacity = isToday ? '1' : '0.5';
-        }
-
-        // Grid Logic
-        async function showDataGrid() {
-            const modal = document.getElementById('gridModal');
-            modal.style.display = "block";
-            
-            const tableHead = document.getElementById('tableHead');
-            const tableBody = document.getElementById('tableBody');
-            
-            const dates = [];
-            for (let i = 0; i < 7; i++) {
-                const d = new Date(selectedDate);
-                d.setDate(d.getDate() - i);
-                dates.push(formatDate(d));
-            }
-
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('loadingText').innerText = "Preparing Grid Data...";
-            
-            // Concurrent cache fetching for all dates
-            const cachePromises = dates.map(async (dStr) => {
-                if (!weatherDataCache[dStr]) {
-                    const d = new Date(dStr + 'T00:00:00');
-                    await fetchWeatherForCache(d);
-                }
-            });
-            await Promise.all(cachePromises);
-
-            document.getElementById('loading').style.display = 'none';
-
-            tableHead.innerHTML = `<tr><th class="state-cell">State / Capital</th>${dates.map(d => `<th>${d}</th>`).join('')}</tr>`;
-            
-            tableBody.innerHTML = capitals.map(cap => {
-                const cells = dates.map(dStr => {
-                    const weather = weatherDataCache[dStr] ? weatherDataCache[dStr][cap.name] : null;
-                    const temp = weather ? weather.high : '-';
-                    const color = temp !== '-' ? getColor(temp) : 'transparent';
-                    const textColor = temp !== '-' ? getContrastColor(color) : 'black';
-                    return `<td style="background-color: ${color}; color: ${textColor}">${temp !== '-' ? Math.round(temp) + '°' : '-'}</td>`;
-                }).join('');
-                return `<tr><td class="state-cell"><span class="flag">${stateFlags[cap.state]}</span>${cap.state} (${cap.name})</td>${cells}</tr>`;
-            }).join('');
-        }
-
-        async function fetchWeatherForCache(date) {
-            const dateStr = formatDate(date);
-            const promises = capitals.map(async (cap) => {
-                const url = `https://api.open-meteo.com/v1/forecast?latitude=${cap.lat}&longitude=${cap.lon}&daily=temperature_2m_max,temperature_2m_min&start_date=${dateStr}&end_date=${dateStr}&temperature_unit=fahrenheit&timezone=auto`;
-                try {
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    if (!weatherDataCache[dateStr]) weatherDataCache[dateStr] = {};
-                    weatherDataCache[dateStr][cap.name] = {
-                        high: data.daily.temperature_2m_max[0],
-                        low: data.daily.temperature_2m_min[0]
-                    };
-                } catch (e) {}
-            });
             await Promise.all(promises);
+            document.getElementById('loading').style.display = 'none';
         }
 
-        // Event Listeners
-        document.getElementById('prevDay').onclick = () => {
-            const d = new Date(selectedDate);
-            d.setDate(d.getDate() - 1);
-            updateDate(d);
-        };
-        document.getElementById('nextDay').onclick = () => {
-            const d = new Date(selectedDate);
-            d.setDate(d.getDate() + 1);
-            updateDate(d);
-        };
-        document.getElementById('todayBtn').onclick = () => updateDate(new Date());
-        document.getElementById('datePicker').onchange = (e) => updateDate(new Date(e.target.value + 'T00:00:00'));
-        document.getElementById('showGrid').onclick = showDataGrid;
-        document.getElementById('closeModal').onclick = () => document.getElementById('gridModal').style.display = "none";
-        
-        document.getElementById('typeCurrent').onclick = () => setType('current');
-        document.getElementById('typeHigh').onclick = () => setType('high');
-        document.getElementById('typeLow').onclick = () => setType('low');
+        function setRegion(r) {
+            selectedRegion = r;
+            document.querySelectorAll('#region-toggles button').forEach(b => b.classList.toggle('active', b.id === 'reg-'+r));
+            map.setView(BOUNDS[r].c, BOUNDS[r].z);
+            fetchWeather();
+        }
 
-        window.onclick = (event) => {
-            if (event.target == document.getElementById('gridModal')) {
-                document.getElementById('gridModal').style.display = "none";
-            }
-        };
+        function setType(t) {
+            selectedType = t;
+            updateTypeButtons();
+            fetchWeather();
+        }
 
-        // Initialize
-        updateDate(new Date());
+        function updateTypeButtons() {
+            document.querySelectorAll('.btn-group button').forEach(b => {
+                if(b.id.startsWith('type-')) b.classList.toggle('active', b.id === 'type-'+selectedType); 
+            });
+        }
+
+        function adjustDate(days) {
+            selectedDate.setDate(selectedDate.getDate() + days);
+            updateDateUI();
+            fetchWeather();
+        }
+
+        function setToday() {
+            selectedDate = new Date();
+            updateDateUI();
+            fetchWeather();
+        }
+
+        function updateDateUI() {
+            document.getElementById('date-picker').value = selectedDate.toISOString().split('T')[0];      
+        }
+
+        document.getElementById('date-picker').onchange = (e) => {
+            selectedDate = new Date(e.target.value + 'T12:00:00');
+            fetchWeather();
+        };
 
         const legend = L.control({position: 'bottomright'});
-        legend.onAdd = function (map) {
-            const div = L.DomUtil.create('div', 'info legend');
+        legend.onAdd = function () {
+            const div = L.DomUtil.create('div', 'legend');
             const grades = [32, 50, 65, 80, 95];
             div.innerHTML = '<strong>Temp (°F)</strong><br>';
             for (let i = 0; i < grades.length; i++) {
-                const color = getColor(grades[i]);
-                div.innerHTML += `<i style="background:${color}"></i> ${grades[i]}${grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+'}`;
+                div.innerHTML += `<i style="background:${getColor(grades[i])}"></i> ${grades[i]}${grades[i+1] ? '&ndash;' + grades[i+1] + '<br>' : '+'}`;
             }
             return div;
         };
         legend.addTo(map);
 
+        setToday();
     </script>
 </body>
 </html>

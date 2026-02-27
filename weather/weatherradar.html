@@ -85,6 +85,7 @@
         .radar-container {
             flex: 1;
             position: relative;
+            margin-bottom: 60px;
         }
 
         iframe {
@@ -113,6 +114,16 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background: var(--card-bg); border-top: 0.5px solid var(--separator);
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 100;
+        }
+        .nav-bar a {
+            color: #8e8e93; text-decoration: none; font-size: 12px; font-weight: 700;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .nav-bar a.active { color: var(--accent); }
 
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -157,6 +168,12 @@
         </div>
         <iframe id="windyFrame" src=""></iframe>
     </div>
+
+    <nav class="nav-bar">
+        <a href="weatherforecast.html"><span>📊</span>Details</a>
+        <a href="weathermap.html"><span>🗺️</span>Map</a>
+        <a href="weatherradar.html" class="active"><span>📡</span>Radar</a>
+    </nav>
 
     <script>
         const states = {
