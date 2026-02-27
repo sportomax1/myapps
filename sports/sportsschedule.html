@@ -16,21 +16,17 @@
         thead th { position: sticky; top: 0; z-index: 30; background: #f8fafc; border-bottom: 2px solid #cbd5e1; }
         tbody td:first-child, thead th:first-child { position: sticky; left: 0; z-index: 40; background: #f8fafc; border-right: 2px solid #cbd5e1; }
         thead th:first-child { z-index: 50; background: #f1f5f9; }
-        .mode-standard th { height: 60px; }
-        .mode-standard td { height: 70px; }
-        .mode-standard td:first-child, .mode-standard th:first-child { min-width: 70px; max-width: 70px; }
-        .mode-standard td:not(:first-child) { min-width: 100px; }
-        .mode-flipped th { height: 50px; }
-        .mode-flipped td { height: 60px; }
-        .mode-flipped td:first-child, .mode-flipped th:first-child { min-width: 60px; max-width: 60px; padding: 0; } 
-        .mode-flipped td:not(:first-child), .mode-flipped th:not(:first-child) { min-width: 100px; }
-        .game-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; font-size: 11px; padding: 2px; }
-        .status-scheduled { color: #64748b; font-weight: 600; font-size: 10px; }
-        .status-live { color: #ea580c; font-weight: 800; animation: pulse 1.5s infinite; font-size: 11px; }
-        .status-win { color: #15803d; font-weight: 800; background: #dcfce7 !important; width: 100%; height: 100%; font-size: 12px; }
-        .status-loss { color: #b91c1c; font-weight: 800; background: #fee2e2 !important; width: 100%; height: 100%; font-size: 12px; }
+        
+        /* Win/Loss Highlights */
+        .win-bg { background-color: #bbf7d0 !important; }
+        .loss-bg { background-color: #fecaca !important; }
         .today-highlight { background-color: #eff6ff !important; }
-        .today-highlight-border { border-left: 4px solid #3b82f6 !important; background-color: #eff6ff !important; }
+        
+        .game-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; font-size: 11px; padding: 2px; }
+        .status-live { color: #ea580c; font-weight: 800; animation: pulse 1.5s infinite; font-size: 11px; }
+        .status-win { color: #166534; font-weight: 900; font-size: 12px; }
+        .status-loss { color: #991b1b; font-weight: 900; font-size: 12px; }
+        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     </style>
@@ -100,22 +96,10 @@
             { s: 'hockey', l: 'nhl' }
         ];
 
-        // Ensure teams have the correct sport mapped to their league
-        function getSportForLeague(league) {
-            const entry = LEAGUES.find(item => item.l === league);
-            return entry ? entry.s : 'basketball'; // fallback
-        }
-
         let TEAMS = JSON.parse(localStorage.getItem('my_sports_teams')) || [
             { id: "7", sport: "football", league: "nfl", name: "Broncos", logo: "https://a.espncdn.com/i/teamlogos/nfl/500/den.png" },
             { id: "7", sport: "basketball", league: "nba", name: "Nuggets", logo: "https://a.espncdn.com/i/teamlogos/nba/500/den.png" }
         ];
-
-        // Migration step: ensure all teams have 'sport'
-        TEAMS = TEAMS.map(t => {
-            if (!t.sport) t.sport = getSportForLeague(t.league);
-            return t;
-        });
 
         let SCHEDULES = {};
         let IS_FLIPPED = false;
@@ -125,9 +109,7 @@
         async function init() {
             document.getElementById('loading').classList.remove('hidden');
             const results = await Promise.all(TEAMS.map(fetchSchedule));
-            TEAMS.forEach((team, i) => { 
-                SCHEDULES[`${team.id}-${team.league}`] = results[i]; 
-            });
+            TEAMS.forEach((team, i) => { SCHEDULES[`${team.id}-${team.league}`] = results[i]; });
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('table-container').classList.remove('hidden');
             render();
@@ -136,29 +118,39 @@
 
         async function fetchSchedule(team) {
             try {
-                const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.id}/schedule`;
+                const url = `https://site.api.espn.com/apis/site/v2/sports/${team.sport || 'basketball'}/${team.league}/teams/${team.id}/schedule`;
                 const res = await fetch(url);
                 const data = await res.json();
                 const map = {};
                 if (!data.events) return {};
-                
+
                 data.events.forEach(ev => {
                     const d = new Date(ev.date);
-                    const k = d.toISOString().split('T')[0]; // Reliable YYYY-MM-DD
+                    const k = d.toISOString().split('T')[0];
                     const comp = ev.competitions?.[0];
                     if (!comp) return;
-                    
+
                     const us = comp.competitors?.find(c => c.id == team.id);
                     const them = comp.competitors?.find(c => c.id != team.id);
                     if (!us || !them) return;
+
+                    const usScore = parseInt(us.score?.displayValue || us.score?.value || 0);
+                    const themScore = parseInt(them.score?.displayValue || them.score?.value || 0);
+                    
+                    let result = null;
+                    if (ev.status?.type?.state === 'post' || ev.status?.type?.completed === true || (usScore > 0 || themScore > 0)) {
+                        if (usScore > themScore) result = 'W';
+                        else if (usScore < themScore) result = 'L';
+                        else if (usScore === themScore && usScore > 0) result = 'T';
+                    }
 
                     map[k] = {
                         time: d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}),
                         oppLogo: them.team?.logos?.[0]?.href,
                         isAway: them.homeAway === 'home',
                         state: ev.status?.type?.state || 'pre',
-                        score: `${us.score?.displayValue || us.score?.value || 0}-${them.score?.displayValue || them.score?.value || 0}`,
-                        result: ev.status?.type?.state === 'post' ? (parseInt(us.score?.value) > parseInt(them.score?.value) ? 'W' : (parseInt(us.score?.value) < parseInt(them.score?.value) ? 'L' : 'T')) : null,
+                        score: `${usScore}-${themScore}`,
+                        result: result, 
                         network: comp.broadcasts?.[0]?.media?.shortName
                     };
                 });
@@ -170,12 +162,10 @@
             const gameDates = new Set();
             Object.values(SCHEDULES).forEach(s => Object.keys(s).forEach(d => gameDates.add(d)));
             const gameDatesArr = Array.from(gameDates).sort();
-            
-            if (HIDE_EMPTY) { 
-                SORTED_DATES = gameDatesArr; 
-            } else if (gameDatesArr.length > 0) {
-                const min = new Date(gameDatesArr[0] + 'T12:00:00');
-                const max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00');
+
+            if (HIDE_EMPTY) SORTED_DATES = gameDatesArr;
+            else if (gameDatesArr.length > 0) {
+                const min = new Date(gameDatesArr[0] + 'T12:00:00'), max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00');
                 const range = [];
                 for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toISOString().split('T')[0]);
                 SORTED_DATES = range;
@@ -186,10 +176,9 @@
             document.getElementById('main-table').className = IS_FLIPPED ? 'mode-flipped' : 'mode-standard';
 
             if (!IS_FLIPPED) {
-                thead.innerHTML = `<tr><th style="min-width:70px">DATE</th>${TEAMS.map(t => `<th><img src="${t.logo}" class="w-8 h-8 mx-auto object-contain"></th>`).join('')}</tr>`;
+                thead.innerHTML = `<tr><th>DATE</th>${TEAMS.map(t => `<th><img src="${t.logo}" class="w-8 h-8 mx-auto object-contain"></th>`).join('')}</tr>`;
                 tbody.innerHTML = SORTED_DATES.map(date => {
-                    const d = new Date(date + 'T12:00:00');
-                    const isToday = date === today;
+                    const d = new Date(date + 'T12:00:00'), isToday = date === today;
                     let html = `<tr id="row-${date}" class="${isToday ? 'today-highlight' : ''}">
                         <td class="${isToday ? 'today-highlight-border' : ''} bg-slate-50">
                             <div class="text-[8px] font-black text-blue-500">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
@@ -200,9 +189,8 @@
                     return html + '</tr>';
                 }).join('');
             } else {
-                thead.innerHTML = `<tr><th class="bg-slate-50">TEAM</th>${SORTED_DATES.map(date => {
-                    const d = new Date(date + 'T12:00:00');
-                    const isToday = date === today;
+                thead.innerHTML = `<tr><th class="bg-slate-50">TEAM</th>${SORTED_DATES.map(date => {      
+                    const d = new Date(date + 'T12:00:00'), isToday = date === today;
                     return `<th id="col-${date}" class="${isToday ? 'today-highlight' : ''}">
                         <div class="text-[9px] font-black text-blue-500">${d.toLocaleDateString('en-US',{weekday:'short'})}</div>
                         <div class="text-xs">${d.getDate()} ${d.toLocaleDateString('en-US',{month:'short'})}</div>
@@ -217,12 +205,18 @@
         }
 
         function renderCell(g, isPast, isToday) {
-            const highlightClass = isToday ? 'today-highlight' : '';
-            if (!g) return `<td class="${highlightClass}"><span class="text-slate-100 text-[4px]">.</span></td>`;
+            const todayClass = isToday ? 'today-highlight' : '';
+            if (!g) return `<td class="${todayClass}"><span class="text-slate-100 text-[4px]">.</span></td>`;
+            
             const showScore = g.state === 'in' || g.state === 'post' || isPast;
-            const cls = g.state === 'in' ? 'status-live' : (g.result === 'W' ? 'status-win' : (g.result === 'L' ? 'status-loss' : ''));
-            return `<td class="${highlightClass}">
-                <div class="game-content ${cls}">
+            const statusClass = g.state === 'in' ? 'status-live' : (g.result === 'W' ? 'status-win' : (g.result === 'L' ? 'status-loss' : ''));
+            
+            let bgClass = todayClass;
+            if (g.result === 'W') bgClass += ' win-bg';
+            else if (g.result === 'L') bgClass += ' loss-bg';
+
+            return `<td class="${bgClass.trim()}">
+                <div class="game-content ${statusClass}">
                     <div class="flex items-center gap-1 mb-0.5"><span class="opacity-50 text-[8px]">${g.isAway?'@':'vs'}</span><img src="${g.oppLogo}" class="w-6 h-6 object-contain"></div>
                     <div class="font-black leading-tight">${showScore ? g.score : g.time}</div>
                     ${g.network && !showScore ? `<div class="text-[8px] opacity-60">${g.network}</div>` : ''}
@@ -253,7 +247,7 @@
         function removeTeam(i) { TEAMS.splice(i, 1); renderTeamList(); }
         function renderTeamList() { document.getElementById('team-list').innerHTML = TEAMS.map((t, i) => `<li class="flex justify-between items-center bg-white p-2 border rounded shadow-sm"><div class="flex items-center gap-2"><img src="${t.logo}" class="w-6 h-6"><span>${t.name}</span></div><button onclick="removeTeam(${i})" class="text-red-500 text-xs font-bold">REMOVE</button></li>`).join(''); }
         function openModal() { document.getElementById('manage-modal').classList.remove('hidden'); renderTeamList(); }
-        function closeModal() { document.getElementById('manage-modal').classList.add('hidden'); }
+        function closeModal() { document.getElementById('manage-modal').classList.add('hidden'); }        
         function saveAndReload() { localStorage.setItem('my_sports_teams', JSON.stringify(TEAMS)); location.reload(); }
         function toggleFlip() { IS_FLIPPED = !IS_FLIPPED; render(); scrollToToday(); }
         function toggleHideEmpty() { HIDE_EMPTY = !HIDE_EMPTY; localStorage.setItem('hide_empty', HIDE_EMPTY); document.getElementById('hide-label').textContent = HIDE_EMPTY ? "Show All" : "Hide Empty"; render(); scrollToToday(); }
