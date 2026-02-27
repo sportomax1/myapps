@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Launcher (pi)</title>
+    <title>App Launcher</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -14,33 +14,29 @@
             --accent: #38bdf8;
             --accent-glow: rgba(56, 189, 248, 0.3);
         }
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-color); 
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 40%), 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image:
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 40%),
                 radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.08) 0px, transparent 40%),
                 radial-gradient(at 50% 50%, rgba(15, 23, 42, 1) 0px, transparent 100%);
-            color: #f8fafc; 
+            color: #f8fafc;
             min-height: 100vh;
             background-attachment: fixed;
         }
-        
         .glass-card {
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
         .glass-card:hover {
             background: var(--card-hover);
             border-color: rgba(56, 189, 248, 0.4);
             transform: translateX(4px);
             box-shadow: 0 10px 20px -10px rgba(0, 0, 0, 0.5), 0 0 15px -5px var(--accent-glow);
         }
-
         .group-header {
             position: sticky;
             top: 0;
@@ -50,80 +46,66 @@
             padding: 0.75rem 0;
             margin-top: -0.75rem;
         }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
-        .app-card {
-            animation: fadeIn 0.4s ease forwards;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #020617;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 10px;
-        }
+        .app-card { animation: fadeIn 0.4s ease forwards; }
     </style>
 </head>
 <body class="p-4 md:p-12 max-w-6xl mx-auto pb-24">
-
-    <!-- Header & Search -->
     <header class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-12">
         <div class="flex items-center gap-4">
             <div class="relative w-12 h-12 bg-slate-900 rounded-2xl flex items-center justify-center text-2xl border border-white/10 shadow-xl">
-                <span>ðŸš€</span>
+                <span>🚀</span>
             </div>
             <div>
                 <h1 class="text-3xl font-black uppercase tracking-tight text-white leading-none mb-1">Launcher</h1>
-                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">25 Apps Indexed</p>
+                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">34 Apps Indexed</p>
             </div>
         </div>
-        
         <div class="search-container relative group w-full lg:w-80">
-            <input type="text" id="search" placeholder="Search..." 
+            <input type="text" id="search" placeholder="Search..."
                 class="block w-full pl-4 pr-4 py-3 bg-slate-900/40 border border-slate-800/50 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/50 transition-all duration-300 text-sm font-medium backdrop-blur-xl">
         </div>
     </header>
-
-    <!-- App Content -->
-    <div id="content" class="space-y-10">
-        <!-- Groups will be rendered here -->
-    </div>
-
+    <div id="content" class="space-y-10"></div>
     <script>
         const apps = [
-            {"href": "other/drive.html", "name": "Drive", "icon": "ðŸš—", "group": "Other"},
-            {"href": "other/cardclipper.html", "name": "Card Clipper", "icon": "âœ‚ï¸", "group": "Other"},
-            {"href": "sports/gameday.html", "name": "Gameday", "icon": "ðŸ†", "group": "Sports"},
-            {"href": "games/qwingo.html", "name": "Qwingo", "icon": "ðŸŽ²", "group": "Games"},
-            {"href": "games/plinko.html", "name": "Plinko", "icon": "ðŸ”µ", "group": "Games"},
-            {"href": "other/api.html", "name": "Api", "icon": "ðŸ”Œ", "group": "Other"},
-            {"href": "other/panels.html", "name": "Panels", "icon": "ðŸ–¥ï¸", "group": "Other"},
-            {"href": "other/receipt.html", "name": "Receipt", "icon": "ðŸ§¾", "group": "Other"},
-            {"href": "other/worldclock.html", "name": "Worldclock", "icon": "ðŸ“„", "group": "Other"},
-            {"href": "sports/logomap.html", "name": "Logomap", "icon": "ðŸŸï¸", "group": "Sports"},
-            {"href": "sports/mlbgameday.html", "name": "Mlb Gameday", "icon": "âš¾", "group": "Sports"},
-            {"href": "sports/mlbplayers.html", "name": "Mlbplayers", "icon": "âš¾", "group": "Sports"},
-            {"href": "sports/nbaplayers.html", "name": "Nbaplayers", "icon": "ðŸ€", "group": "Sports"},
-            {"href": "sports/nbastats.html", "name": "Nbastats", "icon": "ðŸ€", "group": "Sports"},
-            {"href": "sports/nflplayers.html", "name": "Nflplayers", "icon": "ðŸˆ", "group": "Sports"},
-            {"href": "sports/nhlplayers.html", "name": "Nhlplayers", "icon": "ðŸ’", "group": "Sports"},
-            {"href": "sports/fantasyfootball.html", "name": "Fantasy Gridiron", "icon": "ðŸˆ", "group": "Sports"},
-            {"href": "sports/fantasybasketball.html", "name": "Fantasy Hoop", "icon": "ðŸ€", "group": "Sports"},
-            {"href": "sports/fantasyhockey.html", "name": "Fantasy Slapshot", "icon": "ðŸ’", "group": "Sports"},
-            {"href": "sports/fantasybaseball.html", "name": "Fantasy Diamond", "icon": "âš¾", "group": "Sports"},
-            {"href": "sports/sportsschedule.html", "name": "Sportsschedule", "icon": "ðŸ†", "group": "Sports"},
-            {"href": "sports/marchmadness/index.html", "name": "March Madness", "icon": "ðŸ€", "group": "Sports/MM"},
-            {"href": "sports/marchmadness/ncaastats.html", "name": "Ncaastats", "icon": "ðŸ€", "group": "Sports/MM"},
-            {"href": "weather/weather.html", "name": "Weather", "icon": "ðŸŒ¦ï¸", "group": "Weather"},
-            {"href": "weather/weathermap.html", "name": "Weathermap", "icon": "ðŸ—ºï¸", "group": "Weather"}
+            {"href": "weather/weather.html", "name": "Weather", "icon": "🌤️", "group": "Weather"},
+            {"href": "weather/weatherforecast.html", "name": "Forecast", "icon": "📅", "group": "Weather"},
+            {"href": "weather/weathermap.html", "name": "Map", "icon": "🗺️", "group": "Weather"},
+            {"href": "weather/weatherradar.html", "name": "Radar", "icon": "🛰️", "group": "Weather"},
+            {"href": "sports/gameday.html", "name": "Gameday", "icon": "🎮", "group": "Sports"},
+            {"href": "sports/logomap.html", "name": "Logomap", "icon": "📍", "group": "Sports"},
+            {"href": "sports/mlbgameday.html", "name": "MLB Gameday", "icon": "⚾", "group": "Sports"},
+            {"href": "sports/mlbplayers.html", "name": "MLB Players", "icon": "⚾", "group": "Sports"},
+            {"href": "sports/nbaplayers.html", "name": "NBA Players", "icon": "🏀", "group": "Sports"},
+            {"href": "sports/nbastats.html", "name": "NBA Stats", "icon": "🏀", "group": "Sports"},
+            {"href": "sports/nflplayers.html", "name": "NFL Players", "icon": "🏈", "group": "Sports"},
+            {"href": "sports/nhlplayers.html", "name": "NHL Players", "icon": "🏒", "group": "Sports"},
+            {"href": "sports/fantasyfootball.html", "name": "Fantasy Gridiron", "icon": "🏈", "group": "Sports"},
+            {"href": "sports/fantasybasketball.html", "name": "Fantasy Hoop", "icon": "🏀", "group": "Sports"},
+            {"href": "sports/fantasyhockey.html", "name": "Fantasy Slapshot", "icon": "🏒", "group": "Sports"},
+            {"href": "sports/fantasybaseball.html", "name": "Fantasy Diamond", "icon": "⚾", "group": "Sports"},
+            {"href": "sports/sportsschedule.html", "name": "Schedule", "icon": "📅", "group": "Sports"},
+            {"href": "sports/titles.html", "name": "Titles", "icon": "🏆", "group": "Sports"},
+            {"href": "sports/marchmadness/index.html", "name": "March Madness", "icon": "🏀", "group": "Sports/MM"},
+            {"href": "games/qwingo.html", "name": "Qwingo", "icon": "🎲", "group": "Games"},
+            {"href": "games/plinko.html", "name": "Plinko", "icon": "🔵", "group": "Games"},
+            {"href": "other/playfootball.html", "name": "Football Master", "icon": "🏈", "group": "Games"},
+            {"href": "other/drive.html", "name": "Drive", "icon": "🚗", "group": "Other"},
+            {"href": "other/cardclipper.html", "name": "Card Clipper", "icon": "✂️", "group": "Other"},
+            {"href": "other/api.html", "name": "API Explorer", "icon": "🔌", "group": "Other"},
+            {"href": "other/panels.html", "name": "Panels", "icon": "🖥️", "group": "Other"},
+            {"href": "other/receipt.html", "name": "Receipts", "icon": "🧾", "group": "Other"},
+            {"href": "other/worldclock.html", "name": "World Clock", "icon": "🕒", "group": "Other"},
+            {"href": "other/denverflights.html", "name": "Denver Flights", "icon": "✈️", "group": "Other"},
+            {"href": "other/pwa.html", "name": "PWA Builder", "icon": "📱", "group": "Other"},
+            {"href": "other/image_convert.html", "name": "Image Convert", "icon": "🖼️", "group": "Other"},
+            {"href": "other/image_modifier.html", "name": "Image Modifier", "icon": "🎨", "group": "Other"},
+            {"href": "other/shrink_image.html", "name": "Shrink Image", "icon": "📉", "group": "Other"},
+            {"href": "other/sheets.html", "name": "Sheets", "icon": "📊", "group": "Other"}
         ];
 
         const content = document.getElementById('content');
@@ -131,39 +113,32 @@
 
         function renderApps(filter = '') {
             content.innerHTML = '';
-            const filteredApps = apps.filter(app => 
-                app.name.toLowerCase().includes(filter.toLowerCase()) || 
+            const filteredApps = apps.filter(app =>
+                app.name.toLowerCase().includes(filter.toLowerCase()) ||
                 app.group.toLowerCase().includes(filter.toLowerCase())
             );
-
             const groups = {};
             filteredApps.forEach(app => {
                 if (!groups[app.group]) groups[app.group] = [];
                 groups[app.group].push(app);
             });
-
             const sortedGroupNames = Object.keys(groups).sort();
-
             if (sortedGroupNames.length === 0) {
-                content.innerHTML = `<div class="py-20 text-center text-slate-500">No apps found</div>`;
+                content.innerHTML = '<div class="py-20 text-center text-slate-500">No apps found</div>';
                 return;
             }
-
             sortedGroupNames.forEach(groupName => {
                 const groupSection = document.createElement('section');
-                
                 groupSection.innerHTML = `
                     <div class="group-header flex items-center gap-3 mb-4">
-                        <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500/80">${groupName}</h2>
+                        <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500/80">\${groupName}</h2>
                         <div class="h-[1px] flex-grow bg-slate-800/50"></div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                        ${groups[groupName].map((app, index) => `
-                            <a href="${app.href}" class="app-card glass-card rounded-lg px-4 py-3 flex items-center gap-4 group relative overflow-hidden" style="animation-delay: ${index * 30}ms">
-                                <span class="text-xl group-hover:scale-110 transition-transform duration-300">${app.icon}</span>
-                                <span class="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate">
-                                    ${app.name}
-                                </span>
+                        \${groups[groupName].map((app, index) => `
+                            <a href="\${app.href}" class="app-card glass-card rounded-lg px-4 py-3 flex items-center gap-4 group relative overflow-hidden" style="animation-delay: \${index * 30}ms">
+                                <span class="text-xl group-hover:scale-110 transition-transform duration-300">\${app.icon}</span>
+                                <span class="text-sm font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate">\${app.name}</span>
                                 <div class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             </a>
                         `).join('')}
@@ -172,11 +147,8 @@
                 content.appendChild(groupSection);
             });
         }
-
         searchInput.addEventListener('input', (e) => renderApps(e.target.value));
         renderApps();
     </script>
-
 </body>
 </html>
-
