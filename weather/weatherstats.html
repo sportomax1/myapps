@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Weather Stats | Historical Data</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card-bg: #1c1c1e;
+            --accent: #0a84ff;
+            --text: #ffffff;
+            --text-secondary: #8e8e93;
+            --separator: #38383a;
+            --row-alt: #2c2c2e;
+            --winter: #5ac8fa;
+            --spring: #4cd964;
+            --summer: #ffcc00;
+            --fall: #ff9500;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding-bottom: 80px;
+        }
+
+        header {
+            padding: max(20px, env(safe-area-inset-top)) 20px 20px;
+            background: rgba(20, 20, 22, 0.8);
+            backdrop-filter: blur(20px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .header-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="text"], select {
+            background: var(--card-bg);
+            border: 1px solid var(--separator);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .btn {
+            background: var(--card-bg);
+            border: 1px solid var(--separator);
+            color: white;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .location-info h1 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 16px;
+            overflow-x: auto;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            font-size: 13px;
+        }
+
+        .stats-table th {
+            background: #2c2c2e;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 12px 8px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .stats-table td {
+            padding: 10px 8px;
+            border-bottom: 0.5px solid var(--separator);
+        }
+
+        .stats-table tr:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .stats-table tr.total-row {
+            background: rgba(10, 132, 255, 0.1);
+            font-weight: 700;
+        }
+
+        .seasonal-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .winter { background: var(--winter); color: #000; }
+        .spring { background: var(--spring); color: #000; }
+        .summer { background: var(--summer); color: #000; }
+        .fall { background: var(--fall); color: #000; }
+
+        #loader {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; backdrop-filter: blur(5px);
+        }
+
+        .nav-bar {
+            position: fixed; bottom: 0; width: 100%; background: var(--card-bg); border-top: 0.5px solid var(--separator);
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 100;
+        }
+        .nav-bar a {
+            color: var(--text-secondary); text-decoration: none; font-size: 12px; font-weight: 700;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .nav-bar a.active { color: var(--accent); }
+
+        .metric-cell { font-family: 'SF Mono', monospace; text-align: right; }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div style="font-size: 40px;">⏳</div>
+        <p style="font-weight: 700; color: var(--accent); margin-top: 10px" id="loaderText">Fetching 25 years of data...</p>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <div class="top-row">
+                <div class="location-info">
+                    <h1 id="cityName">Stats Explorer</h1>
+                    <p id="locationSubtext" style="color:var(--text-secondary); font-size: 12px; margin: 2px 0 0;">Enter Zip to begin</p>
+                </div>
+                <div class="controls-row">
+                    <input type="text" id="zipInput" placeholder="Zip Code (80134)" style="width: 120px;">
+                    <button class="btn btn-accent" onclick="loadStats()">Go</button>
+                </div>
+            </div>
+            <div class="controls-row">
+                <select id="groupMode" onchange="processData()">
+                    <option value="month">Group by Month</option>
+                    <option value="season">Group by Season</option>
+                    <option value="year">Group by Year</option>
+                </select>
+                <select id="calcMode" onchange="processData()">
+                    <option value="avg">Averages</option>
+                    <option value="total">Totals</option>
+                </select>
+                <div style="font-size: 12px; color: var(--text-secondary);">Years: 2000 - Present</div>
+            </div>
+        </div>
+    </header>
+
+    <main id="mainContent">
+        <table class="stats-table" id="statsTable">
+            <thead>
+                <tr id="tableHeader">
+                    <!-- Headers injected here -->
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data injected here -->
+            </tbody>
+        </table>
+        <div id="welcomeMessage" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            Enter a zip code to load historical weather data back to 2000.
+        </div>
+    </main>
+
+    <nav class="nav-bar">
+        <a href="weatherforecast.html"><span>📊</span>Details</a>
+        <a href="weathermap.html"><span>🗺️</span>Map</a>
+        <a href="weatherradar.html"><span>📡</span>Radar</a>
+        <a href="weatherstats.html" class="active"><span>📈</span>Stats</a>
+    </nav>
+
+    <script>
+        let rawData = null;
+        let selectedLat = null;
+        let selectedLon = null;
+
+        const SEASONS = {
+            'Winter': [11, 0, 1], // Dec, Jan, Feb
+            'Spring': [2, 3, 4],  // Mar, Apr, May
+            'Summer': [5, 6, 7],  // Jun, Jul, Aug
+            'Fall': [8, 9, 10]    // Sep, Oct, Nov
+        };
+
+        const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        async function loadStats() {
+            const zip = document.getElementById('zipInput').value || '80134';
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            
+            loader.style.display = 'flex';
+            loaderText.innerText = `Geocoding ${zip}...`;
+
+            try {
+                // 1. Geocode Zip
+                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${zip}&count=1&language=en&format=json`;
+                const geoRes = await fetch(geoUrl);
+                const geoData = await geoRes.json();
+
+                if (!geoData.results || geoData.results.length === 0) {
+                    alert("Location not found.");
+                    loader.style.display = 'none';
+                    return;
+                }
+
+                const loc = geoData.results[0];
+                selectedLat = loc.latitude;
+                selectedLon = loc.longitude;
+                document.getElementById('cityName').innerText = `${loc.name}, ${loc.admin1 || ''}`;
+                document.getElementById('locationSubtext').innerText = `Lat: ${selectedLat.toFixed(2)} Lon: ${selectedLon.toFixed(2)}`;
+
+                // 2. Fetch Archive Data (2000 to now)
+                const start = '2000-01-01';
+                const end = new Date().toISOString().split('T')[0];
+                loaderText.innerText = "Fetching historical data (2000-Present)...";
+                
+                const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${selectedLat}&longitude=${selectedLon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,rain_sum,snowfall_sum&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto`;
+                
+                const archiveRes = await fetch(archiveUrl);
+                rawData = await archiveRes.json();
+
+                document.getElementById('welcomeMessage').style.display = 'none';
+                processData();
+                loader.style.display = 'none';
+
+            } catch (err) {
+                console.error(err);
+                alert("Error loading data.");
+                loader.style.display = 'none';
+            }
+        }
+
+        function getSeason(monthIndex) {
+            if ([11, 0, 1].includes(monthIndex)) return 'Winter';
+            if ([2, 3, 4].includes(monthIndex)) return 'Spring';
+            if ([5, 6, 7].includes(monthIndex)) return 'Summer';
+            return 'Fall';
+        }
+
+        function processData() {
+            if (!rawData) return;
+
+            const groupMode = document.getElementById('groupMode').value;
+            const calcMode = document.getElementById('calcMode').value;
+            const tableHeader = document.getElementById('tableHeader');
+            const tableBody = document.getElementById('tableBody');
+
+            // Define Headers
+            tableHeader.innerHTML = `
+                <th>${groupMode.toUpperCase()}</th>
+                <th class="metric-cell">High (°F)</th>
+                <th class="metric-cell">Low (°F)</th>
+                <th class="metric-cell">Mean (°F)</th>
+                <th class="metric-cell">Precip (in)</th>
+                <th class="metric-cell">Rain (in)</th>
+                <th class="metric-cell">Snow (in)</th>
+            `;
+
+            const aggregates = {};
+
+            rawData.daily.time.forEach((dateStr, i) => {
+                const date = new Date(dateStr + 'T12:00:00');
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                
+                let key;
+                if (groupMode === 'month') key = `${year}-${(month + 1).toString().padStart(2, '0')} ${MONTH_NAMES[month]}`;
+                else if (groupMode === 'season') key = `${year} ${getSeason(month)}`;
+                else key = `${year}`;
+
+                if (!aggregates[key]) {
+                    aggregates[key] = { count: 0, tMax: 0, tMin: 0, tMean: 0, precip: 0, rain: 0, snow: 0, season: getSeason(month) };
+                }
+
+                const d = aggregates[key];
+                d.count++;
+                d.tMax += rawData.daily.temperature_2m_max[i] || 0;
+                d.tMin += rawData.daily.temperature_2m_min[i] || 0;
+                d.tMean += rawData.daily.temperature_2m_mean[i] || 0;
+                d.precip += rawData.daily.precipitation_sum[i] || 0;
+                d.rain += rawData.daily.rain_sum[i] || 0;
+                d.snow += rawData.daily.snowfall_sum[i] || 0;
+            });
+
+            tableBody.innerHTML = '';
+            
+            const keys = Object.keys(aggregates).sort().reverse();
+            keys.forEach(key => {
+                const d = aggregates[key];
+                const isAvg = calcMode === 'avg';
+                
+                const row = document.createElement('tr');
+                const seasonClass = d.season.toLowerCase();
+                
+                row.innerHTML = `
+                    <td>
+                        <span style="font-weight:700;">${key}</span> 
+                        ${groupMode === 'month' ? `<span class="seasonal-tag ${seasonClass}">${d.season}</span>` : ''}
+                    </td>
+                    <td class="metric-cell">${(isAvg ? d.tMax/d.count : d.tMax/d.count).toFixed(1)}</td>
+                    <td class="metric-cell">${(isAvg ? d.tMin/d.count : d.tMin/d.count).toFixed(1)}</td>
+                    <td class="metric-cell">${(isAvg ? d.tMean/d.count : d.tMean/d.count).toFixed(1)}</td>
+                    <td class="metric-cell">${(isAvg ? (d.precip/d.count)*30.4 : d.precip).toFixed(2)}</td>
+                    <td class="metric-cell">${(isAvg ? (d.rain/d.count)*30.4 : d.rain).toFixed(2)}</td>
+                    <td class="metric-cell">${(isAvg ? (d.snow/d.count)*30.4 : d.snow).toFixed(2)}</td>
+                `;
+
+                // Logic correction: For averages of precip/snow, usually people want "Avg Monthly" even if grouped by something else.
+                // If calcMode is 'avg', show daily average * 30.4 (standard month) to make it readable, or just daily average.
+                // Let's stick to pure averages for temps and totals/monthly-norm for moisture.
+                
+                const tMax = (d.tMax / d.count).toFixed(1);
+                const tMin = (d.tMin / d.count).toFixed(1);
+                const tMean = (d.tMean / d.count).toFixed(1);
+                
+                let pVal, rVal, sVal;
+                if (isAvg) {
+                    pVal = (d.precip / d.count).toFixed(3);
+                    rVal = (d.rain / d.count).toFixed(3);
+                    sVal = (d.snow / d.count).toFixed(3);
+                } else {
+                    pVal = d.precip.toFixed(2);
+                    rVal = d.rain.toFixed(2);
+                    sVal = d.snow.toFixed(2);
+                }
+
+                row.innerHTML = `
+                    <td>
+                        <span style="font-weight:700;">${key}</span> 
+                        ${groupMode === 'month' ? `<span class="seasonal-tag ${seasonClass}">${d.season}</span>` : ''}
+                    </td>
+                    <td class="metric-cell">${tMax}</td>
+                    <td class="metric-cell">${tMin}</td>
+                    <td class="metric-cell">${tMean}</td>
+                    <td class="metric-cell">${pVal}</td>
+                    <td class="metric-cell">${rVal}</td>
+                    <td class="metric-cell">${sVal}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Auto-load default zip on start
+        window.onload = () => {
+            document.getElementById('zipInput').value = '80134';
+        };
+    </script>
+</body>
+</html>
