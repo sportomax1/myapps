@@ -126,7 +126,7 @@
 
                 data.events.forEach(ev => {
                     const d = new Date(ev.date);
-                    const k = d.toISOString().split('T')[0];
+                    const k = d.toLocaleDateString('sv');
                     const comp = ev.competitions?.[0];
                     if (!comp) return;
 
@@ -167,11 +167,11 @@
             else if (gameDatesArr.length > 0) {
                 const min = new Date(gameDatesArr[0] + 'T12:00:00'), max = new Date(gameDatesArr[gameDatesArr.length-1] + 'T12:00:00');
                 const range = [];
-                for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toISOString().split('T')[0]);
+                for (let d = new Date(min); d <= max; d.setDate(d.getDate()+1)) range.push(d.toLocaleDateString('sv'));
                 SORTED_DATES = range;
             }
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date().toLocaleDateString('sv');
             const thead = document.getElementById('table-head'), tbody = document.getElementById('table-body');
             document.getElementById('main-table').className = IS_FLIPPED ? 'mode-flipped' : 'mode-standard';
 
@@ -252,7 +252,7 @@
         function toggleFlip() { IS_FLIPPED = !IS_FLIPPED; render(); scrollToToday(); }
         function toggleHideEmpty() { HIDE_EMPTY = !HIDE_EMPTY; localStorage.setItem('hide_empty', HIDE_EMPTY); document.getElementById('hide-label').textContent = HIDE_EMPTY ? "Show All" : "Hide Empty"; render(); scrollToToday(); }
         function scrollToToday() {
-            const today = new Date().toISOString().split('T')[0], container = document.getElementById('table-container');
+            const today = new Date().toLocaleDateString('sv'), container = document.getElementById('table-container');
             const target = document.getElementById(IS_FLIPPED ? `col-${today}` : `row-${today}`) || document.getElementById(IS_FLIPPED ? `col-${SORTED_DATES.find(d=>d>=today)}` : `row-${SORTED_DATES.find(d=>d>=today)}`);
             if (target) IS_FLIPPED ? container.scrollLeft = target.offsetLeft - 80 : container.scrollTop = target.offsetTop - 80;
         }
