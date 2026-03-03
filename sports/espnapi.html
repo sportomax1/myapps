@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESPN API Explorer | Pro Sports Data Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+        }
+        .json-container {
+            background: #0f172a;
+            border: 1px solid #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            overflow: auto;
+            max-height: 600px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .table-view {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+        .table-view th {
+            text-align: left;
+            padding: 8px;
+            background: #1e293b;
+            color: #94a3b8;
+            text-transform: uppercase;
+            border-bottom: 2px solid #334155;
+            position: sticky;
+            top: 0;
+        }
+        .table-view td {
+            padding: 8px;
+            border-bottom: 1px solid #1e293b;
+            color: #cbd5e1;
+            white-space: nowrap;
+        }
+        .table-view tr:hover td {
+            background: rgba(59, 130, 246, 0.05);
+            color: #fff;
+        }
+        .endpoint-card {
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        .endpoint-card:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateY(-2px);
+        }
+        .endpoint-card.active {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+        }
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #3b82f6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-7xl mx-auto w-full mb-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-red-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-red-500/20 italic">
+                API
+            </div>
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic leading-none">ESPN API Explorer</h1>
+                <p class="text-[10px] text-red-400 font-bold uppercase tracking-widest mt-1 italic">Unified Sports Data Protocol</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div id="status-pill" class="hidden flex items-center gap-3 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-full">
+                <div class="loader"></div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-red-400">Executing...</span>
+            </div>
+            <button onclick="location.reload()" class="p-3 bg-slate-800 rounded-xl hover:bg-slate-700 transition-colors">
+                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Sidebar: Discovery -->
+        <aside class="lg:col-span-4 space-y-6">
+            <div class="glass-panel p-6">
+                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-6 border-b border-slate-800 pb-2">Select League</h2>
+                <div class="grid grid-cols-2 gap-3 mb-8">
+                    <button onclick="switchLeague('nba')" class="league-btn p-3 rounded-xl bg-slate-800 font-black text-xs uppercase transition-all hover:bg-blue-600 active" data-league="nba">NBA</button>
+                    <button onclick="switchLeague('nfl')" class="league-btn p-3 rounded-xl bg-slate-800 font-black text-xs uppercase transition-all hover:bg-red-600" data-league="nfl">NFL</button>
+                    <button onclick="switchLeague('mlb')" class="league-btn p-3 rounded-xl bg-slate-800 font-black text-xs uppercase transition-all hover:bg-blue-800" data-league="mlb">MLB</button>
+                    <button onclick="switchLeague('nhl')" class="league-btn p-3 rounded-xl bg-slate-800 font-black text-xs uppercase transition-all hover:bg-slate-100 hover:text-black" data-league="nhl">NHL</button>
+                </div>
+
+                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-slate-500 mb-6 border-b border-slate-800 pb-2">Available Endpoints</h2>
+                <div id="endpoint-list" class="space-y-3">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace: Results -->
+        <section class="lg:col-span-8 space-y-6">
+            <div class="glass-panel p-6 min-h-[700px] flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex flex-col">
+                        <h2 id="active-endpoint-name" class="text-lg font-black uppercase tracking-tighter italic text-white">Select an Endpoint</h2>
+                        <p id="active-url" class="text-[10px] font-bold text-slate-500 code-font break-all mt-1">No URL selected</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex bg-slate-800 p-1 rounded-xl">
+                            <button onclick="setOutputFormat('json')" id="fmt-json" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all bg-red-600 text-white shadow-lg">JSON</button>
+                            <button onclick="setOutputFormat('table')" id="fmt-table" class="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">Table</button>
+                        </div>
+                        <button id="run-btn" onclick="runAPI()" disabled class="px-6 py-3 bg-red-600 text-white font-black text-xs uppercase rounded-xl shadow-lg shadow-red-900/40 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-red-500 transition-all">Execute Request</button>
+                    </div>
+                </div>
+
+                <div id="json-view" class="json-container code-font flex-grow custom-scrollbar">
+                    <div class="h-full flex flex-col items-center justify-center text-slate-600 opacity-30">
+                        <svg class="w-20 h-20 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        <p class="font-black uppercase tracking-widest text-xs">Awaiting Execution</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const ENDPOINTS = {
+            nba: [
+                { name: 'Scoreboard', url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard', desc: 'Real-time scores and game status' },
+                { name: 'Teams', url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams', desc: 'List of all teams and basic info' },
+                { name: 'Standings', url: 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings', desc: 'Current season standings' },
+                { name: 'News', url: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news', desc: 'Latest headlines and articles' },
+                { name: 'Athletes (LeBron)', url: 'https://site.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/1966', desc: 'Detailed athlete profile' },
+                { name: 'Gamelog (LeBron)', url: 'https://site.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/1966/gamelog', desc: 'Season game-by-game stats' }
+            ],
+            nfl: [
+                { name: 'Scoreboard', url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard', desc: 'Weekly schedule and scores' },
+                { name: 'Teams', url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams', desc: 'Franchise lists and logos' },
+                { name: 'Standings', url: 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings', desc: 'Divisional and conference ranks' },
+                { name: 'News', url: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/news', desc: 'NFL Insider headlines' },
+                { name: 'Athletes (Mahomes)', url: 'https://site.api.espn.com/apis/common/v3/sports/football/nfl/athletes/3139477', desc: 'Player record and stats' }
+            ],
+            mlb: [
+                { name: 'Scoreboard', url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard', desc: 'Daily matchups and results' },
+                { name: 'Teams', url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams', desc: 'Major League team database' },
+                { name: 'Standings', url: 'https://site.api.espn.com/apis/v2/sports/baseball/mlb/standings', desc: 'League and wild card ranks' },
+                { name: 'News', url: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/news', desc: 'Latest from the ballpark' }
+            ],
+            nhl: [
+                { name: 'Scoreboard', url: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard', desc: 'Nightly scores and ice time' },
+                { name: 'Teams', url: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams', desc: 'NHL franchise directory' },
+                { name: 'Standings', url: 'https://site.api.espn.com/apis/v2/sports/hockey/nhl/standings', desc: 'Conference and divisional points' }
+            ]
+        };
+
+        let currentLeague = 'nba';
+        let activeURL = '';
+        let currentData = null;
+        let outputFormat = 'json';
+
+        function switchLeague(league) {
+            currentLeague = league;
+            document.querySelectorAll('.league-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'bg-red-600', 'bg-blue-800', 'text-black', 'bg-slate-100');
+                if (btn.dataset.league === league) {
+                    if (league === 'nba') btn.classList.add('bg-blue-600');
+                    if (league === 'nfl') btn.classList.add('bg-red-600');
+                    if (league === 'mlb') btn.classList.add('bg-blue-800');
+                    if (league === 'nhl') btn.classList.add('bg-slate-100', 'text-black');
+                }
+            });
+            renderEndpoints();
+        }
+
+        function renderEndpoints() {
+            const list = document.getElementById('endpoint-list');
+            list.innerHTML = ENDPOINTS[currentLeague].map(ep => `
+                <div class="endpoint-card p-4 rounded-2xl bg-slate-900/50 border border-slate-800" onclick="setActiveEndpoint('${ep.name}', '${ep.url}')">
+                    <p class="text-[11px] font-black uppercase tracking-widest text-white">${ep.name}</p>
+                    <p class="text-[9px] font-bold text-slate-500 mt-1">${ep.desc}</p>
+                </div>
+            `).join('');
+        }
+
+        function setActiveEndpoint(name, url) {
+            document.querySelectorAll('.endpoint-card').forEach(c => c.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            document.getElementById('active-endpoint-name').textContent = name;
+            document.getElementById('active-url').textContent = url;
+            document.getElementById('run-btn').disabled = false;
+            activeURL = url;
+        }
+
+        function setOutputFormat(fmt) {
+            outputFormat = fmt;
+            document.getElementById('fmt-json').className = fmt === 'json' ? 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all bg-red-600 text-white shadow-lg' : 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white';
+            document.getElementById('fmt-table').className = fmt === 'table' ? 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all bg-red-600 text-white shadow-lg' : 'px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white';
+            if (currentData) displayData();
+        }
+
+        async function runAPI() {
+            const status = document.getElementById('status-pill');
+            const view = document.getElementById('json-view');
+            const runBtn = document.getElementById('run-btn');
+
+            status.classList.remove('hidden');
+            runBtn.disabled = true;
+            view.innerHTML = `<div class="h-full flex items-center justify-center"><div class="loader"></div></div>`;
+
+            try {
+                const res = await fetch(activeURL);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                currentData = await res.json();
+                displayData();
+            } catch (err) {
+                view.innerHTML = `<div class="p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-xs font-bold uppercase">
+                    Execution Failed: ${err.message}
+                </div>`;
+            } finally {
+                status.classList.add('hidden');
+                runBtn.disabled = false;
+            }
+        }
+
+        function displayData() {
+            const view = document.getElementById('json-view');
+            if (outputFormat === 'json') {
+                view.innerHTML = `<pre class="text-emerald-400">${JSON.stringify(currentData, null, 4)}</pre>`;
+            } else {
+                view.innerHTML = generateTable(currentData);
+            }
+        }
+
+        function generateTable(data) {
+            // Find the most likely array of data to display
+            let targetArray = null;
+            if (Array.isArray(data)) targetArray = data;
+            else if (data.events) targetArray = data.events;
+            else if (data.sports?.[0]?.leagues?.[0]?.teams) targetArray = data.sports[0].leagues[0].teams.map(t => t.team);
+            else if (data.standings?.entries) targetArray = data.standings.entries;
+            else if (data.articles) targetArray = data.articles;
+            else if (data.seasonTypes) {
+                // For Gamelogs: flatten all events
+                targetArray = data.seasonTypes.flatMap(st => (st.categories || []).flatMap(cat => cat.events || []));
+            }
+
+            if (!targetArray || !targetArray.length) {
+                // If no array found, just show key-value pairs of the object
+                const pairs = Object.entries(data).filter(([k, v]) => typeof v !== 'object');
+                if (pairs.length === 0) return `<p class="text-slate-500 p-4">No tabular data found.</p>`;
+                return `
+                    <table class="table-view">
+                        <thead><tr><th>Key</th><th>Value</th></tr></thead>
+                        <tbody>${pairs.map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('')}</tbody>
+                    </table>`;
+            }
+
+            // Extract headers from first object
+            const sample = targetArray[0];
+            const headers = Object.keys(sample).filter(k => typeof sample[k] !== 'object' || Array.isArray(sample[k]));
+
+            return `
+                <table class="table-view">
+                    <thead>
+                        <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${targetArray.map(row => `
+                            <tr>
+                                ${headers.map(h => {
+                                    let val = row[h];
+                                    if (Array.isArray(val)) val = `Array(${val.length})`;
+                                    else if (typeof val === 'object') val = '{...}';
+                                    return `<td>${val ?? '--'}</td>`;
+                                }).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>`;
+        }
+
+        // Initialize
+        switchLeague('nba');
+    </script>
+</body>
+</html>

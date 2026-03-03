@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Impact Lines | Pro Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #020617 70%);
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+        }
+        .player-chip {
+            transition: all 0.2s;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .player-chip.active {
+            background: #3b82f6;
+            border-color: #60a5fa;
+            color: white;
+        }
+        .toggle-btn.active {
+            background: #3b82f6 !important;
+            color: white !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .player-chip:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #3b82f6;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        /* Updated Table Styles */
+        .stat-table th { 
+            position: sticky; top: 0; background: #0f172a; 
+            padding: 12px 16px; cursor: pointer; white-space: nowrap;
+            transition: color 0.2s;
+        }
+        .stat-table th:hover { color: #3b82f6; }
+        .stat-table td { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sort-icon::after { content: '↕'; margin-left: 8px; opacity: 0.3; font-size: 10px; }
+        .sort-active.asc::after { content: '↑'; opacity: 1; color: #3b82f6; }
+        .sort-active.desc::after { content: '↓'; opacity: 1; color: #3b82f6; }
+
+        /* Custom Dropdown Styles */
+        .dropdown-container { position: relative; width: 100%; max-width: 320px; z-index: 50; }
+        .dropdown-trigger {
+            background: #0f172a; border: 1px solid #334155; border-radius: 16px;
+            padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .dropdown-trigger:hover { border-color: #3b82f6; background: #1e293b; }
+        .dropdown-menu {
+            position: absolute; top: calc(100% + 8px); left: 0; width: 100%;
+            background: #0f172a; border: 1px solid #334155; border-radius: 16px;
+            max-height: 400px; overflow-y: auto; display: none;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .dropdown-menu.active { display: block; animation: slideDown 0.2s ease-out; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-item {
+            padding: 10px 16px; display: flex; align-items: center; gap: 12px;
+            cursor: pointer; transition: background 0.1s;
+        }
+        .dropdown-item:hover { background: rgba(59, 130, 246, 0.1); }
+        .dropdown-item img { width: 24px; height: 24px; object-fit: contain; }
+        .dropdown-item span { font-size: 13px; font-weight: 700; color: #cbd5e1; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <header class="max-w-[1400px] mx-auto w-full mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-xl shadow-blue-500/20 italic">
+                NBA
+            </div>
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic leading-none">Impact Lines</h1>
+                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-1 italic">Pro Player Analytics • 2025-26</p>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <!-- Stat Toggle -->
+            <div id="stat-toggle" class="hidden flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
+                <button onclick="setStatMode('impact')" id="btn-impact" class="toggle-btn active px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">Impact</button>
+                <button onclick="setStatMode('pts')" id="btn-pts" class="toggle-btn px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">PTS</button>
+            </div>
+
+            <!-- Visibility Controls -->
+            <div id="visibility-controls" class="hidden flex bg-slate-900 border border-slate-800 p-1 rounded-xl mr-2">
+                <button onclick="setVisibleByRank(3)" id="vis-3" class="px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all hover:bg-slate-800 text-slate-400 hover:text-white">Top 3</button>
+                <button onclick="setVisibleByRank(5)" id="vis-5" class="px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all hover:bg-slate-800 text-slate-400 hover:text-white">Top 5</button>
+                <button onclick="setVisibleByRank(99)" id="vis-all" class="px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all hover:bg-slate-800 text-slate-400 hover:text-white active">All</button>
+                <button onclick="setVisibleByRank(0)" id="vis-none" class="px-3 py-2 rounded-lg text-[10px] font-black uppercase transition-all hover:bg-slate-800 text-slate-400 hover:text-white">Clear</button>
+            </div>
+
+            <!-- Custom Logo Dropdown -->
+            <div class="dropdown-container">
+                <div id="dropdown-trigger" class="dropdown-trigger">
+                    <div class="flex items-center gap-3">
+                        <img id="selected-logo" src="https://a.espncdn.com/i/teamlogos/nba/500/nba.png" class="w-6 h-6 object-contain opacity-50">
+                        <span id="selected-name" class="text-xs font-black uppercase tracking-widest text-slate-300">Select Team</span>
+                    </div>
+                    <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
+                <div id="dropdown-menu" class="dropdown-menu custom-scrollbar">
+                    <!-- Items populated by JS -->
+                </div>
+            </div>
+
+            <div id="status-pill" class="hidden flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 px-4 py-2 rounded-full">
+                <div class="loader"></div>
+                <span id="status-text" class="text-[10px] font-black uppercase tracking-widest text-blue-400">Loading...</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1400px] mx-auto w-full space-y-8">
+        <!-- Player Selection chips -->
+        <div id="player-chips" class="flex flex-wrap gap-2 justify-center px-4"></div>
+
+        <!-- Chart Section -->
+        <div class="glass-panel p-6 md:p-8 relative h-[600px] flex flex-col">
+            <div id="active-player-card" class="absolute top-8 right-8 z-10 bg-slate-900/90 border border-blue-500/30 p-4 rounded-2xl flex items-center gap-4 opacity-0 transition-opacity pointer-events-none backdrop-blur-md">
+                <img id="active-headshot" src="" class="w-12 h-12 rounded-full border-2 border-blue-500 shadow-lg">
+                <div>
+                    <h3 id="active-name" class="text-sm font-black uppercase tracking-tighter text-white leading-none"></h3>
+                    <p class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-1 italic">Active Selection</p>
+                </div>
+            </div>
+            <div id="chart-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+                <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                <p class="text-sm font-black uppercase tracking-widest">Select a team to visualize impact</p>
+            </div>
+            <div class="flex-grow">
+                <canvas id="impactChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Table Section -->
+        <div id="table-section" class="hidden glass-panel overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                <h2 class="text-sm font-black uppercase tracking-widest text-blue-400 italic">Reference Stats Log</h2>
+                <div class="flex items-center gap-2">
+                    <span id="table-count" class="text-[10px] font-bold text-slate-500 uppercase">0 Records</span>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/50 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <th class="p-4 border-b border-slate-800 cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('player')">Player <span class="sort-icon" id="sort-player"></span></th>
+                            <th class="p-4 border-b border-slate-800 cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('game')">Game <span class="sort-icon" id="sort-game"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('pts')">PTS <span class="sort-icon" id="sort-pts"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('reb')">REB <span class="sort-icon" id="sort-reb"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('ast')">AST <span class="sort-icon" id="sort-ast"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('stl')">STL <span class="sort-icon" id="sort-stl"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('blk')">BLK <span class="sort-icon" id="sort-blk"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-center cursor-pointer hover:text-blue-400 transition-colors" onclick="sortLogs('to')">TO <span class="sort-icon" id="sort-to"></span></th>
+                            <th class="p-4 border-b border-slate-800 text-right text-blue-400 cursor-pointer hover:text-white transition-colors" onclick="sortLogs('impact')">Impact <span class="sort-icon" id="sort-impact"></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-table-body" class="text-[11px] font-medium text-slate-300">
+                        <!-- Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const TEAMS_API = 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams';
+        const ROSTER_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}/roster`;
+        const SCHEDULE_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${id}/schedule`;
+        const GAMELOG_API = (id) => `https://site.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${id}/gamelog`;
+
+        let chart = null;
+        let teams = [];
+        let currentSchedule = [];
+        let playerStatsMap = {};
+        let currentStatMode = 'impact'; // 'impact' or 'pts'
+
+        const COLORS = [
+            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', 
+            '#06b6d4', '#f97316', '#84cc16', '#d946ef', '#14b8a6', '#f43f5e'
+        ];
+
+        async function init() {
+            try {
+                const res = await fetch(TEAMS_API);
+                const data = await res.json();
+                teams = data.sports[0].leagues[0].teams.map(t => t.team);
+                teams.sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+                renderDropdown();
+                setupDropdownEvents();
+            } catch (err) {
+                console.error("Init Error:", err);
+            }
+        }
+
+        function renderDropdown() {
+            const menu = document.getElementById('dropdown-menu');
+            menu.innerHTML = teams.map(team => `
+                <div class="dropdown-item" onclick="selectTeam('${team.id}', '${team.displayName}', '${team.logos[0].href}')">
+                    <img src="${team.logos[0].href}" alt="${team.abbreviation}">
+                    <span>${team.displayName}</span>
+                </div>
+            `).join('');
+        }
+
+        function setupDropdownEvents() {
+            const trigger = document.getElementById('dropdown-trigger');
+            const menu = document.getElementById('dropdown-menu');
+            trigger.addEventListener('click', () => menu.classList.toggle('active'));
+            document.addEventListener('click', (e) => {
+                if (!trigger.contains(e.target) && !menu.contains(e.target)) menu.classList.remove('active');
+            });
+        }
+
+        async function selectTeam(id, name, logo) {
+            document.getElementById('selected-logo').src = logo;
+            document.getElementById('selected-logo').classList.remove('opacity-50');
+            document.getElementById('selected-name').textContent = name;
+            document.getElementById('dropdown-menu').classList.remove('active');
+            loadTeam(id);
+        }
+
+        async function loadTeam(teamId) {
+            const status = document.getElementById('status-pill');
+            const statusText = document.getElementById('status-text');
+            const placeholder = document.getElementById('chart-placeholder');
+            const tableSection = document.getElementById('table-section');
+            const visControls = document.getElementById('visibility-controls');
+            const statToggle = document.getElementById('stat-toggle');
+
+            status.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            statusText.textContent = "Fetching Schedule...";
+
+            try {
+                const scheduleRes = await fetch(SCHEDULE_API(teamId));
+                const scheduleData = await scheduleRes.json();
+                currentSchedule = scheduleData.events.filter(e => e.competitions[0].status.type.completed).map(e => ({
+                    id: e.id,
+                    date: new Date(e.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+                    name: e.shortName,
+                    opponent: e.competitions[0].competitors.find(c => c.id !== teamId).team.abbreviation
+                }));
+
+                const rosterRes = await fetch(ROSTER_API(teamId));
+                const rosterData = await rosterRes.json();
+                const players = rosterData.athletes.flatMap(a => a.items || [a]);
+
+                playerStatsMap = {};
+                const totalPlayers = players.length;
+                let loadedCount = 0;
+
+                const results = await Promise.all(players.map(async (p) => {
+                    try {
+                        const res = await fetch(GAMELOG_API(p.id));
+                        const data = await res.json();
+                        const logs = [];
+                        let seasonTotalImpact = 0;
+                        let seasonTotalPts = 0;
+
+                        if (data.seasonTypes) {
+                            data.seasonTypes.forEach(st => {
+                                if (st.categories) {
+                                    st.categories.forEach(cat => {
+                                        cat.events.forEach(ev => {
+                                            const s = ev.stats;
+                                            if (!s || s.length < 14) return;
+                                            const pts = parseFloat(s[13]) || 0;
+                                            const reb = parseFloat(s[7]) || 0;
+                                            const ast = parseFloat(s[8]) || 0;
+                                            const stl = parseFloat(s[10]) || 0;
+                                            const blk = parseFloat(s[9]) || 0;
+                                            const to = parseFloat(s[12]) || 0;
+                                            const impact = pts + reb + (2 * ast) + stl + blk - to;
+                                            seasonTotalImpact += impact;
+                                            seasonTotalPts += pts;
+                                            logs.push({ eventId: ev.eventId, pts, reb, ast, stl, blk, to, impact, date: ev.date });
+                                        });
+                                    });
+                                }
+                            });
+                        }
+                        loadedCount++;
+                        statusText.textContent = `Syncing Players (${loadedCount}/${totalPlayers})...`;
+                        return { player: p, logs, seasonTotalImpact, seasonTotalPts };
+                    } catch (e) { return null; }
+                }));
+
+                const validResults = results.filter(r => r && r.logs.length > 0);
+                validResults.sort((a, b) => b.seasonTotalImpact - a.seasonTotalImpact);
+                validResults.forEach((r, idx) => {
+                    playerStatsMap[r.player.id] = { ...r, rank: idx + 1, visible: true };
+                });
+
+                renderPlayerChips();
+                renderChart();
+                renderTable();
+                
+                tableSection.classList.remove('hidden');
+                visControls.classList.remove('hidden');
+                statToggle.classList.remove('hidden');
+                status.classList.add('hidden');
+            } catch (err) {
+                console.error("Load Team Error:", err);
+                statusText.textContent = "Error Loading Data";
+            }
+        }
+
+        function setStatMode(mode) {
+            currentStatMode = mode;
+            document.querySelectorAll('#stat-toggle .toggle-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            renderChart();
+        }
+
+        function renderPlayerChips() {
+            const container = document.getElementById('player-chips');
+            const players = Object.values(playerStatsMap).sort((a, b) => a.rank - b.rank);
+            container.innerHTML = players.map(p => `
+                <div class="player-chip px-3 py-1.5 rounded-full flex items-center gap-2 ${p.visible ? 'active' : ''}" 
+                     onclick="togglePlayerVisibility('${p.player.id}')">
+                    <img src="${p.player.headshot?.href || ''}" class="w-5 h-5 rounded-full bg-slate-800">
+                    <span class="text-[10px] font-bold uppercase tracking-tight">${p.player.displayName}</span>
+                    <span class="text-[9px] font-black opacity-60">#${p.rank}</span>
+                </div>
+            `).join('');
+        }
+
+        function togglePlayerVisibility(playerId) {
+            playerStatsMap[playerId].visible = !playerStatsMap[playerId].visible;
+            renderPlayerChips();
+            updateChartVisibility();
+        }
+
+        function setVisibleByRank(count) {
+            Object.values(playerStatsMap).forEach(p => p.visible = p.rank <= count);
+            document.querySelectorAll('#visibility-controls button').forEach(btn => btn.classList.remove('active'));
+            if (count === 3) document.getElementById('vis-3').classList.add('active');
+            if (count === 5) document.getElementById('vis-5').classList.add('active');
+            if (count === 99) document.getElementById('vis-all').classList.add('active');
+            if (count === 0) document.getElementById('vis-none').classList.add('active');
+            renderPlayerChips();
+            updateChartVisibility();
+        }
+
+        function updateChartVisibility() {
+            if (!chart) return;
+            chart.data.datasets.forEach(ds => {
+                const pId = Object.keys(playerStatsMap).find(id => playerStatsMap[id].player.displayName === ds.label);
+                ds.hidden = !playerStatsMap[pId].visible;
+            });
+            chart.update();
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('impactChart').getContext('2d');
+            if (chart) chart.destroy();
+
+            const datasets = Object.values(playerStatsMap).sort((a, b) => a.rank - b.rank).map((data, idx) => {
+                const color = COLORS[idx % COLORS.length];
+                const dataPoints = currentSchedule.map(game => {
+                    const log = data.logs.find(l => l.eventId === game.id);
+                    if (!log) return null;
+                    return currentStatMode === 'impact' ? log.impact : log.pts;
+                });
+
+                return {
+                    label: data.player.displayName,
+                    data: dataPoints,
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    tension: 0.3,
+                    spanGaps: true,
+                    hidden: !data.visible,
+                    headshot: data.player.headshot?.href || ''
+                };
+            });
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: currentSchedule.map(g => `${g.date} vs ${g.opponent}`),
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onHover: (event, chartElement) => {
+                        const card = document.getElementById('active-player-card');
+                        const headshot = document.getElementById('active-headshot');
+                        const name = document.getElementById('active-name');
+                        if (chartElement.length > 0) {
+                            const index = chartElement[0].datasetIndex;
+                            const dataset = chart.data.datasets[index];
+                            headshot.src = dataset.headshot;
+                            name.textContent = dataset.label;
+                            card.style.opacity = '1';
+                        } else { card.style.opacity = '0'; }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#3b82f6',
+                            titleFont: { size: 14, weight: '900' },
+                            bodyColor: '#f8fafc',
+                            borderColor: 'rgba(59, 130, 246, 0.3)',
+                            borderWidth: 1,
+                            padding: 16,
+                            displayColors: true,
+                            callbacks: {
+                                title: (items) => items[0].dataset.label.toUpperCase(),
+                                label: (item) => {
+                                    const game = currentSchedule[item.dataIndex];
+                                    const pId = Object.keys(playerStatsMap).find(id => playerStatsMap[id].player.displayName === item.dataset.label);
+                                    const log = playerStatsMap[pId].logs.find(l => l.eventId === game.id);
+                                    if (!log) return ' DID NOT PLAY';
+                                    return [
+                                        ` ${currentStatMode.toUpperCase()}: ${(currentStatMode === 'impact' ? log.impact : log.pts).toFixed(1)}`,
+                                        ` 🏀 PTS: ${log.pts} | 📈 REB: ${log.reb} | 👐 AST: ${log.ast}`,
+                                        ` 🛡️ STL: ${log.stl} | BLK: ${log.blk} | ⚠️ TO: ${log.to}`,
+                                        ` 🆚 VS: ${game.opponent} (${game.date})`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#64748b' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748b', maxRotation: 45, minRotation: 45 } }
+                    }
+                }
+            });
+        }
+
+        let currentSort = { key: 'impact', dir: 'desc' };
+
+        function sortLogs(key) {
+            if (currentSort.key === key) currentSort.dir = currentSort.dir === 'asc' ? 'desc' : 'asc';
+            else { currentSort.key = key; currentSort.dir = 'desc'; }
+            document.querySelectorAll('.sort-icon').forEach(icon => icon.className = 'sort-icon');
+            const activeIcon = document.getElementById(`sort-${key}`);
+            if (activeIcon) activeIcon.className = `sort-icon sort-active ${currentSort.dir}`;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('stats-table-body');
+            const countEl = document.getElementById('table-count');
+            let rows = [];
+            Object.values(playerStatsMap).forEach(data => {
+                data.logs.forEach(log => {
+                    const game = currentSchedule.find(g => g.id === log.eventId);
+                    if (game) rows.push({ player: data.player, game: game, log: log });
+                });
+            });
+
+            rows.sort((a, b) => {
+                let vA, vB;
+                switch(currentSort.key) {
+                    case 'player': vA = a.player.displayName; vB = b.player.displayName; break;
+                    case 'game': vA = a.game.date; vB = b.game.date; break;
+                    case 'pts': vA = a.log.pts; vB = b.log.pts; break;
+                    case 'reb': vA = a.log.reb; vB = b.log.reb; break;
+                    case 'ast': vA = a.log.ast; vB = b.log.ast; break;
+                    case 'stl': vA = a.log.stl; vB = b.log.stl; break;
+                    case 'blk': vA = a.log.blk; vB = b.log.blk; break;
+                    case 'to': vA = a.log.to; vB = b.log.to; break;
+                    case 'impact': vA = a.log.impact; vB = b.log.impact; break;
+                    default: vA = a.log.impact; vB = b.log.impact;
+                }
+                if (typeof vA === 'string') return currentSort.dir === 'asc' ? vA.localeCompare(vB) : vB.localeCompare(vA);
+                return currentSort.dir === 'asc' ? vA - vB : vB - vA;
+            });
+
+            countEl.textContent = `${rows.length} Performances`;
+            tbody.innerHTML = rows.map(r => `
+                <tr class="hover:bg-slate-800/30 transition-colors group">
+                    <td class="p-4 border-b border-slate-800/50">
+                        <div class="flex items-center gap-3">
+                            <img src="${r.player.headshot?.href || ''}" class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700">
+                            <span class="font-black text-slate-200">${r.player.displayName}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 border-b border-slate-800/50">
+                        <div class="flex flex-col">
+                            <span class="text-slate-400 font-bold">${r.game.opponent}</span>
+                            <span class="text-[9px] text-slate-600 uppercase font-black">${r.game.date}</span>
+                        </div>
+                    </td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold">${r.log.pts}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold">${r.log.reb}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold">${r.log.ast}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold">${r.log.stl}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold">${r.log.blk}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-center font-bold text-red-400/70">${r.log.to}</td>
+                    <td class="p-4 border-b border-slate-800/50 text-right font-black text-blue-400 text-sm">${r.log.impact.toFixed(1)}</td>
+                </tr>
+            `).join('');
+        }
+        window.onload = init;
+    </script>
+</body>
+</html>
