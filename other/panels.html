@@ -24,7 +24,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .progress-bar { transition: width 0.1s linear; }
         .grid-rows-layout { grid-template-rows: repeat(2, minmax(0, 1fr)); }
-        .clock-text { font-size: clamp(4rem, 8vw, 6rem); }
+        .clock-text { font-size: clamp(2.5rem, 6vw, 4rem); }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col p-2 md:p-4 gap-4 overflow-hidden">
@@ -41,17 +41,17 @@
         <div id="tileClock" class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
             <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
-            <div id="militaryTime" class="text-2xl font-bold text-slate-400 mt-2 z-10">--:--</div>
-            <div class="mt-6 w-full grid grid-cols-2 gap-4 z-10">
-                <div class="bg-slate-900/50 rounded-2xl p-4 flex flex-col justify-center border border-white/5">
-                    <div id="sunTimes" class="text-xl font-black text-orange-300 whitespace-pre-line leading-tight">--</div>
+            <div id="militaryTime" class="text-xl font-bold text-slate-400 mt-2 z-10">--:--</div>
+            <div class="mt-4 w-full grid grid-cols-2 gap-4 z-10">
+                <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
+                    <div id="sunTimes" class="text-lg font-black text-orange-300 whitespace-pre-line leading-tight">--</div>
                 </div>
-                <div class="bg-slate-900/50 rounded-2xl p-4 flex flex-col justify-center border border-white/5">
-                    <div id="moonPhase" class="text-xl font-black text-purple-300">--</div>
-                    <div id="moonDates" class="text-sm text-slate-500 leading-tight mt-1">--</div>
+                <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
+                    <div id="moonPhase" class="text-lg font-black text-purple-300">--</div>
+                    <div id="moonDates" class="text-[10px] text-slate-500 leading-tight mt-1">--</div>
                 </div>
             </div>
-            <div id="currentWeather" class="mt-6 text-2xl font-black text-blue-200 z-10">Loading...</div>
+            <div id="currentWeather" class="mt-4 text-xl font-black text-blue-200 z-10">Loading...</div>
         </div>
 
         <!-- 2. SPEED/STOCKS/GAS -->
@@ -60,9 +60,10 @@
             <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="speedSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
         </div>
 
-        <!-- 3. WEATHER -->
+        <!-- 3. WEATHER ROTATION -->
         <div id="tileWeather" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
-            <div id="weather" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4 text-center">Loading weather...</div>
+            <div id="weather" class="flex-grow flex flex-col justify-center items-center w-full h-full p-0 text-center overflow-hidden">Loading weather...</div>
+            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="weatherSlider" class="h-full bg-blue-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 4. FORECAST -->
@@ -70,7 +71,7 @@
             <div id="forecast" class="flex-grow flex flex-col w-full h-full p-4 overflow-hidden">Loading forecast...</div>
         </div>
 
-        <!-- 5. CALENDAR (Full Info Restored) -->
+        <!-- 5. CALENDAR -->
         <div id="tileCalendar" class="glass-tile rounded-3xl p-4 flex flex-col gap-2 relative">
             <div id="holidayCountdown" class="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed"></div>
             <div id="calendar" class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-300 mt-1 flex-grow content-center"></div>
@@ -86,14 +87,14 @@
             <div class="h-1 w-full bg-slate-800 mt-auto"><div id="bggSlider" class="h-full bg-orange-500 w-0 progress-bar"></div></div>
         </div>
 
-        <!-- 7. LEAGUE RANKINGS (Top 25) -->
+        <!-- 7. LEAGUE RANKINGS -->
         <div id="tileFun" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
             <div id="funTitle" class="p-2 text-[10px] font-black uppercase text-slate-500 text-center bg-slate-900/30">Rankings</div>
             <div id="funGrid" class="grid grid-cols-5 gap-1 p-2 overflow-y-auto no-scrollbar flex-grow content-start">Loading...</div>
             <div class="h-1 w-full bg-slate-800 mt-auto"><div id="funSlider" class="h-full bg-purple-500 w-0 progress-bar"></div></div>
         </div>
 
-        <!-- 8. SPORTS SCHEDULE (5 Games + Skip Logic) -->
+        <!-- 8. SPORTS SCHEDULE -->
         <div id="tileSports" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
             <div id="sportsContent" class="flex-grow flex flex-col w-full h-full p-0 overflow-hidden relative">
                 <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-500">Loading teams...</div>
@@ -137,12 +138,12 @@ let sunriseTime="--:--", sunsetTime="--:--";
 function updateClock(){
   const now=new Date();
   document.getElementById("clock").textContent=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-  document.getElementById("militaryTime").textContent=now.toLocaleDateString([], {weekday:'long', month:'long', day:'numeric'}) + ' • ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
+  document.getElementById("militaryTime").textContent=now.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'}) + ' • ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',hour12:false});
   document.getElementById("sunTimes").innerHTML=`🌅${sunriseTime}<br>🌇${sunsetTime}`;
   
   const moon = calculateMoonPhase(now);
   const dates = findFullMoonDates();
-  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-sm text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
+  document.getElementById("moonPhase").innerHTML = `${moon.phase.emoji} ${moon.phase.name}<br><span class="text-xs text-purple-400 font-normal">${moon.illumination}% Illum</span>`;
   document.getElementById("moonDates").innerHTML = `Last: ${dates.lastFull}<br>Next: ${dates.nextFull}`;
 }
 function calculateMoonPhase(date){
@@ -171,71 +172,88 @@ async function rotateSpeedTile(){
   if(pauseStates.speed) return;
   const el=document.getElementById("speed"); const view=speedViews[speedIndex];
   if(view==="speed"){
-    el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-xl font-black uppercase text-slate-500 mb-6">Network Status</div><div class="flex gap-12 mb-4"><div class="text-center"><div class="text-6xl font-black text-emerald-400">${speedData.download}</div><div class="text-lg font-bold text-slate-500 uppercase mt-2">Down</div></div><div class="text-center"><div class="text-6xl font-black text-blue-400">12.5</div><div class="text-lg font-bold text-slate-500 uppercase mt-2">Up</div></div></div><div class="text-sm text-slate-600 font-mono mt-4">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
-  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Market Indices</div><div class="space-y-6"><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="text-3xl font-black text-white">6,920.93</div><div class="text-xl font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="text-3xl font-black text-white">23,584.27</div><div class="text-xl font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
-  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-6 mt-2"><div class="bg-emerald-900/20 border border-emerald-500/20 p-4 rounded-2xl text-center"><div class="text-sm text-emerald-400 font-bold uppercase mb-1">Costco</div><div class="text-4xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-4 rounded-2xl text-center"><div class="text-sm text-slate-400 font-bold uppercase mb-1">Avg</div><div class="text-4xl font-black text-white">$2.41</div></div></div></div>`;
-  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-xl font-black uppercase text-slate-500 mb-6 border-b border-slate-700 pb-2">Mortgage Rates</div><div class="space-y-6 mt-1"><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-400">30-Yr Fixed</span><span class="text-3xl font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-2xl font-bold text-slate-400">15-Yr Fixed</span><span class="text-3xl font-black text-blue-300">6.25%</span></div></div></div>`;
+    el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-sm font-black uppercase text-slate-500 mb-4">Network</div><div class="flex gap-8 mb-2"><div class="text-center"><div class="text-4xl font-black text-emerald-400">${speedData.download}</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Down</div></div><div class="text-center"><div class="text-4xl font-black text-blue-400">12.5</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Up</div></div></div><div class="text-[10px] text-slate-600 font-mono mt-2">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
+  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Market</div><div class="space-y-4"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="text-lg font-black text-white">6,920.93</div><div class="text-xs font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="text-lg font-black text-white">23,584.27</div><div class="text-xs font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
+  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-4 mt-1"><div class="bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-xl text-center"><div class="text-[8px] text-emerald-400 font-bold uppercase mb-1">Costco</div><div class="text-2xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-2 rounded-xl text-center"><div class="text-[8px] text-slate-400 font-bold uppercase mb-1">Avg</div><div class="text-2xl font-black text-white">$2.41</div></div></div></div>`;
+  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Mortgage</div><div class="space-y-4 mt-1"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">30-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">15-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.25%</span></div></div></div>`;
   speedIndex=(speedIndex+1)%speedViews.length; startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
 }
 testSpeed(); rotateSpeedTile(); setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs); setInterval(testSpeed,300000);
 
 /* ========== WEATHER ========== */
+let weatherData=null, weatherIndex=0, weatherViews=["forecast","radar"];
 let forecastData=[]; 
 async function loadWeather(){
   try{
     const lat=39.5186, lon=-104.7614;
     const res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,weathercode,precipitation_probability,windspeed_10m&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,windspeed_10m_max,precipitation_probability_max,sunrise,sunset,weathercode,uv_index_max&current_weather=true&timezone=auto&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch`); 
     const d=await res.json();
+    weatherData = d;
     sunriseTime=new Date(d.daily.sunrise[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
     sunsetTime=new Date(d.daily.sunset[0]).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const cw=d.current_weather;
     document.getElementById("currentWeather").innerHTML=`🌡️ ${Math.round(d.daily.temperature_2m_max[0])}/${Math.round(d.daily.temperature_2m_min[0])}° &bull; UV ${Math.round(d.daily.uv_index_max[0])}`;
     updateClock();
-
-    // Render 12-hour forecast for Tile 3
-    const hourlyContainer = document.getElementById('weather');
-    hourlyContainer.innerHTML = `
-        <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full">12-Hour Forecast</div>
-        <div class="flex-grow flex flex-col gap-1.5 w-full overflow-y-auto no-scrollbar p-1">
-            ${d.hourly.time.slice(0,12).map((time,i) => {
-                const hour = new Date(time).getHours();
-                const temp = Math.round(d.hourly.temperature_2m[i]);
-                const weatherCode = d.hourly.weathercode[i];
-                const pop = d.hourly.precipitation_probability[i];
-                const windSpeed = Math.round(d.hourly.windspeed_10m[i]);
-                return `
-                    <div class="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold">
-                        <span class="w-10 text-slate-400">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
-                        <span class="text-base">${getWeatherIcon(weatherCode)}</span>
-                        <span class="text-white">${temp}°</span>
-                        <span class="text-blue-300">${pop}%</span>
-                        <span class="text-emerald-300">${windSpeed}mph</span>
-                    </div>
-                `;
-            }).join('')}
-        </div>
-    `;
-    forecastData=d.daily; renderForecast(); 
+    forecastData=d.daily; 
+    renderWeatherTile();
+    renderForecast(); 
   }catch(e){console.error("Weather load failed:", e);}
 }
-loadWeather(); setInterval(loadWeather,1800000);
+
+function renderWeatherTile(){
+    if(!weatherData) return;
+    const el = document.getElementById('weather');
+    const view = weatherViews[weatherIndex];
+    
+    if(view === "forecast") {
+        el.innerHTML = `
+            <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full pt-4">12-Hour Forecast</div>
+            <div class="flex-grow flex flex-col gap-1.5 w-full overflow-y-auto no-scrollbar px-4 pb-4">
+                ${weatherData.hourly.time.slice(0,12).map((time,i) => {
+                    const hour = new Date(time).getHours();
+                    const temp = Math.round(weatherData.hourly.temperature_2m[i]);
+                    const weatherCode = weatherData.hourly.weathercode[i];
+                    const pop = weatherData.hourly.precipitation_probability[i];
+                    const windSpeed = Math.round(weatherData.hourly.windspeed_10m[i]);
+                    return `
+                        <div class="flex justify-between items-center bg-white/5 p-1.5 rounded text-[10px] font-bold">
+                            <span class="w-8 text-slate-400 text-left">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
+                            <span class="text-sm">${getWeatherIcon(weatherCode)}</span>
+                            <span class="text-white">${temp}°</span>
+                            <span class="text-blue-300">${pop}%</span>
+                            <span class="text-emerald-300">${windSpeed}mph</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    } else {
+        el.innerHTML = `<iframe src="https://embed.windy.com/embed2.html?lat=39.519&lon=-104.761&detailLat=39.519&detailLon=-104.761&width=650&height=450&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" class="w-full h-full" frameborder="0"></iframe>`;
+    }
+}
+
+function rotateWeatherTile(){
+    if(pauseStates.weather) return;
+    weatherIndex = (weatherIndex + 1) % weatherViews.length;
+    renderWeatherTile();
+    startTileSlider("weatherSlider", CONFIG.rotateIntervalMs);
+}
 
 function getWeatherIcon(c){if(c===0)return"☀️";else if(c<=3)return"⛅";else if(c>=61&&c<=63)return"🌧️";else if(c>=71)return"❄️";else return"☁️";}
 
 function renderForecast(){
   if(!forecastData.time) return;
   const c=document.getElementById("forecast"); c.innerHTML="";
-  c.appendChild(Object.assign(document.createElement("div"),{className:"text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full",innerText:`7-Day Outlook`}));
-  const l=document.createElement("div"); l.className="flex flex-col gap-1.5 w-full";
+  c.appendChild(Object.assign(document.createElement("div"),{className:"text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full pt-4",innerText:`7-Day Outlook`}));
+  const l=document.createElement("div"); l.className="flex flex-col gap-1.5 w-full px-4 pb-4";
   for(let i=0; i<7; i++){
       const d=new Date(forecastData.time[i]);
       const pop = forecastData.precipitation_probability_max[i];
       const windSpeed = Math.round(forecastData.windspeed_10m_max[i]);
-      const row=document.createElement("div"); row.className="flex justify-between items-center bg-white/5 p-1.5 rounded text-xs font-bold";
+      const row=document.createElement("div"); row.className="flex justify-between items-center bg-white/5 p-1.5 rounded text-[10px] font-bold";
       row.innerHTML=`
-          <span class="w-10 text-slate-400">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span>
-          <span class="text-base">${getWeatherIcon(forecastData.weathercode[i])}</span>
-          <span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[10px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>
+          <span class="w-8 text-slate-400 text-left">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span>
+          <span class="text-sm">${getWeatherIcon(forecastData.weathercode[i])}</span>
+          <span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[8px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>
           <span class="text-blue-300">${pop}%</span>
           <span class="text-emerald-300">${windSpeed}mph</span>
       `;
@@ -244,8 +262,9 @@ function renderForecast(){
   c.appendChild(l);
 }
 
+loadWeather(); setInterval(loadWeather,1800000); setInterval(rotateWeatherTile, CONFIG.rotateIntervalMs);
 
-/* ========== CALENDAR (Restored Info) ========== */
+/* ========== CALENDAR ========== */
 function renderCalendar(){
   const now=new Date();
   const year=now.getFullYear(), month=now.getMonth(), today=now.getDate();
@@ -253,10 +272,8 @@ function renderCalendar(){
   const dayOfYear=Math.floor((now-start)/(1000*60*60*24))+1;
   const daysLeft=Math.ceil((new Date(year,11,31)-now)/(1000*60*60*24));
   
-  // Year Info
   document.getElementById("holidayCountdown").innerHTML = `Year ${year} • Day ${dayOfYear} • ${daysLeft} Left`;
 
-  // Grid
   const firstDay=new Date(year,month,1).getDay();
   const daysInMonth=new Date(year,month+1,0).getDate();
   let html="";
@@ -268,14 +285,12 @@ function renderCalendar(){
   }
   document.getElementById("calendar").innerHTML=html;
 
-  // Holidays
   const holidays=[
     {name:"New Year's",date:new Date(year+1,0,1)},{name:"Valentine's",date:new Date(year,1,14)},{name:"St. Patrick's",date:new Date(year,2,17)},
     {name:"Easter",date:new Date(year,3,20)},{name:"July 4th",date:new Date(year,6,4)},{name:"Halloween",date:new Date(year,9,31)},
     {name:"Thanksgiving",date:new Date(year,10,26)},{name:"Christmas",date:new Date(year,11,25)}
   ];
   const upcoming = holidays.filter(h=>h.date>now).sort((a,b)=>a.date-b.date).slice(0,3);
-  
   document.getElementById("upcomingHolidays").innerHTML = upcoming.map(h => {
       const dLeft = Math.ceil((h.date-now)/(1000*60*60*24));
       return `<div class="flex justify-between"><span>${h.name}</span><span class="text-white">${dLeft}d</span></div>`;
@@ -297,7 +312,7 @@ function renderBGGGrid(){
 function rotateBGG(){ if(!pauseStates.bgg) startTileSlider("bggSlider", CONFIG.rotateIntervalMs); }
 renderBGGGrid(); setInterval(rotateBGG, CONFIG.rotateIntervalMs);
 
-/* ========== LEAGUE RANKINGS (Top 25) ========== */
+/* ========== LEAGUE RANKINGS ========== */
 const LEAGUES={
   nba:{name:'NBA',url:"https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings"},
   nfl:{name:'NFL',url:"https://site.web.api.espn.com/apis/v2/sports/football/nfl/standings"},
@@ -313,33 +328,32 @@ async function fetchRankings(){
     try {
         const res = await fetch(LEAGUES[key].url);
         const data = await res.json();
-        
         let teams = [];
         if(key.includes('ncaa')) {
             const poll = data.rankings?.find(p=>p.shortName==='AP' || p.name?.includes('Associated')) || data.rankings?.[0];
-            if(poll?.ranks) teams = poll.ranks.map(r=>({name: r.team.abbreviation || r.team.name, logo: r.team.logo, pct: r.current}));
+            if(poll?.ranks) teams = poll.ranks.map(r=>({name: r.team.abbreviation || r.team.name, logo: r.team.logo, rankVal: r.current}));
         } else {
             const process = (node) => {
                 if(node.standings?.entries) teams.push(...node.standings.entries);
                 if(node.children) node.children.forEach(process);
             };
             process(data);
-            teams = teams.map(e => ({
-                name: e.team.abbreviation,
-                logo: e.team.logos?.[0]?.href,
-                pct: e.stats?.find(s=>s.name==='winPercent')?.value || 0
-            })).sort((a,b) => b.pct - a.pct);
+            teams = teams.map(e => {
+                const statName = key === 'nhl' ? 'points' : 'winPercent';
+                return {
+                    name: e.team.abbreviation,
+                    logo: e.team.logos?.[0]?.href,
+                    rankVal: e.stats?.find(s=>s.name===statName)?.value || 0
+                };
+            }).sort((a,b) => b.rankVal - a.rankVal);
         }
-
-        renderRankings(teams.slice(0,25), LEAGUES[key].name); // Top 25
-        
+        renderRankings(teams.slice(0,25), LEAGUES[key].name);
     } catch(e) { console.warn(e); }
 }
 
 function renderRankings(teams, leagueName){
     const grid=document.getElementById('funGrid'); grid.innerHTML='';
     document.getElementById('funTitle').innerText = `${leagueName} Top ${teams.length}`;
-    
     teams.forEach((t, i)=>{
         const div=document.createElement('div');
         div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700 flex items-center justify-center p-1";
@@ -350,7 +364,7 @@ function renderRankings(teams, leagueName){
 function rotateFun(){ if(!pauseStates.fun){ funIdx=(funIdx+1)%funKeys.length; fetchRankings(); startTileSlider("funSlider", CONFIG.rotateIntervalMs); }}
 fetchRankings(); setInterval(rotateFun, CONFIG.rotateIntervalMs);
 
-/* ========== SPORTS (Next 5 Games w/ Skip) ========== */
+/* ========== SPORTS SCHEDULE ========== */
 const MY_TEAMS=[
   {id:'nuggets',sport:'basketball',league:'nba',espnId:'den',icon:'🏀'},
   {id:'broncos',sport:'football',league:'nfl',espnId:'den',icon:'🏈'},
@@ -360,71 +374,56 @@ const MY_TEAMS=[
 let sportsIdx=0;
 
 async function loadSportsTeam(){
-    // Try to find a team with games (limit attempts to prevent infinite loop)
     let attempts = 0;
     let upcomingGames = [];
     let team = null;
-
     while(upcomingGames.length === 0 && attempts < MY_TEAMS.length) {
         team = MY_TEAMS[sportsIdx];
         try {
             const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${team.sport}/${team.league}/teams/${team.espnId}/schedule`);
             const data = await res.json();
             const now = new Date();
-            // Filter future games
             if(data.events) {
                 upcomingGames = data.events.filter(e => {
                     const date = new Date(e.date);
                     return date >= now || e.competitions[0].status.type.state === 'in';
-                }).slice(0, 5); // Take top 5
+                }).slice(0, 5);
             }
         } catch(e) {}
-        
         if(upcomingGames.length === 0) {
-            sportsIdx = (sportsIdx + 1) % MY_TEAMS.length; // Rotate to next
+            sportsIdx = (sportsIdx + 1) % MY_TEAMS.length;
             attempts++;
         }
     }
-
-    // Render (even if empty after checking all)
     const container = document.getElementById('sportsContent');
     if(upcomingGames.length === 0) {
-        container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No upcoming games found</div>`;
+        container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No games found</div>`;
         return;
     }
-
     const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId)?.team.logos[0].href;
-
-    let html = `
-        <div class="flex items-center justify-between border-b border-slate-700 pb-4 mb-4 p-4">
-            <div class="flex items-center gap-4">
-                <img src="${teamLogo}" class="w-12 h-12 object-contain">
+    let html = `<div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2 p-4">
+            <div class="flex items-center gap-3">
+                <img src="${teamLogo}" class="w-10 h-10 object-contain">
                 <div>
-                    <div class="text-3xl font-black text-white uppercase tracking-wider">${team.id}</div>
-                    <div class="text-sm font-bold text-slate-500 uppercase">Upcoming Schedule</div>
+                    <div class="text-xl font-black text-white uppercase tracking-wider">${team.id}</div>
+                    <div class="text-[10px] font-bold text-slate-500 uppercase">Schedule</div>
                 </div>
             </div>
         </div>
-        <div class="space-y-2 overflow-y-auto no-scrollbar px-4 pb-4">
-    `;
-
+        <div class="space-y-1.5 overflow-y-auto no-scrollbar px-4 pb-4">`;
     upcomingGames.forEach(evt => {
         const comp = evt.competitions[0];
         const date = new Date(evt.date);
         const dateStr = date.toLocaleDateString([],{month:'numeric',day:'numeric'}) + ' ' + date.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
         const vs = comp.competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId);
-        
-        html += `
-            <div class="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl text-lg border border-white/5">
-                <div class="flex items-center gap-4">
-                    <span class="font-black text-slate-400 text-xl">vs ${vs.team.abbreviation}</span>
-                    <img src="${vs.team.logos?.[0]?.href}" class="w-8 h-8 object-contain">
+        html += `<div class="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg text-sm border border-white/5">
+                <div class="flex items-center gap-3">
+                    <span class="font-black text-slate-400">vs ${vs.team.abbreviation}</span>
+                    <img src="${vs.team.logos?.[0]?.href}" class="w-6 h-6 object-contain">
                 </div>
                 <span class="font-black text-white">${dateStr}</span>
-            </div>
-        `;
+            </div>`;
     });
-    
     html += `</div>`;
     container.innerHTML = html;
 }
