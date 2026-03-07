@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sharp Sports Hub | Analytics & Betting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617;
+            --surface: #0f172a;
+            --card: #1e293b;
+            --accent: #10b981;
+            --text: #f8fafc;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .hero-gradient {
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.1), transparent),
+                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.1), transparent);
+        }
+        .app-card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .app-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+        .badge-new {
+            background: linear-gradient(to right, #10b981, #3b82f6);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="hero-gradient p-6 md:p-12">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-16">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20">📈</div>
+                <h1 class="text-4xl font-black tracking-tighter uppercase italic italic">Sharp Sports Hub</h1>
+            </div>
+            <p class="text-slate-400 font-medium max-w-2xl">Professional-grade sports analytics, real-time betting variance trackers, and historical data dashboards.</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Trend Hunter Pro -->
+            <a href="bettinglines.html" class="app-card rounded-3xl p-8 relative overflow-hidden group">
+                <div class="absolute top-4 right-4 badge-new text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest text-white z-10">NEW: PRO</div>
+                <div class="text-4xl mb-6 group-hover:scale-110 transition-transform">🎯</div>
+                <h2 class="text-xl font-bold mb-2">Trend Hunter</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Real-time betting variance dashboard. Compares sportsbook lines against statistical season models to find market edges.</p>
+                <div class="flex items-center text-emerald-400 font-bold text-xs uppercase tracking-widest">
+                    Launch Analytics <span class="ml-2 group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </a>
+
+            <!-- Gameday Dashboard -->
+            <a href="gameday.html" class="app-card rounded-3xl p-8 group">
+                <div class="text-4xl mb-6 group-hover:scale-110 transition-transform">🏟️</div>
+                <h2 class="text-xl font-bold mb-2">Gameday Lanes</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Multi-league real-time scoreboard. Track every play across NBA, NFL, MLB, and NHL in a high-density dashboard.</p>
+                <div class="flex items-center text-blue-400 font-bold text-xs uppercase tracking-widest">
+                    Open Scoreboard <span class="ml-2 group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </a>
+
+            <!-- Title Drought Tracker -->
+            <a href="titles.html" class="app-card rounded-3xl p-8 group">
+                <div class="text-4xl mb-6 group-hover:scale-110 transition-transform">🏆</div>
+                <h2 class="text-xl font-bold mb-2">League Legends</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Historical title drought and championship counts. Track which cities are due for a trophy across major pro leagues.</p>
+                <div class="flex items-center text-yellow-400 font-bold text-xs uppercase tracking-widest">
+                    View History <span class="ml-2 group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </a>
+
+            <!-- March Madness -->
+            <a href="marchmadness/index.html" class="app-card rounded-3xl p-8 group border-orange-500/20">
+                <div class="text-4xl mb-6 group-hover:scale-110 transition-transform">🏀</div>
+                <h2 class="text-xl font-bold mb-2">March Madness</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Historical tournament bracket data dating back to 1985. Complete team seeds and tournament paths.</p>
+                <div class="flex items-center text-orange-400 font-bold text-xs uppercase tracking-widest">
+                    Enter Madness <span class="ml-2 group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </a>
+
+            <!-- Fantasy Tools -->
+            <div class="app-card rounded-3xl p-8 bg-slate-900/30">
+                <div class="text-4xl mb-6 opacity-50">🧙‍♂️</div>
+                <h2 class="text-xl font-bold mb-4">Fantasy Suite</h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="fantasyfootball.html" class="text-[10px] font-black uppercase tracking-tighter bg-white/5 hover:bg-white/10 p-3 rounded-xl text-center transition-colors">Football</a>
+                    <a href="fantasybasketball.html" class="text-[10px] font-black uppercase tracking-tighter bg-white/5 hover:bg-white/10 p-3 rounded-xl text-center transition-colors">Basketball</a>
+                    <a href="fantasybaseball.html" class="text-[10px] font-black uppercase tracking-tighter bg-white/5 hover:bg-white/10 p-3 rounded-xl text-center transition-colors">Baseball</a>
+                    <a href="fantasyhockey.html" class="text-[10px] font-black uppercase tracking-tighter bg-white/5 hover:bg-white/10 p-3 rounded-xl text-center transition-colors">Hockey</a>
+                </div>
+            </div>
+
+            <!-- API Explorer -->
+            <a href="espnapi.html" class="app-card rounded-3xl p-8 group border-indigo-500/20">
+                <div class="text-4xl mb-6 group-hover:scale-110 transition-transform">⚙️</div>
+                <h2 class="text-xl font-bold mb-2">Data Explorer</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6">Direct access to ESPN V2 sports endpoints. Inspect raw scoreboard and athlete data for custom integrations.</p>
+                <div class="flex items-center text-indigo-400 font-bold text-xs uppercase tracking-widest">
+                    Query API <span class="ml-2 group-hover:translate-x-2 transition-transform">→</span>
+                </div>
+            </a>
+        </div>
+
+        <footer class="mt-20 pt-8 border-t border-white/5 text-center text-slate-600 text-[10px] font-bold uppercase tracking-[0.3em]">
+            &copy; 2026 Sharp Sports Systems • Powered by ESPN V2
+        </footer>
+    </div>
+</body>
+</html>

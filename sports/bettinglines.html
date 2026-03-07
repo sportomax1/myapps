@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0">
+  <title>Trend Hunter | Sharp Betting Dashboard</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --surface: #0f172a;
+      --card: #1e293b;
+      --accent: #10b981;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --border: #334155;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: rgba(2, 6, 23, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 10px 0;
+    }
+
+    .header-container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 0 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .header-top { display: flex; align-items: center; justify-content: space-between; }
+    .brand {
+      font-size: 20px;
+      font-weight: 900;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.03em;
+    }
+
+    .nav-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .date-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2px;
+      border-radius: 10px;
+    }
+
+    .date-nav-btn {
+      background: transparent; border: none; color: var(--text); padding: 6px 10px;
+      cursor: pointer; border-radius: 6px; transition: all 0.2s; font-weight: 700; font-size: 13px;
+    }
+    .date-nav-btn:hover { background: var(--card); }
+
+    #dateDisplay { 
+      font-size: 13px; font-weight: 800; color: var(--accent); 
+      min-width: 110px; text-align: center;
+    }
+    
+    .jump-today {
+      font-size: 10px; font-weight: 800;
+      background: var(--accent);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .sport-tabs {
+      display: flex; 
+      gap: 8px; 
+      overflow-x: auto; 
+      padding: 5px 0; 
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      white-space: nowrap;
+      width: 100%;
+    }
+    .sport-tabs::-webkit-scrollbar { display: none; }
+
+    .sport-tab {
+      background: var(--surface); border: 1px solid var(--border); color: var(--muted);
+      padding: 6px 14px; border-radius: 99px; cursor: pointer;
+      font-size: 11px; font-weight: 700; transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .sport-tab.active {
+      background: var(--accent); color: white; border-color: var(--accent);
+    }
+
+    .main-content { padding: 15px; }
+    
+    .lanes { 
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 20px;
+      padding-bottom: 20px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--card) var(--bg);
+    }
+
+    @media (max-width: 767px) {
+      .lanes { display: block; overflow-x: visible; }
+    }
+
+    .lane { 
+      width: 360px; 
+      flex-shrink: 0; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 16px; 
+    }
+    
+    @media (max-width: 767px) { .lane { width: 100%; } }
+
+    .lane-header {
+      display: flex; align-items: center; justify-content: space-between; padding-bottom: 8px; border-bottom: 2px solid var(--surface);
+    }
+    .lane-header h3 { margin: 0; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+
+    .game-card {
+      background: var(--surface); border-radius: 16px; padding: 16px;
+      border: 1px solid var(--border); box-shadow: var(--shadow); transition: all 0.2s;
+      position: relative; display: flex; flex-direction: column; gap: 12px;
+    }
+    .game-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 10px; border-bottom: 1px solid var(--card);
+    }
+
+    .game-status { font-size: 11px; font-weight: 800; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .status-live { color: var(--danger); font-weight: 900; }
+
+    .scoreboard {
+      display: flex; flex-direction: column; gap: 8px; padding: 4px 0;
+    }
+    .team-row { display: flex; align-items: center; justify-content: space-between; }
+    .team-info { display: flex; align-items: center; gap: 12px; }
+    .team-logo { width: 32px; height: 32px; object-fit: contain; background: white; border-radius: 6px; padding: 3px; border: 1px solid var(--border); }
+    .team-details { display: flex; flex-direction: column; }
+    .team-name { font-weight: 800; font-size: 14px; color: var(--text); }
+    .team-ppg { font-size: 10px; font-weight: 700; color: var(--muted); }
+    .team-score { font-size: 22px; font-weight: 900; font-family: 'JetBrains Mono', monospace; color: var(--text); }
+
+    /* Comparison Grid */
+    .comparison-container {
+      background: var(--card); border-radius: 12px; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .comp-header {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      padding: 6px; background: rgba(0,0,0,0.2);
+      border-bottom: 1px solid var(--border);
+      font-size: 9px; font-weight: 900; color: var(--muted); text-transform: uppercase; text-align: center;
+    }
+    .comp-row {
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.05);
+      align-items: center; text-align: center;
+    }
+    .comp-row:last-child { border-bottom: none; }
+    
+    .comp-label { font-size: 10px; font-weight: 800; color: var(--muted); text-align: left; padding-left: 6px; }
+    .comp-val { font-size: 12px; font-weight: 800; }
+    .comp-market { color: var(--text); }
+    .comp-model { color: var(--accent); }
+    
+    .edge-box {
+      margin-top: 4px; padding: 8px; border-radius: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .edge-label { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+    .edge-val { font-size: 13px; font-weight: 900; font-family: 'JetBrains Mono', monospace; }
+
+    .edge-badge {
+      position: absolute; top: -10px; right: 12px;
+      padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 900;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 5; letter-spacing: 0.5px;
+    }
+    .edge-high { background: var(--success); color: white; border: 2px solid #065f46; }
+    .edge-mid { background: var(--warning); color: #000; border: 2px solid #92400e; }
+    .edge-trap { background: var(--danger); color: white; border: 2px solid #991b1b; }
+
+    .score-meter { height: 3px; background: var(--border); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+    .score-fill { height: 100%; transition: width 1s; }
+
+    .provider-tag {
+      font-size: 9px; font-weight: 800; color: var(--muted);
+      background: var(--bg); padding: 2px 6px; border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar { height: 6px; width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-container">
+      <div class="header-top">
+        <div class="brand">TREND HUNTER <span style="font-size:10px; color:var(--muted); font-weight:400; font-style:italic">PRO</span></div>
+        <div class="header-actions">
+          <button class="date-nav-btn" onclick="location.reload()">⟳</button>
+        </div>
+      </div>
+      
+      <div class="nav-row">
+        <div class="date-wrapper">
+          <button class="date-nav-btn" id="prevDate">←</button>
+          <div id="dateDisplay"></div>
+          <button class="date-nav-btn" id="nextDate">→</button>
+        </div>
+        <button class="jump-today" id="jumpToday">TODAY</button>
+      </div>
+
+      <div class="sport-tabs" id="sportTabs">
+        <div class="sport-tab active" data-sport="all">Combined Edge</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="lanes" id="lanesContainer"></div>
+  </main>
+
+  <script>
+    const LANES = [
+      {id:'nba', label:'NBA', league:'basketball/nba', icon:'🏀', sport:'basketball', weight: 1.0},
+      {id:'nfl', label:'NFL', league:'football/nfl', icon:'🏈', sport:'football', weight: 4.0},
+      {id:'mlb', label:'MLB', league:'baseball/mlb', icon:'⚾', sport:'baseball', weight: 1.5},
+      {id:'nhl', label:'NHL', league:'hockey/nhl', icon:'🏒', sport:'hockey', weight: 2.5},
+      {id:'ncaaf', label:'CFB', league:'football/college-football', icon:'🎓', sport:'football', weight: 3.5},
+      {id:'ncaam', label:'CBB', league:'basketball/mens-college-basketball', icon:'🎓', sport:'basketball', weight: 1.2}
+    ];
+
+    let selectedDate = new Date();
+    let selectedSports = JSON.parse(localStorage.getItem('th_selectedSports')) || { nba:true, nfl:true, mlb:true, nhl:true, ncaaf:true, ncaam:true };
+    const standingsCache = {};
+
+    function buildTabs() {
+      const tabContainer = document.getElementById('sportTabs');
+      LANES.forEach(lane => {
+        const tab = document.createElement('div');
+        tab.className = 'sport-tab' + (selectedSports[lane.id] ? ' active' : '');
+        tab.dataset.sport = lane.id;
+        tab.innerHTML = `${lane.icon} ${lane.label}`;
+        tabContainer.appendChild(tab);
+      });
+    }
+
+    async function fetchStandings(lane) {
+      if (standingsCache[lane.id]) return;
+      try {
+        const res = await fetch(`https://site.api.espn.com/apis/v2/sports/${lane.sport}/${lane.id}/standings`);
+        const data = await res.json();
+        const map = {};
+        const processEntries = (entries) => {
+          entries.forEach(entry => {
+            const stats = entry.stats;
+            map[entry.team.id] = {
+              ppg: stats.find(s => s.type === 'avgpointsfor')?.value || 0,
+              oppg: stats.find(s => s.type === 'avgpointsagainst')?.value || 0,
+              diff: stats.find(s => s.type === 'differential')?.value || 0
+            };
+          });
+        };
+
+        if (data.children) data.children.forEach(c => c.children ? c.children.forEach(gc => processEntries(gc.standings.entries)) : processEntries(c.standings.entries));
+        else if (data.standings?.entries) processEntries(data.standings.entries);
+        
+        standingsCache[lane.id] = map;
+      } catch (e) { console.warn(`No standings for ${lane.id}`); }
+    }
+
+    async function fetchLaneData(lane, dateStr) {
+      try {
+        let endpoint = `https://site.api.espn.com/apis/site/v2/sports/${lane.league}/scoreboard?dates=${dateStr}`;
+        const res = await fetch(endpoint);
+        const data = await res.json();
+        return { lane, games: data.events || [] };
+      } catch (e) { return { lane, games: [] }; }
+    }
+
+    function getBettingData(comp) {
+      const odds = comp.odds?.[0] || {};
+      const getVal = (path) => path.split('.').reduce((obj, key) => obj?.[key], odds);
+      return {
+        details: odds.details || 'OFF',
+        overUnder: parseFloat(odds.overUnder) || parseFloat(getVal('total.over.close.line')?.toString().replace('o','')) || 0,
+        spread: odds.spread || 0,
+        provider: odds.provider?.displayName || 'MARKET',
+        awayML: getVal('moneyline.away.close.odds') || '—',
+        homeML: getVal('moneyline.home.close.odds') || '—'
+      };
+    }
+
+    async function renderDashboard() {
+      const container = document.getElementById('lanesContainer');
+      const dateDisplay = document.getElementById('dateDisplay');
+      dateDisplay.textContent = selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', weekday: 'short' });
+      
+      const dateStr = selectedDate.getFullYear() + String(selectedDate.getMonth() + 1).padStart(2, '0') + String(selectedDate.getDate()).padStart(2, '0');
+      container.innerHTML = '<div style="flex:1; text-align:center; padding:60px; color:var(--muted); font-weight:800; letter-spacing:2px">SCANNING MARKET INEFFICIENCIES...</div>';
+
+      await Promise.all(LANES.map(l => fetchStandings(l)));
+      const results = await Promise.all(LANES.map(l => fetchLaneData(l, dateStr)));
+      container.innerHTML = '';
+
+      const allRankedGames = [];
+
+      results.forEach(({ lane, games }) => {
+        if (!games || !selectedSports[lane.id]) return;
+        games.forEach(game => {
+          const comp = game.competitions[0];
+          const odds = getBettingData(comp);
+          const home = comp.competitors.find(c => c.homeAway === 'home');
+          const away = comp.competitors.find(c => c.homeAway === 'away');
+          const hStats = standingsCache[lane.id]?.[home.id] || { ppg:0, oppg:0, diff:0 };
+          const aStats = standingsCache[lane.id]?.[away.id] || { ppg:0, oppg:0, diff:0 };
+
+          // MODEL PROJECTIONS (Negative = Favorite)
+          // Point Diff: Home - Away. If +3, Home is 3 pts better. Betting Line = -3.0
+          const pointDiff = (hStats.diff - aStats.diff);
+          const modelSpread = -pointDiff; 
+          
+          const marketSpreadStr = odds.details.split(' ').pop();
+          const marketSpreadRaw = parseFloat(marketSpreadStr);
+          const marketFavAbbr = odds.details.split(' ')[0];
+          const isHomeMarketFav = marketFavAbbr === home.team.abbreviation;
+          
+          // Market Spread from Home perspective (Negative if Home is Favored)
+          const marketSpread = isHomeMarketFav ? marketSpreadRaw : -marketSpreadRaw;
+          
+          // Spread Variance: How many points the Market is "off" compared to Model
+          const spreadVariance = (modelSpread - marketSpread);
+          const sharpsScore = Math.min(100, Math.round(Math.abs(spreadVariance) * (20 / lane.weight)));
+
+          const modelTotal = (hStats.ppg + aStats.ppg + hStats.oppg + aStats.oppg) / 2;
+          const totalVariance = odds.overUnder > 0 ? (modelTotal - odds.overUnder) : 0;
+          
+          allRankedGames.push({
+            game, comp, lane, odds, hStats, aStats, 
+            modelSpread, marketSpread, spreadVariance, 
+            modelTotal, totalVariance, sharpsScore,
+            state: game.status.type.state
+          });
+        });
+      });
+
+      allRankedGames.sort((a,b) => b.sharpsScore - a.sharpsScore);
+
+      const laneEl = document.createElement('div');
+      laneEl.className = 'lane';
+      laneEl.style.width = '100%';
+      laneEl.style.display = 'grid';
+      laneEl.style.gridTemplateColumns = 'repeat(auto-fill, minmax(350px, 1fr))';
+      laneEl.style.gap = '20px';
+
+      allRankedGames.forEach(g => laneEl.appendChild(createSharpsCard(g)));
+      container.appendChild(laneEl);
+    }
+
+    function createSharpsCard(g) {
+      const home = g.comp.competitors.find(c => c.homeAway === 'home');
+      const away = g.comp.competitors.find(c => c.homeAway === 'away');
+      
+      const card = document.createElement('div');
+      card.className = 'game-card';
+      
+      let badgeClass = 'edge-mid';
+      let badgeText = 'MODEL NEUTRAL';
+      if (g.sharpsScore > 70) { badgeClass = 'edge-high'; badgeText = 'HIGH VARIANCE'; }
+      else if (g.sharpsScore < 25) { badgeClass = 'edge-trap'; badgeText = 'EFFICIENT LINE'; }
+
+      // Format Model Line
+      const modelFavAbbr = g.modelSpread < 0 ? home.team.abbreviation : away.team.abbreviation;
+      const modelLineText = `${modelFavAbbr} ${g.modelSpread < 0 ? g.modelSpread.toFixed(1) : '-' + g.modelSpread.toFixed(1)}`;
+
+      card.innerHTML = `
+        <div class="edge-badge ${badgeClass}">${badgeText} | ${g.sharpsScore}</div>
+        
+        <div class="game-header">
+          <div class="game-status ${g.state==='in'?'status-live':''}">
+            ${g.state==='in' ? `<span class="status-live">● LIVE</span> ${g.game.status.type.detail}` : (g.state==='pre' ? new Date(g.game.date).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}) : 'FINAL')}
+          </div>
+          <div style="font-size:10px; font-weight:900; color:var(--accent); letter-spacing:1px">${g.lane.icon} ${g.lane.label}</div>
+        </div>
+
+        <div class="scoreboard">
+          <div class="team-row">
+            <div class="team-info">
+              <img src="${away.team.logo}" class="team-logo">
+              <div class="team-details">
+                <span class="team-name">${away.team.displayName}</span>
+                <span class="team-ppg">AVG ${g.aStats.ppg.toFixed(1)}</span>
+              </div>
+            </div>
+            <div class="team-score">${away.score || 0}</div>
+          </div>
+          <div class="team-row">
+            <div class="team-info">
+              <img src="${home.team.logo}" class="team-logo">
+              <div class="team-details">
+                <span class="team-name">${home.team.displayName}</span>
+                <span class="team-ppg">AVG ${g.hStats.ppg.toFixed(1)}</span>
+              </div>
+            </div>
+            <div class="team-score">${home.score || 0}</div>
+          </div>
+        </div>
+
+        <div class="comparison-container">
+          <div class="comp-header">
+            <span>Sportsbook</span>
+            <span>Vs</span>
+            <span>Model</span>
+          </div>
+          <div class="comp-row">
+            <span class="comp-label">Line</span>
+            <span class="comp-val comp-market">${g.odds.details === 'OFF' ? '—' : g.odds.details}</span>
+            <span class="comp-val comp-model">${modelLineText}</span>
+          </div>
+          <div class="comp-row">
+            <span class="comp-label">Total</span>
+            <span class="comp-val comp-market">${g.odds.overUnder || '—'}</span>
+            <span class="comp-val comp-model">${g.modelTotal.toFixed(1)}</span>
+          </div>
+          <div class="comp-row">
+            <span class="comp-label">Value</span>
+            <span class="comp-val comp-market">${g.odds.homeML}</span>
+            <span class="comp-val comp-model" style="color:var(--text)">SCORE ${g.sharpsScore}</span>
+          </div>
+        </div>
+
+        <div class="edge-box" style="background:${Math.abs(g.spreadVariance) > 3 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255,255,255,0.05)'}">
+          <span class="edge-label">Spread Variance</span>
+          <span class="edge-val" style="color:${Math.abs(g.spreadVariance) > 3 ? 'var(--success)' : 'var(--text)'}">
+            ${Math.abs(g.spreadVariance).toFixed(1)} points
+          </span>
+        </div>
+
+        <div class="score-meter">
+          <div class="score-fill" style="width:${g.sharpsScore}%; background:linear-gradient(90deg, var(--danger), var(--warning), var(--success))"></div>
+        </div>
+      `;
+      return card;
+    }
+
+    document.getElementById('sportTabs').onclick = (e) => {
+      const tab = e.target.closest('.sport-tab');
+      if (!tab) return;
+      const sport = tab.dataset.sport;
+      if (sport === 'all') {
+        const active = !tab.classList.contains('active');
+        LANES.forEach(l => selectedSports[l.id] = active);
+        document.querySelectorAll('.sport-tab').forEach(t => t.classList.toggle('active', active));
+      } else {
+        selectedSports[sport] = !selectedSports[sport];
+        tab.classList.toggle('active');
+      }
+      localStorage.setItem('th_selectedSports', JSON.stringify(selectedSports));
+      renderDashboard();
+    };
+
+    document.getElementById('prevDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()-1); renderDashboard(); };
+    document.getElementById('nextDate').onclick = () => { selectedDate.setDate(selectedDate.getDate()+1); renderDashboard(); };
+    document.getElementById('jumpToday').onclick = () => { selectedDate = new Date(); renderDashboard(); };
+    
+    buildTabs();
+    renderDashboard();
+    setInterval(renderDashboard, 300000); // 5 min refresh
+  </script>
+</body>
+</html>
