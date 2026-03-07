@@ -3,49 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autonomous Explorer v4</title>
+    <title>Autonomous Explorer v7 | Analytical Scout</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
             --accent: #30d158;
             --bg: #000;
-            --panel-bg: rgba(20, 20, 22, 0.98);
+            --panel-bg: rgba(20, 20, 22, 0.96);
             --text: #fff;
             --info: #0a84ff;
+            --secondary: #8e8e93;
         }
         body, html { margin: 0; padding: 0; height: 100%; font-family: -apple-system, system-ui, sans-serif; background: var(--bg); overflow: hidden; color: var(--text); }
-        #map { height: 100vh; width: 100%; filter: brightness(0.6) contrast(1.1) saturate(0.8); }
+        #map { height: 100vh; width: 100%; filter: brightness(0.7) contrast(1.1); }
         
-        .control-panel {
+        .top-nav {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: var(--panel-bg); backdrop-filter: blur(20px);
+            padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; gap: 12px; align-items: center; box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+        }
+
+        /* ANALYTICS PANEL (LEFT) */
+        .analytics-panel {
+            position: fixed; left: 20px; top: 80px; width: 220px;
+            z-index: 1001; background: var(--panel-bg); backdrop-filter: blur(30px);
+            border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 20px; display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 10px 0 50px rgba(0,0,0,0.5);
+        }
+        .analytics-header { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--secondary); font-weight: 800; margin-bottom: 4px; }
+        .stat-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .stat-row:last-child { border: none; }
+        .stat-label { color: #fff; opacity: 0.8; }
+        .stat-count { font-family: monospace; font-weight: 800; color: var(--accent); }
+        .stat-ratio { font-size: 9px; color: var(--secondary); }
+
+        .log-panel {
+            position: fixed; right: 20px; top: 80px; bottom: 20px;
+            width: 350px; z-index: 1001; background: var(--panel-bg); backdrop-filter: blur(30px);
+            border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -10px 0 50px rgba(0,0,0,0.5);
+        }
+        .log-panel.collapsed { transform: translateX(calc(100% - 60px)); }
+
+        .log-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .log-header h2 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--secondary); }
+
+        .log-container {
+            flex: 1; padding: 12px; overflow-y: auto;
+            display: flex; flex-direction: column-reverse; gap: 8px;
+            font-family: 'SF Mono', 'Menlo', monospace;
+        }
+        
+        .mini-log {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 60px;
+            display: none; align-items: center; justify-content: center;
+            writing-mode: vertical-rl; text-transform: uppercase; font-size: 10px;
+            font-weight: 900; letter-spacing: 2px; color: var(--accent);
+        }
+        .collapsed .mini-log { display: flex; }
+        .collapsed .log-container, .collapsed .log-header h2 { opacity: 0; pointer-events: none; }
+
+        .log-entry { font-size: 10px; line-height: 1.4; color: #8e8e93; border-left: 2px solid transparent; padding-left: 10px; }
+        .log-entry.active { color: #fff; border-left-color: var(--accent); font-weight: bold; background: rgba(48, 209, 88, 0.05); }
+        .log-entry.future { color: var(--info); border-left-color: var(--info); opacity: 0.6; }
+
+        .bottom-panel {
             position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
             z-index: 1000; background: var(--panel-bg); backdrop-filter: blur(30px);
-            padding: 20px; border-radius: 28px; box-shadow: 0 10px 50px rgba(0,0,0,0.8);
-            width: 94%; max-width: 500px; display: flex; flex-direction: column; gap: 12px;
+            padding: 16px; border-radius: 24px; box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            width: 90%; max-width: 450px; display: flex; flex-direction: column; gap: 12px;
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
-        .stat-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
-        .stat-label { font-size: 8px; text-transform: uppercase; color: #8e8e93; font-weight: 800; letter-spacing: 1px; margin-bottom: 2px; }
-        .stat-value { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
-
-        .log-container {
-            background: #000; border-radius: 16px; padding: 12px;
-            height: 140px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);
-            display: flex; flex-direction: column-reverse; gap: 4px;
-            font-family: 'SF Mono', 'Menlo', monospace;
-        }
-        .log-entry { font-size: 11px; line-height: 1.4; color: #636366; }
-        .log-entry.decision { color: var(--info); font-weight: bold; border-left: 2px solid var(--info); padding-left: 6px; }
-        .log-entry.sys { color: var(--accent); }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .stat-box { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 12px; text-align: center; }
+        .stat-label { font-size: 7px; text-transform: uppercase; color: var(--secondary); font-weight: 800; letter-spacing: 1px; margin-bottom: 2px; }
+        .stat-value { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
         .btn {
-            background: var(--accent); color: #000; border: none; padding: 18px;
-            border-radius: 20px; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s;
+            background: rgba(255,255,255,0.05); color: #fff; border: 1px solid rgba(255,255,255,0.1); 
+            padding: 8px 14px; border-radius: 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+        }
+        .main-btn {
+            background: var(--accent); color: #000; border: none; padding: 16px;
+            border-radius: 16px; font-size: 14px; font-weight: 800; cursor: pointer; transition: all 0.2s;
             text-transform: uppercase; letter-spacing: 1px;
         }
-        .btn:active { transform: scale(0.97); }
         .btn-stop { background: #ff453a; color: white; }
+
+        @media (max-width: 900px) {
+            .analytics-panel { display: none; }
+            .log-panel { top: auto; bottom: 180px; left: 50%; right: auto; transform: translateX(-50%); width: 94%; height: 120px; }
+            .log-panel.collapsed { transform: translateX(-50%) translateY(calc(100% - 40px)); }
+        }
 
         .loading-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
@@ -57,13 +110,61 @@
 <body>
 
     <div id="loader" class="loading-overlay">
-        <div style="font-size: 40px; margin-bottom: 10px;">🛰️</div>
-        <div style="font-weight: 700;">Acquiring GPS Signal...</div>
+        <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+        <div style="font-weight: 700;">Initializing Analytical Engine...</div>
     </div>
     
     <div id="map"></div>
 
-    <div class="control-panel" id="ui" style="display:none">
+    <div class="top-nav">
+        <button class="btn" onclick="zoomMap(-1)">−</button>
+        <span style="font-size:10px; font-weight:800; color:var(--secondary); min-width: 30px; text-align: center;" id="zoomLevel">18</span>
+        <button class="btn" onclick="zoomMap(1)">+</button>
+        <div style="width:1px; height:16px; background:rgba(255,255,255,0.1)"></div>
+        <button class="btn" id="followBtn" onclick="toggleFollow()">View Lock</button>
+        <button class="btn" onclick="recenter()">Center</button>
+    </div>
+
+    <!-- ANALYTICS PANEL -->
+    <div class="analytics-panel">
+        <div class="analytics-header">Decision Stats</div>
+        <div class="stat-row">
+            <span class="stat-label">Straight</span>
+            <span class="stat-count" id="stat-Straight">0 <span class="stat-ratio">/ 0</span></span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Left Turn</span>
+            <span class="stat-count" id="stat-Left">0 <span class="stat-ratio">/ 0</span></span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Right Turn</span>
+            <span class="stat-count" id="stat-Right">0 <span class="stat-ratio">/ 0</span></span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">U-Turn</span>
+            <span class="stat-count" id="stat-UTurn">0 <span class="stat-ratio">/ 0</span></span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Other</span>
+            <span class="stat-count" id="stat-Other">0 <span class="stat-ratio">/ 0</span></span>
+        </div>
+        <div class="analytics-header" style="margin-top:10px">Global Total</div>
+        <div class="stat-row">
+            <span class="stat-label">Total Legs</span>
+            <span class="stat-count" id="stat-Total">0</span>
+        </div>
+    </div>
+
+    <div class="log-panel" id="logPanel">
+        <div class="mini-log" onclick="toggleLog()">Neural Feed: <span id="lastDecisionMini">Active</span></div>
+        <div class="log-header" onclick="toggleLog()">
+            <h2>Mission Log</h2>
+            <div id="toggleIcon">➡️</div>
+        </div>
+        <div class="log-container" id="driveLog"></div>
+    </div>
+
+    <div class="bottom-panel" id="ui" style="display:none">
         <div class="stats-grid">
             <div class="stat-box">
                 <div class="stat-label">Odometer</div>
@@ -74,188 +175,215 @@
                 <div class="stat-value" id="dirVal">--</div>
             </div>
             <div class="stat-box">
-                <div class="stat-label">Status</div>
-                <div class="stat-value" id="statusVal" style="color:var(--info)">STANDBY</div>
+                <div class="stat-label">To Junction</div>
+                <div class="stat-value" id="distVal">-- ft</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Buffer</div>
+                <div class="stat-value" id="bufVal" style="color:var(--accent)">0/10</div>
             </div>
         </div>
-
-        <div class="log-container" id="driveLog"></div>
-
-        <button class="btn" id="driveBtn">Start Mission</button>
+        <button class="main-btn" id="driveBtn">Engage Autonomy</button>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        const CONFIG = { speed: 0.00003, maxBuffer: 10, probeDist: 0.006 };
+        
         let map, carMarker, activePath, trail;
-        let isDriving = false;
-        let currentPos = null;
-        let routeCoords = [];
-        let currentManeuvers = [];
-        let currentIndex = 0;
-        let totalMiles = 0;
-        let driveTimeout;
-        let currentBearing = 0;
+        let isDriving = false, autoFollow = true;
+        let currentPos = null, currentBearing = 0, totalMiles = 0;
+        let activeLeg = null, pathQueue = [], isThinking = false;
+        
+        const analytics = {
+            Straight: { taken: 0, possible: 0 },
+            Left: { taken: 0, possible: 0 },
+            Right: { taken: 0, possible: 0 },
+            UTurn: { taken: 0, possible: 0 },
+            Other: { taken: 0, possible: 0 },
+            Total: 0
+        };
 
-        // Init Map
-        map = L.map('map', { zoomControl: false, attributionControl: false }).setView([0,0], 17);
+        map = L.map('map', { zoomSnap: 0.1, zoomControl: false, attributionControl: false }).setView([0,0], 18);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+        map.on('dragstart', () => { if(autoFollow) toggleFollow(false); });
 
         const carIcon = L.divIcon({
-            html: `<div id="car" style="font-size: 36px; transition: transform 0.15s linear;">🚗</div>`,
+            html: `<div id="car" style="font-size: 32px; transition: transform 0.1s linear;">🚗</div>`,
             className: 'car-icon', iconSize: [40, 40], iconAnchor: [20, 20]
         });
 
-        function log(msg, type = "") {
+        function updateAnalyticsUI() {
+            Object.keys(analytics).forEach(key => {
+                if (key === 'Total') {
+                    document.getElementById('stat-Total').innerText = analytics[key];
+                    return;
+                }
+                const el = document.getElementById('stat-' + key);
+                if (el) {
+                    el.innerHTML = `${analytics[key].taken} <span class="stat-ratio">/ ${analytics[key].possible}</span>`;
+                }
+            });
+        }
+
+        function log(msg, type = "", coords = null) {
             const el = document.getElementById('driveLog');
+            if(!el) return;
             const entry = document.createElement('div');
             entry.className = "log-entry " + type;
             const time = new Date().toLocaleTimeString([], {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
-            entry.innerText = `[${time}] ${msg}`;
+            const targetCoords = coords || currentPos;
+            const coordsHtml = targetCoords ? `<span class="coords">LAT: ${targetCoords[0].toFixed(6)}, LON: ${targetCoords[1].toFixed(6)}</span>` : '';
+            entry.innerHTML = `[${time}] ${msg}${coordsHtml}`;
             el.insertBefore(entry, el.firstChild);
+            if(document.getElementById('lastDecisionMini')) document.getElementById('lastDecisionMini').innerText = msg;
         }
 
         function initLocation() {
             navigator.geolocation.getCurrentPosition(p => {
-                const coords = [p.coords.latitude, p.coords.longitude];
-                currentPos = coords;
-                map.setView(coords, 17);
-                carMarker = L.marker(coords, { icon: carIcon }).addTo(map);
-                trail = L.polyline([], { color: '#30d158', weight: 4, opacity: 0.5 }).addTo(map);
-                
+                currentPos = [p.coords.latitude, p.coords.longitude];
+                map.setView(currentPos, 18);
+                carMarker = L.marker(currentPos, { icon: carIcon }).addTo(map);
+                trail = L.polyline([], { color: '#30d158', weight: 4, opacity: 0.4 }).addTo(map);
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('ui').style.display = 'flex';
-                log("Location Locked. Systems Ready.", "sys");
-            }, e => {
-                alert("GPS Denied. Please enable location services.");
+                document.getElementById('zoomLevel').innerText = Math.round(map.getZoom());
+                log("Systems online.", "sys");
             });
         }
 
-        async function scanIntersections() {
-            document.getElementById('statusVal').innerText = "SCANNING";
-            document.getElementById('statusVal').style.color = "#ff9f0a";
-            log("Analyzing possible exits from current node...");
+        function getCategory(angle) {
+            const abs = Math.abs(angle);
+            if (abs < 25) return "Straight";
+            if (angle >= 25 && angle <= 110) return "Right";
+            if (angle <= -25 && angle >= -110) return "Left";
+            if (abs > 135) return "UTurn";
+            return "Other";
+        }
+
+        async function fillNeuralBuffer() {
+            if (isThinking || pathQueue.length >= CONFIG.maxBuffer) return;
+            isThinking = true;
+
+            let origin, bearing;
+            if (pathQueue.length > 0) {
+                const last = pathQueue[pathQueue.length - 1];
+                origin = last.coords[last.coords.length - 1];
+                bearing = last.exitBearing;
+            } else if (activeLeg) {
+                origin = activeLeg.coords[activeLeg.coords.length - 1];
+                bearing = currentBearing;
+            } else {
+                origin = currentPos;
+                bearing = currentBearing;
+            }
 
             const angles = [0, 90, -90, 45, -45, 180];
-            const possibleRoutes = [];
-
-            // Parallel scan of directions
             const scans = await Promise.all(angles.map(async angle => {
-                const targetRad = (currentBearing + angle) * (Math.PI / 180);
-                const dest = [
-                    currentPos[0] + Math.cos(targetRad) * 0.015,
-                    currentPos[1] + Math.sin(targetRad) * 0.015
-                ];
-                const url = `https://router.project-osrm.org/route/v1/driving/${currentPos[1]},${currentPos[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
+                const rad = (bearing + angle) * (Math.PI / 180);
+                const dest = [origin[0] + Math.cos(rad) * CONFIG.probeDist, origin[1] + Math.sin(rad) * CONFIG.probeDist];
+                const url = `https://router.project-osrm.org/route/v1/driving/${origin[1]},${origin[0]};${dest[1]},${dest[0]}?overview=full&geometries=geojson&steps=true`;
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
-                    if (data.routes && data.routes.length > 0) {
-                        const step = data.routes[0].legs[0].steps[1] || data.routes[0].legs[0].steps[0];
-                        return { 
-                            angle, 
-                            data: data.routes[0], 
-                            name: step.name || "Unnamed Road",
-                            instruction: step.maneuver.instruction 
-                        };
+                    if (data.routes?.[0]) {
+                        const route = data.routes[0];
+                        const leg = route.legs[0];
+                        const coords = leg.steps[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                        const exitB = Math.atan2(coords[coords.length-1][1]-coords[0][1], coords[coords.length-1][0]-coords[0][0]) * 180 / Math.PI;
+                        const finalAngle = ((exitB - bearing + 540) % 360) - 180;
+                        return { category: getCategory(finalAngle), coords, instruction: leg.steps[1]?.maneuver.instruction || "Forward", exitBearing: exitB, angle: finalAngle };
                     }
-                } catch (e) {}
+                } catch(e) {}
                 return null;
             }));
 
-            const validRoutes = scans.filter(s => s !== null);
-            
-            if (validRoutes.length === 0) {
-                log("No exits found. Recalibrating GPS...", "error");
-                currentBearing += 45;
-                return scanIntersections();
+            const valid = scans.filter(s => s !== null);
+            if (valid.length > 0) {
+                // Record possible options
+                valid.forEach(v => analytics[v.category].possible++);
+                
+                // Selection logic (Strict no U-Turn unless forced)
+                const forward = valid.filter(v => v.category !== "UTurn");
+                const chosen = (forward.length > 0 ? forward : valid)[Math.floor(Math.random() * (forward.length || valid.length))];
+                
+                analytics[chosen.category].taken++;
+                analytics.Total++;
+                updateAnalyticsUI();
+
+                pathQueue.push(chosen);
+                log(chosen.instruction, "future", chosen.coords[0]);
+                
+                if (activePath) map.removeLayer(activePath);
+                const allPlanned = pathQueue.flatMap(p => p.coords);
+                activePath = L.polyline(allPlanned, { color: '#0a84ff', weight: 6, opacity: 0.3, dashArray: '10, 10' }).addTo(map);
             }
-
-            const routeLabels = validRoutes.map(r => {
-                if (r.angle === 0) return "Straight (" + r.name + ")";
-                if (r.angle === 90) return "Right (" + r.name + ")";
-                if (r.angle === -90) return "Left (" + r.name + ")";
-                return "Turn (" + r.name + ")";
-            });
-
-            log("Options Found: " + routeLabels.join(", "), "sys");
-
-            // Pick a route (prefer non-U-turns)
-            const forwardRoutes = validRoutes.filter(r => r.angle !== 180);
-            const chosen = (forwardRoutes.length > 0 ? forwardRoutes : validRoutes)[Math.floor(Math.random() * (forwardRoutes.length || validRoutes.length))];
             
-            routeCoords = chosen.data.geometry.coordinates.map(c => [c[1], c[0]]);
-            currentManeuvers = chosen.data.legs[0].steps;
-            currentIndex = 0;
-
-            if (activePath) map.removeLayer(activePath);
-            activePath = L.polyline(routeCoords, { color: '#0a84ff', weight: 6, opacity: 0.3 }).addTo(map);
-
-            log("Decision: " + chosen.instruction, "decision");
-            document.getElementById('statusVal').innerText = "DRIVING";
-            document.getElementById('statusVal').style.color = "#30d158";
-            
-            driveLoop();
+            isThinking = false;
+            document.getElementById('bufVal').innerText = `${pathQueue.length}/${CONFIG.maxBuffer}`;
+            if (pathQueue.length < CONFIG.maxBuffer) fillNeuralBuffer();
         }
 
         function driveLoop() {
             if (!isDriving) return;
 
-            if (currentIndex >= routeCoords.length) {
-                log("Intersection reached.");
-                scanIntersections();
-                return;
-            }
-
-            const now = routeCoords[currentIndex];
-            const next = routeCoords[currentIndex + 1];
-
-            // Intersection Check (End of Step 0)
-            const firstStepEnd = currentManeuvers[0]?.geometry?.coordinates;
-            if (firstStepEnd) {
-                const endCoord = [firstStepEnd[firstStepEnd.length-1][1], firstStepEnd[firstStepEnd.length-1][0]];
-                if (Math.abs(now[0] - endCoord[0]) < 0.0001 && Math.abs(now[1] - endCoord[1]) < 0.0001 && currentIndex > 5) {
-                    log("Approaching decision point...");
-                    scanIntersections();
+            if (!activeLeg) {
+                if (pathQueue.length > 0) {
+                    activeLeg = pathQueue.shift();
+                    log(activeLeg.instruction, "active");
+                    document.getElementById('bufVal').innerText = `${pathQueue.length}/${CONFIG.maxBuffer}`;
+                    fillNeuralBuffer();
+                } else {
+                    fillNeuralBuffer().then(() => setTimeout(driveLoop, 500));
                     return;
                 }
             }
 
-            currentPos = now;
-            carMarker.setLatLng(now);
-            trail.addLatLng(now);
-            map.panTo(now, { animate: true, duration: 0.1 });
+            const target = activeLeg.coords[1];
+            const current = activeLeg.coords[0];
+            const dist = Math.sqrt(Math.pow(target[0]-current[0], 2) + Math.pow(target[1]-current[1], 2));
 
-            totalMiles += 0.004;
-            document.getElementById('odoVal').innerText = totalMiles.toFixed(2);
-
-            if (next) {
-                const angle = Math.atan2(next[1] - now[1], next[0] - now[0]) * 180 / Math.PI;
-                currentBearing = angle;
-                document.getElementById('car').style.transform = `rotate(${90 - angle}deg)`;
+            if (dist < CONFIG.speed) {
+                activeLeg.coords.shift();
+                if (activeLeg.coords.length < 2) activeLeg = null;
+            } else {
+                const angle = Math.atan2(target[1]-current[1], target[0]-current[0]);
+                currentPos = [current[0] + Math.cos(angle) * CONFIG.speed, current[1] + Math.sin(angle) * CONFIG.speed];
+                activeLeg.coords[0] = currentPos;
+                currentBearing = angle * 180 / Math.PI;
                 
+                carMarker.setLatLng(currentPos);
+                trail.addLatLng(currentPos);
+                if (autoFollow) map.panTo(currentPos, { animate: false });
+                
+                totalMiles += 0.0002;
+                document.getElementById('odoVal').innerText = totalMiles.toFixed(2) + " mi";
                 const dirs = ["E", "NE", "N", "NW", "W", "SW", "S", "SE"];
-                const dIdx = Math.round(((angle %= 360) < 0 ? angle + 360 : angle) / 45) % 8;
-                document.getElementById('dirVal').innerText = dirs[dIdx];
+                document.getElementById('dirVal').innerText = dirs[Math.round(((currentBearing % 360 + 360) % 360) / 45) % 8];
+                
+                if (activeLeg) {
+                    const end = activeLeg.coords[activeLeg.coords.length - 1];
+                    document.getElementById('distVal').innerText = Math.round(map.distance(currentPos, end) * 3.28) + " ft";
+                }
+                const carEl = document.getElementById('car');
+                if(carEl) carEl.style.transform = `rotate(${90 - currentBearing}deg)`;
             }
 
-            currentIndex++;
-            driveTimeout = setTimeout(driveLoop, 150);
+            requestAnimationFrame(driveLoop);
         }
+
+        function toggleFollow() { autoFollow = !autoFollow; document.getElementById('followBtn').classList.toggle('active', autoFollow); }
+        function recenter() { if(currentPos) { map.setView(currentPos, map.getZoom()); toggleFollow(); } }
+        function zoomMap(d) { map.setZoom(map.getZoom() + d); document.getElementById('zoomLevel').innerText = Math.round(map.getZoom()); }
+        function toggleLog() { document.getElementById('logPanel').classList.toggle('collapsed'); }
 
         document.getElementById('driveBtn').onclick = () => {
             if (!isDriving) {
                 isDriving = true;
                 document.getElementById('driveBtn').innerText = "Emergency Stop";
                 document.getElementById('driveBtn').classList.add('btn-stop');
-                scanIntersections();
-            } else {
-                isDriving = false;
-                document.getElementById('driveBtn').innerText = "Resume Mission";
-                document.getElementById('driveBtn').classList.remove('btn-stop');
-                document.getElementById('statusVal').innerText = "PAUSED";
-                document.getElementById('statusVal').style.color = "#8e8e93";
-                clearTimeout(driveTimeout);
-            }
+                fillNeuralBuffer().then(() => driveLoop());
+            } else { location.reload(); }
         };
 
         initLocation();
