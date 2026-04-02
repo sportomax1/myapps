@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Player Vault | Ultimate Multi-League Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+        }
+
+        .hover-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .hover-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            background: rgba(51, 65, 85, 0.9);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .league-btn.active {
+            background-color: var(--league-color, #2563eb);
+            color: white;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+        }
+
+        .trivia-option { transition: all 0.2s; }
+        .trivia-option:hover:not(:disabled) { background-color: rgba(59, 130, 246, 0.2); border-color: #3b82f6; }
+        .trivia-option.correct { background-color: rgba(34, 197, 94, 0.2); border-color: #22c55e; color: #22c55e; }
+        .trivia-option.wrong { background-color: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444; }
+
+        #map-container { height: 500px; width: 100%; border-radius: 1rem; z-index: 1; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- League Selector -->
+    <div class="max-w-7xl mx-auto w-full mb-8 flex justify-center gap-2 md:gap-4 overflow-x-auto pb-2 no-scrollbar">
+        <button onclick="selectLeague('nfl')" id="sel-nfl" class="league-btn px-6 py-3 glass-panel rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-slate-800">
+            <span class="text-xl">🏈</span> NFL
+        </button>
+        <button onclick="selectLeague('mlb')" id="sel-mlb" class="league-btn px-6 py-3 glass-panel rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-slate-800">
+            <span class="text-xl">⚾</span> MLB
+        </button>
+        <button onclick="selectLeague('nba')" id="sel-nba" class="league-btn px-6 py-3 glass-panel rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-slate-800">
+            <span class="text-xl">🏀</span> NBA
+        </button>
+        <button onclick="selectLeague('nhl')" id="sel-nhl" class="league-btn px-6 py-3 glass-panel rounded-2xl text-xs font-black uppercase tracking-widest flex items-center gap-3 transition-all hover:bg-slate-800">
+            <span class="text-xl">🏒</span> NHL
+        </button>
+    </div>
+
+    <!-- Header -->
+    <header id="app-header" class="max-w-7xl mx-auto w-full flex flex-col md:flex-row items-center justify-between gap-6 mb-8 shrink-0 hidden">
+        <div class="flex items-center gap-4 cursor-pointer" onclick="location.reload()">
+            <div id="league-icon" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic"></div>
+            <div>
+                <h1 id="league-title" class="text-2xl font-black uppercase tracking-tighter italic"></h1>
+                <p id="league-subtitle" class="text-[10px] font-bold uppercase tracking-widest"></p>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-4">
+            <div class="relative">
+                <input type="text" id="main-search" oninput="applySearch()" placeholder="Search..." 
+                       class="bg-slate-900 text-white text-xs font-bold uppercase p-2 pl-8 rounded-lg border border-slate-700 outline-none focus:border-blue-500 w-48">
+                <svg class="w-3 h-3 text-slate-500 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+
+            <div id="nav-tabs" class="flex bg-slate-800 p-1 rounded-xl flex-wrap justify-center"></div>
+
+            <select id="main-sort" onchange="applyMainSort()" class="bg-slate-900 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none">
+                <option value="alpha">A-Z</option>
+                <option value="record">Record</option>
+                <option value="count">Count</option>
+            </select>
+        </div>
+    </header>
+
+    <!-- Initial State / Loader -->
+    <div id="init-loader" class="max-w-xl mx-auto w-full flex flex-col items-center justify-center gap-8 py-20">
+        <div id="welcome-msg" class="text-center">
+            <h2 class="text-4xl font-black italic uppercase tracking-tighter mb-4">Pro Player Vault</h2>
+            <p class="text-slate-500 font-bold uppercase text-xs tracking-[0.2em]">Universal Scouting & Analytics</p>
+        </div>
+        <div id="loading-spinner" class="hidden flex flex-col items-center gap-4">
+            <div class="loader w-12 h-12 border-4"></div>
+            <p id="loading-text" class="text-xs font-bold text-slate-400 uppercase tracking-widest"></p>
+            <div class="w-64 bg-slate-800 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar" class="bg-blue-500 h-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main id="main-container" class="max-w-7xl mx-auto w-full flex-grow relative hidden">
+        
+        <!-- Teams View -->
+        <div id="teams-view" class="view-section">
+            <div id="team-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        </div>
+
+        <!-- Colleges View -->
+        <div id="college-view" class="view-section hidden">
+            <div class="mb-6 flex justify-between items-end">
+                <h2 class="text-xl font-black italic uppercase text-slate-300">College Pipeline</h2>
+                <span class="text-xs font-bold text-slate-500 uppercase" id="college-count"></span>
+            </div>
+            <div id="college-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"></div>
+        </div>
+
+        <!-- Attributes View (Positions/Numbers) -->
+        <div id="attribute-view" class="view-section hidden">
+            <div id="attribute-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+        </div>
+
+        <!-- Depth View -->
+        <div id="depth-view" class="view-section hidden">
+            <div class="glass-panel p-4 overflow-x-auto">
+                <table id="depth-table" class="w-full text-left text-sm border-collapse">
+                    <thead id="depth-thead"></thead>
+                    <tbody id="depth-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Map View -->
+        <div id="map-view" class="view-section hidden">
+            <div class="glass-panel p-4 flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-black italic uppercase text-white">Geographic Insights</h2>
+                    <div id="map-controls" class="flex gap-2">
+                        <button onclick="updateMap('hometown')" class="px-3 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase">Hometown</button>
+                        <button onclick="updateMap('college')" class="px-3 py-1 bg-slate-800 rounded text-[10px] font-bold uppercase">College</button>
+                    </div>
+                </div>
+                <div id="map-container"></div>
+            </div>
+        </div>
+
+        <!-- Trivia View -->
+        <div id="trivia-view" class="view-section hidden max-w-4xl mx-auto w-full">
+            <!-- Reuse from all.html but with logo options -->
+            <div class="glass-panel p-6 mb-6 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div id="trivia-icon" class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl italic">?</div>
+                    <div>
+                        <h2 class="text-xl font-black uppercase italic text-white">Player Trivia</h2>
+                        <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest" id="trivia-stats">Score: 0 | Streak: 0</p>
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <select id="trivia-pos-filter" onchange="nextTriviaQuestion()" class="bg-slate-900 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none">
+                        <option value="all">All Positions</option>
+                    </select>
+                    <button onclick="nextTriviaQuestion()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-black uppercase transition shadow-lg">Next Player</button>
+                </div>
+            </div>
+            <div id="trivia-card" class="glass-panel p-8 flex flex-col items-center gap-8 relative overflow-hidden hidden">
+                <div class="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent pointer-events-none"></div>
+                <div class="flex flex-col items-center gap-4 z-10 text-center">
+                    <div class="w-32 h-32 bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 relative">
+                        <img id="trivia-player-img" src="" class="w-full h-full object-cover">
+                    </div>
+                    <h2 id="trivia-player-name" class="text-3xl font-black uppercase italic tracking-tighter text-white"></h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full z-10" id="trivia-questions"></div>
+                <div id="trivia-feedback" class="h-6 text-sm font-black uppercase italic tracking-tighter"></div>
+            </div>
+            <div id="trivia-empty" class="glass-panel p-20 text-center">
+                <button onclick="nextTriviaQuestion()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase transition shadow-xl">Start Trivia</button>
+            </div>
+        </div>
+
+        <!-- Roster View -->
+        <div id="roster-view" class="hidden flex flex-col gap-6 animate-fade-in fixed inset-0 bg-[#0f172a] z-50 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-7xl mx-auto w-full">
+                <button onclick="closeRoster()" class="mb-6 px-4 py-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold uppercase transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back
+                </button>
+                <div class="glass-panel p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden mb-8">
+                    <div id="roster-bg" class="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent opacity-50"></div>
+                    <img id="roster-header-logo" src="" class="w-24 h-24 object-contain drop-shadow-2xl z-10">
+                    <div class="text-center md:text-left z-10 flex-grow">
+                        <h2 id="roster-header-title" class="text-4xl font-black uppercase italic tracking-tighter text-white"></h2>
+                        <p id="roster-header-subtitle" class="text-sm font-bold text-blue-300 mt-2 tracking-widest uppercase"></p>
+                    </div>
+                    <div class="z-10 flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="roster-search" oninput="applyRosterFilters()" placeholder="Filter..." class="bg-slate-900 text-white text-xs font-bold uppercase p-3 rounded-xl border border-slate-700 outline-none w-full md:w-40">
+                    </div>
+                </div>
+                <div id="players-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20"></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Configuration ---
+        const LEAGUES = {
+            nfl: { id: 'nfl', name: 'NFL', emoji: '🏈', color: 'green', sport: 'football', league: 'nfl', stats: ['TD', 'YDS', 'INT'] },
+            mlb: { id: 'mlb', name: 'MLB', emoji: '⚾', color: 'blue', sport: 'baseball', league: 'mlb', stats: ['AVG', 'HR', 'RBI', 'ERA', 'SO'] },
+            nba: { id: 'nba', name: 'NBA', emoji: '🏀', color: 'orange', sport: 'basketball', league: 'nba', stats: ['PPG', 'RPG', 'APG'] },
+            nhl: { id: 'nhl', name: 'NHL', emoji: '🏒', color: 'blue', sport: 'hockey', league: 'nhl', stats: ['G', 'A', 'P', '+/-'] }
+        };
+
+        // --- State ---
+        let currentLeague = null;
+        let teams = [];
+        let players = [];
+        let colleges = {};
+        let positions = {};
+        let numbers = {};
+        let teamRecords = {};
+        let currentView = 'teams';
+        let currentRoster = [];
+        let map = null;
+        let markers = [];
+        let triviaState = { score: 0, streak: 0, currentPlayer: null, answered: {} };
+
+        // --- Core ---
+        async function selectLeague(leagueId) {
+            if (currentLeague === leagueId) return;
+            currentLeague = leagueId;
+            const config = LEAGUES[leagueId];
+
+            document.querySelectorAll('.league-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`sel-${leagueId}`).classList.add('active');
+            document.documentElement.style.setProperty('--league-color', config.color === 'green' ? '#16a34a' : (config.color === 'orange' ? '#ea580c' : '#2563eb'));
+
+            document.getElementById('welcome-msg').classList.add('hidden');
+            document.getElementById('loading-spinner').classList.remove('hidden');
+            document.getElementById('app-header').classList.add('hidden');
+            document.getElementById('main-container').classList.add('hidden');
+
+            teams = []; players = []; colleges = {}; positions = {}; numbers = {}; teamRecords = {};
+
+            try {
+                updateProgress(5, `Fetching ${config.name} Data...`);
+                
+                // Fetch Teams & Standings
+                const [teamsRes, standingsRes] = await Promise.all([
+                    fetch(`https://site.api.espn.com/apis/site/v2/sports/${config.sport}/${config.league}/teams`),
+                    fetch(`https://site.api.espn.com/apis/v2/sports/${config.sport}/${config.league}/standings`)
+                ]);
+                const teamsData = await teamsRes.json();
+                const standingsData = await standingsRes.json();
+                
+                processStandings(standingsData);
+
+                const rawTeams = teamsData.sports[0].leagues[0].teams.map(t => t.team);
+                await fetchRosters(rawTeams);
+
+                processData();
+                renderUI();
+            } catch (e) {
+                console.error(e);
+                alert("League sync failed. Check connection.");
+            }
+        }
+
+        async function fetchRosters(rawTeams) {
+            const chunkSize = 8;
+            for (let i = 0; i < rawTeams.length; i += chunkSize) {
+                const chunk = rawTeams.slice(i, i + chunkSize);
+                await Promise.all(chunk.map(async (team) => {
+                    try {
+                        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${LEAGUES[currentLeague].sport}/${LEAGUES[currentLeague].league}/teams/${team.id}/roster`);
+                        const data = await res.json();
+                        let roster = [];
+                        if (data.athletes) {
+                            if (Array.isArray(data.athletes[0]?.items)) {
+                                data.athletes.forEach(g => roster = roster.concat(g.items));
+                            } else {
+                                roster = data.athletes;
+                            }
+                        }
+                        team.roster = roster;
+                        team.playerCount = roster.length;
+                        team.record = teamRecords[team.id]?.record || "0-0";
+                        team.winPct = teamRecords[team.id]?.winPct || 0;
+                        teams.push(team);
+                        roster.forEach(p => { 
+                            p.currentTeam = team; 
+                            players.push(p); 
+                        });
+                    } catch(e) {}
+                }));
+                updateProgress(10 + Math.round((i / rawTeams.length) * 80), `Syncing Roster ${i}/${rawTeams.length}...`);
+            }
+        }
+
+        function processStandings(data) {
+            if (!data.children) return;
+            const traverse = (node) => {
+                if (node.standings?.entries) {
+                    node.standings.entries.forEach(entry => {
+                        const w = entry.stats.find(s => s.name === 'wins')?.value || 0;
+                        const l = entry.stats.find(s => s.name === 'losses')?.value || 0;
+                        const winPct = entry.stats.find(s => s.name === 'winPercent')?.value || 0;
+                        teamRecords[entry.team.id] = { record: `${w}-${l}`, winPct };
+                    });
+                }
+                if (node.children) node.children.forEach(traverse);
+            };
+            data.children.forEach(traverse);
+        }
+
+        function processData() {
+            colleges = {}; positions = {}; numbers = {};
+            players.forEach(p => {
+                if (p.college?.name) {
+                    const c = p.college.name;
+                    if (!colleges[c]) colleges[c] = { name: c, logo: p.college.id ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${p.college.id}.png` : null, players: [] };
+                    colleges[c].players.push(p);
+                }
+                const pos = p.position?.abbreviation || 'N/A';
+                if (!positions[pos]) positions[pos] = { name: pos, players: [] };
+                positions[pos].players.push(p);
+                const num = p.jersey || '00';
+                if (!numbers[num]) numbers[num] = { name: num, players: [] };
+                numbers[num].players.push(p);
+            });
+        }
+
+        // --- UI ---
+        function renderUI() {
+            const config = LEAGUES[currentLeague];
+            document.getElementById('loading-spinner').classList.add('hidden');
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('main-container').classList.remove('hidden');
+
+            document.getElementById('league-icon').textContent = config.emoji;
+            document.getElementById('league-icon').className = `w-12 h-12 bg-${config.color}-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic`;
+            document.getElementById('league-title').textContent = `${config.name} Vault`;
+            document.getElementById('league-subtitle').textContent = `Sync Complete: ${players.length} Active Athletes`;
+
+            const tabs = ['teams', 'college', 'position', 'number', 'depth', 'map', 'trivia'];
+            document.getElementById('nav-tabs').innerHTML = tabs.map(t => `
+                <button onclick="switchView('${t}')" id="tab-${t}" class="tab-btn px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all text-slate-400 hover:text-white">
+                    ${t}
+                </button>
+            `).join('');
+
+            switchView('teams');
+        }
+
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('bg-blue-600', 'text-white'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.add('text-slate-400'));
+            
+            const btn = document.getElementById(`tab-${view}`);
+            if (btn) {
+                btn.classList.remove('text-slate-400');
+                btn.classList.add('bg-blue-600', 'text-white');
+            }
+
+            const el = document.getElementById(`${view === 'position' || view === 'number' ? 'attribute' : view}-view`);
+            if (el) el.classList.remove('hidden');
+
+            if (view === 'teams') renderTeams();
+            else if (view === 'college') renderColleges();
+            else if (['position', 'number'].includes(view)) renderAttributes(view);
+            else if (view === 'depth') renderDepth();
+            else if (view === 'map') initMap();
+            else if (view === 'trivia') initTrivia();
+        }
+
+        // --- Renderers ---
+        function renderTeams(filtered = null) {
+            const list = filtered || teams;
+            document.getElementById('team-grid').innerHTML = list.map(t => `
+                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('team', '${t.id}')">
+                    <img src="${t.logos[0].href}" class="w-20 h-20 object-contain drop-shadow-lg group-hover:scale-110 transition duration-300">
+                    <div class="text-center">
+                        <h3 class="text-sm font-black uppercase text-white">${t.displayName}</h3>
+                        <div class="mt-2 px-3 py-1 bg-slate-800 rounded-full inline-block">
+                            <span class="text-[10px] font-black text-blue-400 tracking-widest">${t.record}</span>
+                        </div>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mt-2">${t.playerCount} Roster</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderColleges(filtered = null) {
+            const list = filtered || Object.values(colleges).sort((a,b) => b.players.length - a.players.length);
+            document.getElementById('college-count').textContent = `${list.length} Schools Represented`;
+            document.getElementById('college-grid').innerHTML = list.map(c => `
+                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4" onclick="openRoster('college', '${c.name.replace(/'/g,"\\'")}')">
+                    <img src="${c.logo || 'https://a.espncdn.com/i/teamlogos/ncaa/500/0.png'}" class="w-16 h-16 object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/ncaa/500/0.png'">
+                    <div class="text-center">
+                        <h3 class="text-xs font-black uppercase text-white truncate w-32">${c.name}</h3>
+                        <span class="text-[10px] text-blue-400 font-bold uppercase">${c.players.length} Pro Alumni</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAttributes(type) {
+            const source = type === 'position' ? positions : numbers;
+            const list = Object.values(source).sort((a,b) => type === 'number' ? (parseInt(a.name)||0) - (parseInt(b.name)||0) : b.players.length - a.players.length);
+            document.getElementById('attribute-grid').innerHTML = list.map(item => `
+                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-2" onclick="openRoster('${type}', '${item.name}')">
+                    <span class="text-2xl font-black text-white italic">${type === 'number' ? '#' : ''}${item.name}</span>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">${item.players.length} Players</span>
+                </div>
+            `).join('');
+        }
+
+        function renderDepth() {
+            const thead = document.getElementById('depth-thead');
+            const tbody = document.getElementById('depth-tbody');
+            thead.innerHTML = '<tr class="text-xs uppercase text-slate-500 border-b border-white/5"><th class="py-4 px-2">Team</th><th class="py-4 px-2">Core Personnel</th></tr>';
+            tbody.innerHTML = teams.map(t => `
+                <tr class="border-b border-white/5 hover:bg-white/5 transition cursor-pointer" onclick="openRoster('team', '${t.id}')">
+                    <td class="py-4 px-2 flex items-center gap-3">
+                        <img src="${t.logos[0].href}" class="w-8 h-8">
+                        <span class="font-bold text-xs uppercase">${t.abbreviation}</span>
+                    </td>
+                    <td class="py-4 px-2 text-[10px] text-slate-400">
+                        ${t.roster.slice(0, 8).map(p => `<span class="text-slate-200">${p.displayName}</span> (#${p.jersey})`).join(' • ')}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openRoster(type, id) {
+            let roster = [], title = "", logo = "";
+            if (type === 'team') { const t = teams.find(x => x.id === id); roster = t.roster; title = t.displayName; logo = t.logos[0].href; }
+            else if (type === 'college') { roster = colleges[id].players; title = id; logo = colleges[id].logo; }
+            else if (type === 'position') { roster = positions[id].players; title = `Position: ${id}`; logo = LEAGUES[currentLeague].emoji; }
+            else if (type === 'number') { roster = numbers[id].players; title = `Jersey #${id}`; logo = LEAGUES[currentLeague].emoji; }
+
+            currentRoster = roster;
+            document.getElementById('roster-header-title').textContent = title;
+            document.getElementById('roster-header-logo').src = logo || '';
+            applyRosterFilters();
+            document.getElementById('roster-view').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function applyRosterFilters() {
+            const term = document.getElementById('roster-search').value.toLowerCase();
+            const filtered = currentRoster.filter(p => p.displayName.toLowerCase().includes(term));
+            
+            document.getElementById('players-grid').innerHTML = filtered.map(p => {
+                const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(p.displayName + " transactions " + currentLeague.toUpperCase())}`;
+                return `
+                <div class="glass-panel p-4 flex flex-col gap-4 hover:border-blue-500/30 transition">
+                    <div class="flex gap-4">
+                        <img src="${p.headshot?.href || 'https://a.espncdn.com/i/headshots/nba/players/full/0.png'}" class="w-20 h-20 bg-slate-800 rounded-xl object-cover">
+                        <div class="flex-grow">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-black uppercase text-white">${p.displayName}</h3>
+                                <img src="${p.currentTeam.logos[0].href}" class="w-5 h-5">
+                            </div>
+                            <p class="text-xs font-bold text-slate-500">#${p.jersey || '--'} • ${p.position?.abbreviation || 'N/A'}</p>
+                            <div class="text-[10px] text-blue-400 mt-1 flex justify-between items-center">
+                                <span class="uppercase font-black">${p.college?.name || 'No College'}</span>
+                                <a href="${searchUrl}" target="_blank" class="text-slate-500 hover:text-white">Trans ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="stats-${p.id}" class="grid grid-cols-2 gap-2 text-[10px] opacity-60">
+                        <button onclick="fetchStats('${p.id}')" class="col-span-2 py-1 bg-white/5 rounded hover:bg-white/10 transition">Load Stats</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function fetchStats(pid) {
+            const container = document.getElementById(`stats-${pid}`);
+            container.innerHTML = '<span class="col-span-2 text-center text-blue-400 animate-pulse">Syncing...</span>';
+            try {
+                const res = await fetch(`https://site.api.espn.com/apis/common/v3/sports/${LEAGUES[currentLeague].sport}/${LEAGUES[currentLeague].league}/athletes/${pid}/overview`);
+                const data = await res.json();
+                const splits = data.statistics?.splits || [];
+                const labels = data.statistics?.labels || [];
+                const current = splits.find(s => s.displayName === "Regular Season" || s.displayName === "2024 Regular Season");
+                
+                if (current) {
+                    container.innerHTML = LEAGUES[currentLeague].stats.map(s => {
+                        const idx = labels.indexOf(s);
+                        return `<div><span class="text-slate-500 uppercase">${s}:</span> <span class="text-white font-bold">${current.stats[idx] || '0'}</span></div>`;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<span class="col-span-2 text-center text-slate-600">No active stats</span>';
+                }
+            } catch(e) { container.innerHTML = '<span class="col-span-2 text-center text-red-900">Stats N/A</span>'; }
+        }
+
+        // --- Geographics ---
+        function initMap() {
+            if (!map) {
+                map = L.map('map-container').setView([37.8, -96], 4);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+            }
+            updateMap('hometown');
+        }
+
+        function updateMap(type) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            const data = type === 'hometown' ? players : Object.values(colleges);
+            
+            // Simplified: Plot first 100 players with birthplaces or colleges
+            players.slice(0, 100).forEach(p => {
+                // Mock coords for state codes (simplification for speed)
+                const stateCoords = { 'CA': [36.7, -119.4], 'TX': [31.9, -99.9], 'FL': [27.6, -81.5], 'NY': [40.7, -74.0], 'IL': [40.6, -89.3], 'OH': [40.4, -82.9], 'PA': [41.2, -77.1] };
+                const loc = p.birthPlace?.state || 'CA';
+                if (stateCoords[loc]) {
+                    const m = L.marker(stateCoords[loc]).addTo(map).bindPopup(`<b>${p.displayName}</b><br>${type === 'hometown' ? p.birthPlace.city : p.college?.name}`);
+                    markers.push(m);
+                }
+            });
+        }
+
+        // --- Trivia ---
+        function initTrivia() {
+            const sel = document.getElementById('trivia-pos-filter');
+            sel.innerHTML = '<option value="all">All Positions</option>' + Object.keys(positions).map(p => `<option value="${p}">${p}</option>`).join('');
+            nextTriviaQuestion();
+        }
+
+        function nextTriviaQuestion() {
+            const pos = document.getElementById('trivia-pos-filter').value;
+            let pool = pos === 'all' ? players : players.filter(p => p.position?.abbreviation === pos);
+            if (pool.length < 5) pool = players;
+            const p = pool[Math.floor(Math.random() * pool.length)];
+            triviaState.currentPlayer = p; triviaState.answered = {};
+            document.getElementById('trivia-empty').classList.add('hidden');
+            document.getElementById('trivia-card').classList.remove('hidden');
+            document.getElementById('trivia-player-name').textContent = p.displayName;
+            document.getElementById('trivia-player-img').src = p.headshot?.href || '';
+            document.getElementById('trivia-feedback').textContent = '';
+            
+            const qSet = [
+                { t: 'number', l: 'Jersey #', c: p.jersey, pool: pool.map(x=>x.jersey) },
+                { t: 'team', l: 'Team', c: p.currentTeam.displayName, pool: teams.map(x=>x.displayName) },
+                { t: 'college', l: 'College', c: p.college?.name || 'No College', pool: Object.keys(colleges) }
+            ];
+
+            document.getElementById('trivia-questions').innerHTML = qSet.map(q => `
+                <div class="flex flex-col gap-3">
+                    <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">${q.l}?</label>
+                    <div class="grid grid-cols-2 gap-2">${generateTriviaOptions(q)}</div>
+                </div>
+            `).join('');
+        }
+
+        function generateTriviaOptions(q) {
+            let opts = [q.c];
+            while(opts.length < 4) {
+                const r = q.pool[Math.floor(Math.random()*q.pool.length)];
+                if (r && !opts.includes(r)) opts.push(r);
+            }
+            return opts.sort(() => Math.random() - 0.5).map(o => {
+                let logo = "";
+                if (q.t === 'team') { const t = teams.find(x => x.displayName === o); if (t) logo = `<img src="${t.logos[0].href}" class="w-4 h-4 mr-2">`; }
+                else if (q.t === 'college') { const c = colleges[o]; if (c) logo = `<img src="${c.logo || ''}" class="w-4 h-4 mr-2" onerror="this.style.display='none'">`; }
+                return `<button onclick="checkTrivia('${q.t}', '${o.replace(/'/g,"\\'")}', this)" class="trivia-option w-full bg-slate-800 border border-slate-700 p-2 rounded-lg text-[10px] font-bold text-white uppercase flex items-center justify-center truncate">${logo}${o}</button>`;
+            }).join('');
+        }
+
+        function checkTrivia(type, choice, btn) {
+            if (triviaState.answered[type]) return;
+            const correct = type === 'number' ? triviaState.currentPlayer.jersey : (type === 'team' ? triviaState.currentPlayer.currentTeam.displayName : (triviaState.currentPlayer.college?.name || 'No College'));
+            const isCorrect = choice === correct;
+            triviaState.answered[type] = true;
+            btn.parentElement.querySelectorAll('button').forEach(b => { b.disabled = true; if (b.textContent.trim() === correct) b.classList.add('correct'); });
+            if (isCorrect) { btn.classList.add('correct'); triviaState.score++; }
+            else { btn.classList.add('wrong'); triviaState.streak = -1; }
+            if (Object.keys(triviaState.answered).length === 3) {
+                if (triviaState.streak === -1) triviaState.streak = 0; else triviaState.streak++;
+                document.getElementById('trivia-feedback').textContent = triviaState.streak > 0 ? `STREAK: ${triviaState.streak} 🔥` : "ROUND OVER";
+                document.getElementById('trivia-feedback').className = `h-6 text-sm font-black uppercase italic ${triviaState.streak > 0 ? 'text-green-400' : 'text-slate-400'}`;
+            }
+            document.getElementById('trivia-stats').textContent = `Score: ${triviaState.score} | Streak: ${triviaState.streak}`;
+        }
+
+        // --- Helpers ---
+        function updateProgress(p, t) { document.getElementById('progress-bar').style.width = `${p}%`; document.getElementById('loading-text').textContent = t; }
+        function closeRoster() { document.getElementById('roster-view').classList.add('hidden'); document.body.style.overflow = 'auto'; }
+        function applySearch() {
+            const term = document.getElementById('main-search').value.toLowerCase();
+            if (currentView === 'teams') renderTeams(teams.filter(t => t.displayName.toLowerCase().includes(term)));
+            else if (currentView === 'college') renderColleges(Object.values(colleges).filter(c => c.name.toLowerCase().includes(term)));
+        }
+        function applyMainSort() {
+            const val = document.getElementById('main-sort').value;
+            if (currentView === 'teams') {
+                if (val === 'alpha') teams.sort((a,b) => a.displayName.localeCompare(b.displayName));
+                else if (val === 'record') teams.sort((a,b) => b.winPct - a.winPct);
+                renderTeams();
+            }
+        }
+    </script>
+</body>
+</html>

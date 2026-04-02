@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Sports Hub | Conference Affiliations</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1.5rem;
+        }
+        .hover-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        .hover-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            background: rgba(51, 65, 85, 0.9);
+            border-color: rgba(59, 130, 246, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .active-tab {
+            background-color: #2563eb;
+            color: white;
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Sidebar / Top Nav -->
+    <div class="max-w-7xl mx-auto w-full mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic">
+                🎓
+            </div>
+            <div>
+                <h1 class="text-2xl font-black uppercase tracking-tighter italic">NCAA Hub</h1>
+                <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest">Conference & Team Tracker</p>
+            </div>
+        </div>
+
+        <!-- Sport Selector -->
+        <div class="flex bg-slate-800 p-1 rounded-xl flex-wrap justify-center overflow-x-auto no-scrollbar">
+            <button onclick="selectSport('football', 'college-football')" id="btn-football" class="sport-btn px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">Football</button>
+            <button onclick="selectSport('basketball', 'mens-college-basketball')" id="btn-mbb" class="sport-btn px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">Men's Hoops</button>
+            <button onclick="selectSport('basketball', 'womens-college-basketball')" id="btn-wbb" class="sport-btn px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">Women's Hoops</button>
+            <button onclick="selectSport('baseball', 'college-baseball')" id="btn-baseball" class="sport-btn px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">Baseball</button>
+            <button onclick="selectSport('hockey', 'mens-college-hockey')" id="btn-hockey" class="sport-btn px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white">Hockey</button>
+        </div>
+
+        <!-- Search -->
+        <div class="relative w-full md:w-64">
+            <input type="text" id="main-search" oninput="applySearch()" placeholder="Search Teams or Conferences..." 
+                   class="bg-slate-900 text-white text-xs font-bold uppercase p-3 pl-10 rounded-xl border border-slate-700 outline-none focus:border-blue-500 w-full">
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="main-container" class="max-w-7xl mx-auto w-full flex-grow">
+        <!-- Loading State -->
+        <div id="loader" class="hidden flex flex-col items-center justify-center py-20 gap-4">
+            <div class="loader w-12 h-12 border-4"></div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Fetching Collegiate Data...</p>
+        </div>
+
+        <!-- Dashboard View (Conferences) -->
+        <div id="dashboard-view" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Conference cards injected here -->
+        </div>
+
+        <!-- Detailed Conference View (Overlay) -->
+        <div id="detail-view" class="hidden fixed inset-0 bg-[#0f172a] z-50 overflow-y-auto p-4 md:p-8">
+            <div class="max-w-7xl mx-auto w-full">
+                <button onclick="closeDetail()" class="mb-6 px-4 py-2 bg-slate-800 rounded-full hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-bold uppercase transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Back to Conferences
+                </button>
+
+                <div class="glass-panel p-8 mb-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+                    <div id="detail-header-bg" class="absolute inset-0 bg-gradient-to-r from-blue-900 to-transparent opacity-50"></div>
+                    <div id="conf-logo-container" class="w-24 h-24 bg-white/10 rounded-2xl flex items-center justify-center z-10 p-2">
+                        <!-- Logo dynamically added -->
+                    </div>
+                    <div class="z-10 text-center md:text-left">
+                        <h2 id="detail-title" class="text-4xl font-black uppercase italic tracking-tighter text-white"></h2>
+                        <p id="detail-subtitle" class="text-sm font-bold text-blue-300 mt-2 tracking-widest uppercase"></p>
+                    </div>
+                </div>
+
+                <div id="team-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 pb-20">
+                    <!-- Teams injected here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentSport = '';
+        let currentLeague = '';
+        let allConferences = [];
+        let filteredConferences = [];
+
+        async function selectSport(sport, league) {
+            currentSport = sport;
+            currentLeague = league;
+
+            // Update UI tabs
+            document.querySelectorAll('.sport-btn').forEach(btn => btn.classList.remove('active-tab'));
+            const btnId = league === 'mens-college-basketball' ? 'btn-mbb' : 
+                          league === 'womens-college-basketball' ? 'btn-wbb' : 
+                          `btn-${sport}`;
+            document.getElementById(btnId).classList.add('active-tab');
+
+            // Show loader
+            document.getElementById('dashboard-view').innerHTML = '';
+            document.getElementById('loader').classList.remove('hidden');
+
+            try {
+                const url = `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/groups`;
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                processGroups(data.groups);
+                renderConferences();
+            } catch (e) {
+                console.error("Failed to fetch college data", e);
+                document.getElementById('dashboard-view').innerHTML = '<div class="col-span-full text-center py-20 text-red-500 font-bold">Failed to load data. Please try again.</div>';
+            } finally {
+                document.getElementById('loader').classList.add('hidden');
+            }
+        }
+
+        function processGroups(groups) {
+            allConferences = [];
+            
+            const traverse = (group) => {
+                // If it has teams and is a leaf-ish conference, add it
+                if (group.teams && group.teams.length > 0) {
+                    allConferences.push({
+                        id: group.id,
+                        name: group.name,
+                        abbreviation: group.abbreviation,
+                        teams: group.teams,
+                        logo: group.id ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${group.id}.png` : null
+                    });
+                }
+                if (group.children) {
+                    group.children.forEach(traverse);
+                }
+            };
+
+            groups.forEach(traverse);
+            
+            // Clean up: filter out meta-groups that might have been caught if they had no children but had teams (rare)
+            // and sort alphabetically
+            allConferences.sort((a,b) => a.name.localeCompare(b.name));
+            filteredConferences = [...allConferences];
+        }
+
+        function renderConferences() {
+            const container = document.getElementById('dashboard-view');
+            if (filteredConferences.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center py-20 text-slate-500 font-bold uppercase">No conferences found.</div>';
+                return;
+            }
+
+            container.innerHTML = filteredConferences.map(conf => `
+                <div class="hover-card glass-panel p-6 flex items-center gap-6 group" onclick="viewConference('${conf.id}')">
+                    <div class="w-16 h-16 bg-white/5 rounded-xl p-2 flex items-center justify-center shrink-0">
+                        <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${conf.id}.png" class="max-w-full max-h-full object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/ncaa/500/0.png'">
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black uppercase text-white group-hover:text-blue-400 transition">${conf.name}</h3>
+                        <p class="text-[10px] text-slate-500 font-bold uppercase mt-1">${conf.teams.length} Members</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function viewConference(id) {
+            const conf = allConferences.find(c => c.id == id);
+            if (!conf) return;
+
+            document.getElementById('detail-title').textContent = conf.name;
+            document.getElementById('detail-subtitle').textContent = `${conf.teams.length} Teams • ${currentSport.toUpperCase()} ${currentLeague.includes('mens') ? 'MENS' : (currentLeague.includes('womens') ? 'WOMENS' : '')}`;
+            
+            const logoContainer = document.getElementById('conf-logo-container');
+            logoContainer.innerHTML = `<img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${conf.id}.png" class="max-w-full max-h-full object-contain" onerror="this.src='https://a.espncdn.com/i/teamlogos/ncaa/500/0.png'">`;
+
+            const teamGrid = document.getElementById('team-grid');
+            teamGrid.innerHTML = conf.teams.map(team => `
+                <div class="hover-card glass-panel p-4 flex flex-col items-center justify-center gap-3 text-center">
+                    <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${team.id}.png" class="w-16 h-16 object-contain drop-shadow-lg" onerror="this.src='https://a.espncdn.com/i/teamlogos/ncaa/500/0.png'">
+                    <div>
+                        <h4 class="text-[10px] font-black uppercase text-white leading-tight">${team.displayName || team.name}</h4>
+                        <p class="text-[8px] text-slate-500 font-bold uppercase mt-1">${team.abbreviation || ''}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('detail-view').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDetail() {
+            document.getElementById('detail-view').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function applySearch() {
+            const term = document.getElementById('main-search').value.toLowerCase();
+            if (!term) {
+                filteredConferences = [...allConferences];
+            } else {
+                filteredConferences = allConferences.filter(conf => {
+                    const matchName = conf.name.toLowerCase().includes(term);
+                    const matchTeam = conf.teams.some(t => (t.displayName || t.name || '').toLowerCase().includes(term));
+                    return matchName || matchTeam;
+                });
+            }
+            renderConferences();
+        }
+
+        // Init
+        selectSport('football', 'college-football');
+    </script>
+</body>
+</html>

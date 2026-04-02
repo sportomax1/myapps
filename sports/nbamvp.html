@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NBA MVP Vault | Who Won vs. Who Should Have</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #020617;
+      --surface: #0f172a;
+      --card: #1e293b;
+      --accent: #f97316;
+      --text: #f8fafc;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at 50% -10%, #1c0800 0%, #020617 55%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .mvp-row {
+      background: rgba(30, 41, 59, 0.55);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 1.25rem;
+      transition: all 0.22s ease;
+    }
+    .mvp-row:hover {
+      border-color: rgba(249, 115, 22, 0.28);
+      background: rgba(30, 41, 59, 0.85);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px -8px rgba(0,0,0,0.5);
+    }
+    .mvp-row.match {
+      border-color: rgba(16, 185, 129, 0.18);
+    }
+    .mvp-row.match:hover {
+      border-color: rgba(16, 185, 129, 0.45);
+    }
+    .player-img {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #1e293b;
+      flex-shrink: 0;
+    }
+    .team-logo {
+      width: 26px;
+      height: 26px;
+      object-fit: contain;
+    }
+    .rank-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 900;
+      padding: 0.3rem 0.7rem;
+      border-radius: 0.5rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+    .rank-1 { background: rgba(16, 185, 129, 0.18); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .rank-2 { background: rgba(234, 179, 8, 0.14); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.35); }
+    .rank-3 { background: rgba(249, 115, 22, 0.14); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.35); }
+    .rank-high { background: rgba(239, 68, 68, 0.14); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .formula-bar-track {
+      background: rgba(255, 255, 255, 0.07);
+      border-radius: 9999px;
+      height: 4px;
+      width: 72px;
+      overflow: hidden;
+    }
+    .formula-bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.4s ease;
+    }
+    .decade-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #64748b;
+      font-weight: 800;
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      padding: 0.45rem 1rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-transform: uppercase;
+    }
+    .decade-btn:hover, .decade-btn.active {
+      background: rgba(249, 115, 22, 0.18);
+      border-color: rgba(249, 115, 22, 0.5);
+      color: #f97316;
+    }
+    .match-agreed {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.28);
+      color: #10b981;
+      font-size: 0.6rem;
+      font-weight: 900;
+      padding: 0.2rem 0.55rem;
+      border-radius: 0.4rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+    .stat-pill {
+      background: rgba(255,255,255,0.05);
+      border-radius: 0.4rem;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+    .vs-divider {
+      color: rgba(100,116,139,0.4);
+      font-size: 0.6rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .col-header {
+      font-size: 0.58rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #334155;
+    }
+    .year-clickable {
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .year-clickable:hover {
+      opacity: 0.7;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      backdrop-filter: blur(3px);
+    }
+    .modal-modal {
+      background: linear-gradient(to bottom, rgba(20, 30, 48, 0.95), rgba(15, 23, 42, 0.95));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 1rem;
+      max-width: 900px;
+      max-height: 85vh;
+      overflow-y: auto;
+      padding: 2rem;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: bold;
+    }
+    .modal-close:hover {
+      background: rgba(249, 115, 22, 0.15);
+      border-color: rgba(249, 115, 22, 0.4);
+      color: #f97316;
+    }
+    .formula-controls {
+      background: rgba(30, 41, 59, 0.55);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .formula-input {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    .formula-input label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      width: 60px;
+      color: #cbd5e1;
+    }
+    .formula-input input {
+      width: 80px;
+      padding: 0.4rem 0.6rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 0.4rem;
+      color: #f8fafc;
+      font-weight: 600;
+    }
+    .formula-input input:focus {
+      outline: none;
+      border-color: rgba(249, 115, 22, 0.5);
+      background: rgba(249, 115, 22, 0.08);
+    }
+    .standing-row {
+      display: grid;
+      grid-template-columns: 50px 1.5fr 100px 100px 100px 100px;
+      gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: rgba(255,255,255,0.02);
+      border-radius: 0.5rem;
+      align-items: center;
+      font-size: 0.85rem;
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 0.5rem;
+    }
+    .standing-row.header {
+      background: rgba(249, 115, 22, 0.08);
+      border-color: rgba(249, 115, 22, 0.2);
+      font-weight: 700;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .standings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 767px) {
+      .player-img { width: 48px; height: 48px; }
+      .standings-grid {
+        grid-template-columns: 1fr;
+      }
+      .modal-modal {
+        max-width: 95vw;
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+  <div class="max-w-5xl mx-auto">
+
+    <!-- Header -->
+    <header class="mb-8">
+      <a href="index.html" class="text-slate-600 hover:text-orange-400 transition-colors text-xs font-black uppercase tracking-widest mb-5 inline-flex items-center gap-1">
+        ← Back to Hub
+      </a>
+      <div class="flex items-start gap-4 mt-2">
+        <div class="text-5xl">🏆</div>
+        <div>
+          <h1 class="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none" style="color: var(--accent);">NBA MVP Vault</h1>
+          <p class="text-slate-400 font-semibold mt-2 text-sm">Who Won vs. Who Should Have &nbsp;·&nbsp; Formula: <span style="color:var(--accent)">pts + reb + (ast × 2)</span></p>
+        </div>
+      </div>
+
+      <!-- Summary stats -->
+      <div class="mt-6 flex flex-wrap gap-3">
+        <div class="px-4 py-3 rounded-xl text-center" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2)">
+          <div class="text-xl font-black text-emerald-400" id="agreePct">—</div>
+          <div class="text-xs text-slate-600 font-bold uppercase tracking-wider mt-0.5">Formula Agreed</div>
+        </div>
+        <div class="px-4 py-3 rounded-xl text-center" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.18)">
+          <div class="text-xl font-black text-red-400" id="bigSnubs">—</div>
+          <div class="text-xs text-slate-600 font-bold uppercase tracking-wider mt-0.5">Rank 5+ Picks</div>
+        </div>
+        <div class="px-4 py-3 rounded-xl text-center" style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.18)">
+          <div class="text-xl font-black text-orange-400" id="totalYears">—</div>
+          <div class="text-xs text-slate-600 font-bold uppercase tracking-wider mt-0.5">Years Tracked</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-2 mb-5">
+      <button class="decade-btn active" onclick="setFilter('all',this)">All</button>
+      <button class="decade-btn" onclick="setFilter('20s',this)">2020s</button>
+      <button class="decade-btn" onclick="setFilter('10s',this)">2010s</button>
+      <button class="decade-btn" onclick="setFilter('00s',this)">2000s</button>
+      <button class="decade-btn" onclick="setFilter('90s',this)">1990s</button>
+      <button class="decade-btn ml-auto" id="sortBtn" onclick="toggleSort()">Newest ↓</button>
+    </div>
+
+    <!-- Column headers (desktop) -->
+    <div class="hidden md:grid gap-4 mb-2 px-5" style="grid-template-columns: 70px 1fr 28px 1fr 88px">
+      <div class="col-header">Year</div>
+      <div class="col-header">Actual MVP Winner</div>
+      <div></div>
+      <div class="col-header">Formula Winner (pts+reb+ast)</div>
+      <div class="col-header text-right">MVP Rank</div>
+    </div>
+
+    <!-- List -->
+    <div id="mvp-list" class="space-y-2.5"></div>
+
+    <div class="mt-10 pt-6 border-t border-white/5 text-center text-slate-700 text-xs font-bold uppercase tracking-widest">
+      Rank = actual MVP's position when all players sorted by pts+reb+(ast×2) that season &nbsp;·&nbsp; Stats approximate &nbsp;·&nbsp; © 2026 Sharp Sports
+    </div>
+  </div>
+
+  <!-- Formula & Year Modal -->
+  <div id="modalOverlay" class="modal-overlay hidden" onclick="if(event.target.id === 'modalOverlay') closeYearModal()">
+    <div class="modal-modal">
+      <button class="modal-close" onclick="closeYearModal()">✕ Close</button>
+      
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const FALLBACK = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Ccircle cx='50' cy='35' r='22' fill='%23334155'/%3E%3Cellipse cx='50' cy='95' rx='35' ry='28' fill='%23334155'/%3E%3C/svg%3E`;
+    const MAX_SCORE = 75;  // Updated for new formula: pts + reb + (ast * 2)
+
+    const mvpData = [
+      {
+        year: 2025, season: "2024-25",
+        mvp: { name: "Shai Gilgeous-Alexander", team: "OKC Thunder", teamAbbr: "okc", playerId: 4278073, pts: 32.7, reb: 5.5, ast: 6.4 },
+        formulaWinner: { name: "Nikola Jokic", team: "Denver Nuggets", teamAbbr: "den", playerId: 3112335, pts: 29.6, reb: 13.0, ast: 10.4 },
+        mvpRank: 3
+      },
+      {
+        year: 2024, season: "2023-24",
+        mvp: { name: "Nikola Jokic", team: "Denver Nuggets", teamAbbr: "den", playerId: 3112335, pts: 26.4, reb: 12.4, ast: 9.0 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2023, season: "2022-23",
+        mvp: { name: "Joel Embiid", team: "Philadelphia 76ers", teamAbbr: "phi", playerId: 3059318, pts: 33.1, reb: 10.2, ast: 4.2 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2022, season: "2021-22",
+        mvp: { name: "Nikola Jokic", team: "Denver Nuggets", teamAbbr: "den", playerId: 3112335, pts: 27.1, reb: 13.8, ast: 7.9 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2021, season: "2020-21",
+        mvp: { name: "Nikola Jokic", team: "Denver Nuggets", teamAbbr: "den", playerId: 3112335, pts: 26.4, reb: 10.8, ast: 8.3 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2020, season: "2019-20",
+        mvp: { name: "Giannis Antetokounmpo", team: "Milwaukee Bucks", teamAbbr: "mil", playerId: 3032977, pts: 29.6, reb: 13.7, ast: 5.6 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2019, season: "2018-19",
+        mvp: { name: "Giannis Antetokounmpo", team: "Milwaukee Bucks", teamAbbr: "mil", playerId: 3032977, pts: 27.7, reb: 12.5, ast: 5.9 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2018, season: "2017-18",
+        mvp: { name: "James Harden", team: "Houston Rockets", teamAbbr: "hou", playerId: 3992, pts: 30.4, reb: 5.4, ast: 8.8 },
+        formulaWinner: { name: "LeBron James", team: "Cleveland Cavaliers", teamAbbr: "cle", playerId: 1966, pts: 27.5, reb: 8.6, ast: 9.1 },
+        mvpRank: 2
+      },
+      {
+        year: 2017, season: "2016-17",
+        mvp: { name: "Russell Westbrook", team: "OKC Thunder", teamAbbr: "okc", playerId: 3468, pts: 31.6, reb: 10.7, ast: 10.4 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2016, season: "2015-16",
+        mvp: { name: "Stephen Curry", team: "Golden State Warriors", teamAbbr: "gs", playerId: 3975, pts: 30.1, reb: 5.4, ast: 6.7 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2015, season: "2014-15",
+        mvp: { name: "Stephen Curry", team: "Golden State Warriors", teamAbbr: "gs", playerId: 3975, pts: 23.8, reb: 4.3, ast: 7.7 },
+        formulaWinner: { name: "Russell Westbrook", team: "OKC Thunder", teamAbbr: "okc", playerId: 3468, pts: 28.1, reb: 7.3, ast: 8.6 },
+        mvpRank: 5
+      },
+      {
+        year: 2014, season: "2013-14",
+        mvp: { name: "Kevin Durant", team: "OKC Thunder", teamAbbr: "okc", playerId: 3202, pts: 32.0, reb: 7.4, ast: 5.5 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2013, season: "2012-13",
+        mvp: { name: "LeBron James", team: "Miami Heat", teamAbbr: "mia", playerId: 1966, pts: 26.8, reb: 8.0, ast: 7.3 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2012, season: "2011-12",
+        mvp: { name: "LeBron James", team: "Miami Heat", teamAbbr: "mia", playerId: 1966, pts: 27.1, reb: 7.9, ast: 6.2 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2011, season: "2010-11",
+        mvp: { name: "Derrick Rose", team: "Chicago Bulls", teamAbbr: "chi", playerId: 3987, pts: 25.0, reb: 4.1, ast: 7.7 },
+        formulaWinner: { name: "LeBron James", team: "Miami Heat", teamAbbr: "mia", playerId: 1966, pts: 26.7, reb: 7.5, ast: 7.0 },
+        mvpRank: 4
+      },
+      {
+        year: 2010, season: "2009-10",
+        mvp: { name: "LeBron James", team: "Cleveland Cavaliers", teamAbbr: "cle", playerId: 1966, pts: 29.7, reb: 7.3, ast: 8.6 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2009, season: "2008-09",
+        mvp: { name: "LeBron James", team: "Cleveland Cavaliers", teamAbbr: "cle", playerId: 1966, pts: 28.4, reb: 7.6, ast: 7.2 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2008, season: "2007-08",
+        mvp: { name: "Kobe Bryant", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 110, pts: 28.3, reb: 6.3, ast: 5.4 },
+        formulaWinner: { name: "LeBron James", team: "Cleveland Cavaliers", teamAbbr: "cle", playerId: 1966, pts: 30.0, reb: 7.9, ast: 7.2 },
+        mvpRank: 2
+      },
+      {
+        year: 2007, season: "2006-07",
+        mvp: { name: "Dirk Nowitzki", team: "Dallas Mavericks", teamAbbr: "dal", playerId: 1717, pts: 24.6, reb: 8.9, ast: 3.4 },
+        formulaWinner: { name: "Kobe Bryant", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 110, pts: 31.6, reb: 5.7, ast: 4.5 },
+        mvpRank: 4
+      },
+      {
+        year: 2006, season: "2005-06",
+        mvp: { name: "Steve Nash", team: "Phoenix Suns", teamAbbr: "phx", playerId: 176, pts: 18.8, reb: 4.2, ast: 10.5 },
+        formulaWinner: { name: "Kobe Bryant", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 110, pts: 35.4, reb: 5.3, ast: 4.5 },
+        mvpRank: 12
+      },
+      {
+        year: 2005, season: "2004-05",
+        mvp: { name: "Steve Nash", team: "Phoenix Suns", teamAbbr: "phx", playerId: 176, pts: 15.5, reb: 3.3, ast: 11.5 },
+        formulaWinner: { name: "Allen Iverson", team: "Philadelphia 76ers", teamAbbr: "phi", playerId: 555, pts: 30.7, reb: 4.0, ast: 7.9 },
+        mvpRank: 10
+      },
+      {
+        year: 2004, season: "2003-04",
+        mvp: { name: "Kevin Garnett", team: "Minnesota T-Wolves", teamAbbr: "min", playerId: 708, pts: 24.2, reb: 13.9, ast: 5.0 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2003, season: "2002-03",
+        mvp: { name: "Tim Duncan", team: "San Antonio Spurs", teamAbbr: "sa", playerId: 695, pts: 23.3, reb: 12.9, ast: 3.9 },
+        formulaWinner: { name: "Tracy McGrady", team: "Orlando Magic", teamAbbr: "orl", playerId: 533, pts: 32.1, reb: 6.5, ast: 5.5 },
+        mvpRank: 3
+      },
+      {
+        year: 2002, season: "2001-02",
+        mvp: { name: "Tim Duncan", team: "San Antonio Spurs", teamAbbr: "sa", playerId: 695, pts: 25.5, reb: 12.7, ast: 3.7 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 2001, season: "2000-01",
+        mvp: { name: "Allen Iverson", team: "Philadelphia 76ers", teamAbbr: "phi", playerId: 555, pts: 31.1, reb: 3.8, ast: 4.6 },
+        formulaWinner: { name: "Shaquille O'Neal", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 614, pts: 28.7, reb: 12.7, ast: 3.7 },
+        mvpRank: 3
+      },
+      {
+        year: 2000, season: "1999-00",
+        mvp: { name: "Shaquille O'Neal", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 614, pts: 29.7, reb: 13.6, ast: 3.8 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1999, season: "1998-99",
+        mvp: { name: "Karl Malone", team: "Utah Jazz", teamAbbr: "uta", playerId: 540, pts: 23.8, reb: 9.4, ast: 3.7 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1998, season: "1997-98",
+        mvp: { name: "Michael Jordan", team: "Chicago Bulls", teamAbbr: "chi", playerId: 1974, pts: 28.7, reb: 5.8, ast: 3.5 },
+        formulaWinner: { name: "Karl Malone", team: "Utah Jazz", teamAbbr: "uta", playerId: 540, pts: 27.0, reb: 9.9, ast: 4.0 },
+        mvpRank: 2
+      },
+      {
+        year: 1997, season: "1996-97",
+        mvp: { name: "Karl Malone", team: "Utah Jazz", teamAbbr: "uta", playerId: 540, pts: 27.4, reb: 9.9, ast: 4.5 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1996, season: "1995-96",
+        mvp: { name: "Michael Jordan", team: "Chicago Bulls", teamAbbr: "chi", playerId: 1974, pts: 30.4, reb: 6.6, ast: 4.3 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1995, season: "1994-95",
+        mvp: { name: "David Robinson", team: "San Antonio Spurs", teamAbbr: "sa", playerId: 600, pts: 27.6, reb: 10.8, ast: 2.9 },
+        formulaWinner: { name: "Shaquille O'Neal", team: "Orlando Magic", teamAbbr: "orl", playerId: 614, pts: 29.3, reb: 11.4, ast: 2.7 },
+        mvpRank: 2
+      },
+      {
+        year: 1994, season: "1993-94",
+        mvp: { name: "Hakeem Olajuwon", team: "Houston Rockets", teamAbbr: "hou", playerId: 443, pts: 27.3, reb: 11.9, ast: 3.6 },
+        formulaWinner: { name: "David Robinson", team: "San Antonio Spurs", teamAbbr: "sa", playerId: 600, pts: 29.8, reb: 10.7, ast: 3.3 },
+        mvpRank: 2
+      },
+      {
+        year: 1993, season: "1992-93",
+        mvp: { name: "Charles Barkley", team: "Phoenix Suns", teamAbbr: "phx", playerId: 217, pts: 25.6, reb: 12.2, ast: 5.1 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1992, season: "1991-92",
+        mvp: { name: "Michael Jordan", team: "Chicago Bulls", teamAbbr: "chi", playerId: 1974, pts: 30.1, reb: 6.4, ast: 6.1 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1991, season: "1990-91",
+        mvp: { name: "Michael Jordan", team: "Chicago Bulls", teamAbbr: "chi", playerId: 1974, pts: 31.5, reb: 6.0, ast: 5.5 },
+        formulaWinner: null,
+        mvpRank: 1
+      },
+      {
+        year: 1990, season: "1989-90",
+        mvp: { name: "Magic Johnson", team: "Los Angeles Lakers", teamAbbr: "lal", playerId: 1029, pts: 22.3, reb: 6.6, ast: 11.5 },
+        formulaWinner: { name: "Michael Jordan", team: "Chicago Bulls", teamAbbr: "chi", playerId: 1974, pts: 33.6, reb: 6.9, ast: 6.3 },
+        mvpRank: 3
+      },
+    ];
+
+    let currentFilter = 'all';
+    let sortDesc = true;
+    
+    // Formula weights that can be customized
+    let formulaWeights = {
+      pts: 1,
+      reb: 1,
+      ast: 2
+    };
+
+    function score(p, weights = formulaWeights) {
+      return +(p.pts * weights.pts + p.reb * weights.reb + p.ast * weights.ast).toFixed(1);
+    }
+
+    function rankClass(rank) {
+      if (rank === 1) return 'rank-1';
+      if (rank === 2) return 'rank-2';
+      if (rank === 3) return 'rank-3';
+      return 'rank-high';
+    }
+
+    function rankLabel(rank) {
+      const s = rank === 1 ? 'st' : rank === 2 ? 'nd' : rank === 3 ? 'rd' : 'th';
+      return `#${rank}<sup>${s}</sup>`;
+    }
+
+    function headshot(id) {
+      return id ? `https://a.espncdn.com/i/headshots/nba/players/full/${id}.png` : FALLBACK;
+    }
+
+    function logoUrl(abbr) {
+      return `https://a.espncdn.com/i/teamlogos/nba/500/${abbr}.png`;
+    }
+
+    function barPct(s) {
+      return Math.min(100, Math.round((s / MAX_SCORE) * 100));
+    }
+
+    function playerCard(p, accent, label) {
+      const s = score(p);
+      const pct = barPct(s);
+      const borderColor = `${accent}55`;
+      return `
+        <div class="flex items-start gap-3 min-w-0">
+          <div class="relative flex-shrink-0 mt-0.5">
+            <img src="${headshot(p.playerId)}"
+                 onerror="this.src='${FALLBACK}'"
+                 class="player-img border-2"
+                 style="border-color:${borderColor}"
+                 alt="${p.name}">
+            <img src="${logoUrl(p.teamAbbr)}"
+                 onerror="this.style.display='none'"
+                 class="team-logo absolute -bottom-1 -right-1 rounded-full border border-slate-900 bg-slate-900 p-0.5"
+                 alt="${p.team}">
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-xs font-black uppercase tracking-widest mb-0.5" style="color:${accent};font-size:0.55rem">${label}</div>
+            <div class="font-black text-sm leading-tight" style="color:${accent}">${p.name}</div>
+            <div class="text-xs text-slate-500 font-semibold truncate">${p.team}</div>
+            <div class="flex flex-wrap gap-1 mt-1.5">
+              <span class="stat-pill text-slate-300">${p.pts} <span class="text-slate-600">PTS</span></span>
+              <span class="stat-pill text-slate-300">${p.reb} <span class="text-slate-600">REB</span></span>
+              <span class="stat-pill text-slate-300">${p.ast} <span class="text-slate-600">AST</span></span>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <span class="text-xs font-black" style="color:${accent}">★ ${s}</span>
+              <div class="formula-bar-track flex-1" style="max-width:64px">
+                <div class="formula-bar-fill" style="width:${pct}%;background:${accent}60"></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderRow(entry) {
+      const isMatch = entry.formulaWinner === null;
+      const mvpScore = score(entry.mvp);
+
+      const formulaSection = isMatch
+        ? `<div class="flex items-center justify-center min-h-[80px]">
+             <div class="text-center">
+               <div class="text-lg font-black text-emerald-400 mb-1">✓</div>
+               <div class="match-agreed">Formula Agreed</div>
+               <div class="text-xs text-slate-600 font-semibold mt-1">Correct Pick</div>
+             </div>
+           </div>`
+        : playerCard(entry.formulaWinner, '#10b981', 'Should Have Won');
+
+      const rowClass = isMatch ? 'mvp-row match' : 'mvp-row';
+
+      return `
+        <div class="${rowClass} p-4 md:p-5">
+          <div class="grid grid-cols-1 md:grid-cols-[70px_1fr_28px_1fr_88px] gap-3 md:gap-4 md:items-center">
+
+            <!-- Year (Clickable) -->
+            <div class="flex md:flex-col items-center md:items-start gap-3 md:gap-0 year-clickable" onclick="openYearModal(${entry.year})">
+              <div class="text-2xl font-black text-white leading-none hover:text-orange-400">${entry.year}</div>
+              <div class="text-xs text-slate-600 font-bold">${entry.season}</div>
+              ${isMatch ? '<div class="md:hidden match-agreed">✓ Agreed</div>' : ''}
+            </div>
+
+            <!-- Actual MVP -->
+            ${playerCard(entry.mvp, '#f97316', 'Actual MVP')}
+
+            <!-- VS -->
+            <div class="hidden md:flex items-center justify-center">
+              <div class="vs-divider">VS</div>
+            </div>
+
+            <!-- Formula Winner -->
+            ${formulaSection}
+
+            <!-- Rank -->
+            <div class="flex md:flex-col items-center md:items-end gap-2 md:gap-1.5">
+              <div class="text-xs text-slate-700 font-bold uppercase tracking-wider hidden md:block">MVP Rank</div>
+              <div class="rank-badge ${rankClass(entry.mvpRank)}">${rankLabel(entry.mvpRank)}</div>
+              ${entry.mvpRank === 1
+                ? '<div class="text-xs text-emerald-700 font-bold hidden md:block">Top Pick</div>'
+                : entry.mvpRank >= 5
+                  ? `<div class="text-xs text-red-800 font-bold hidden md:block">Snubbed</div>`
+                  : ''}
+            </div>
+
+          </div>
+        </div>`;
+    }
+
+    function getFiltered() {
+      let data = [...mvpData];
+      const ranges = { '90s':[1990,1999], '00s':[2000,2009], '10s':[2010,2019], '20s':[2020,2029] };
+      if (currentFilter !== 'all') {
+        const [lo, hi] = ranges[currentFilter];
+        data = data.filter(d => d.year >= lo && d.year <= hi);
+      }
+      data.sort((a, b) => sortDesc ? b.year - a.year : a.year - b.year);
+      return data;
+    }
+
+    function render() {
+      document.getElementById('mvp-list').innerHTML = getFiltered().map(renderRow).join('');
+    }
+
+    function updateSummary() {
+      const total = mvpData.length;
+      const agreed = mvpData.filter(d => d.mvpRank === 1).length;
+      const bigSnubs = mvpData.filter(d => d.mvpRank >= 5).length;
+      document.getElementById('agreePct').textContent = `${Math.round(agreed / total * 100)}%`;
+      document.getElementById('bigSnubs').textContent = bigSnubs;
+      document.getElementById('totalYears').textContent = total;
+    }
+
+    function setFilter(f, btn) {
+      currentFilter = f;
+      document.querySelectorAll('.decade-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function toggleSort() {
+      sortDesc = !sortDesc;
+      document.getElementById('sortBtn').textContent = sortDesc ? 'Newest ↓' : 'Oldest ↑';
+      render();
+    }
+
+    function openYearModal(year) {
+      const entry = mvpData.find(d => d.year === year);
+      if (!entry) return;
+
+      const modalContent = document.getElementById('modalContent');
+      const mvpScore = score(entry.mvp);
+      const formulaScore = entry.formulaWinner ? score(entry.formulaWinner) : null;
+
+      let html = `
+        <div>
+          <h2 class="text-2xl font-black mb-1" style="color:var(--accent);">${year} ${entry.season} Season</h2>
+          <p class="text-slate-500 text-sm mb-4">Click year to close × Formula: <span style="color:var(--accent)">pts + reb + (ast × 2)</span></p>
+
+          <!-- Formula Controls -->
+          <div class="formula-controls">
+            <div class="text-xs font-bold uppercase text-slate-400 mb-3">⚙️ Formula Weights (Customize)</div>
+            <div class="formula-input">
+              <label>PTS:</label>
+              <input type="number" id="wtPts" step="0.1" value="${formulaWeights.pts}" onchange="updateFormulaWeights()">
+            </div>
+            <div class="formula-input">
+              <label>REB:</label>
+              <input type="number" id="wtReb" step="0.1" value="${formulaWeights.reb}" onchange="updateFormulaWeights()">
+            </div>
+            <div class="formula-input">
+              <label>AST:</label>
+              <input type="number" id="wtAst" step="0.1" value="${formulaWeights.ast}" onchange="updateFormulaWeights()">
+            </div>
+            <button onclick="resetFormula()" class="text-xs px-3 py-1.5 bg-orange-600/20 border border-orange-500/40 text-orange-400 rounded hover:bg-orange-600/30 transition mt-2">Reset to Default</button>
+          </div>
+
+          <!-- Standings Comparison -->
+          <div class="standings-grid">
+            <!-- Actual MVP Winner -->
+            <div>
+              <h3 class="text-sm font-black mb-2" style="color:#f97316;">Actual MVP Winner</h3>
+              <div class="standing-row header">
+                <div>#</div>
+                <div>Player</div>
+                <div>PTS</div>
+                <div>REB</div>
+                <div>AST</div>
+                <div>SCORE</div>
+              </div>
+              <div class="standing-row">
+                <div style="color:#f97316;font-weight:bold;">1</div>
+                <div>
+                  <div class="font-bold">${entry.mvp.name}</div>
+                  <div class="text-xs text-slate-500">${entry.mvp.team}</div>
+                </div>
+                <div>${entry.mvp.pts}</div>
+                <div>${entry.mvp.reb}</div>
+                <div>${entry.mvp.ast}</div>
+                <div style="color:#f97316;font-weight:bold;">${mvpScore}</div>
+              </div>
+            </div>
+
+            <!-- Formula Winner -->
+            <div>
+              <h3 class="text-sm font-black mb-2" style="color:#10b981;">Formula-Based Winner</h3>
+              <div class="standing-row header">
+                <div>#</div>
+                <div>Player</div>
+                <div>PTS</div>
+                <div>REB</div>
+                <div>AST</div>
+                <div>SCORE</div>
+              </div>
+      `;
+
+      if (entry.formulaWinner) {
+        html += `
+              <div class="standing-row">
+                <div style="color:#10b981;font-weight:bold;">${entry.mvpRank}</div>
+                <div>
+                  <div class="font-bold">${entry.formulaWinner.name}</div>
+                  <div class="text-xs text-slate-500">${entry.formulaWinner.team}</div>
+                </div>
+                <div>${entry.formulaWinner.pts}</div>
+                <div>${entry.formulaWinner.reb}</div>
+                <div>${entry.formulaWinner.ast}</div>
+                <div style="color:#10b981;font-weight:bold;">${formulaScore}</div>
+              </div>
+        `;
+      } else {
+        html += `
+              <div class="standing-row" style="background:rgba(16,185,129,0.15);">
+                <div colspan="6" class="text-center text-emerald-400 font-bold">✓ Formula Agreed with Actual MVP</div>
+              </div>
+        `;
+      }
+
+      html += `
+            </div>
+          </div>
+
+          <div class="mt-4 p-3 bg-orange-900/20 border border-orange-500/30 rounded text-xs text-slate-400">
+            <strong>Rankings:</strong> The formula determines who should have won based on the stat formula. 
+            <br><strong>Actual MVP Rank:</strong> ${entry.mvpRank === 1 ? '✓ 1st - Correct Pick' : `#${entry.mvpRank} - ${entry.mvpRank >= 5 ? 'Snubbed!' : 'Close call'}`}
+          </div>
+        </div>
+      `;
+
+      modalContent.innerHTML = html;
+      document.getElementById('modalOverlay').classList.remove('hidden');
+    }
+
+    function closeYearModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+
+    function updateFormulaWeights() {
+      formulaWeights.pts = parseFloat(document.getElementById('wtPts').value) || 1;
+      formulaWeights.reb = parseFloat(document.getElementById('wtReb').value) || 1;
+      formulaWeights.ast = parseFloat(document.getElementById('wtAst').value) || 2;
+      render();
+    }
+
+    function resetFormula() {
+      formulaWeights = { pts: 1, reb: 1, ast: 2 };
+      document.getElementById('wtPts').value = 1;
+      document.getElementById('wtReb').value = 1;
+      document.getElementById('wtAst').value = 2;
+      render();
+    }
+
+    updateSummary();
+    render();
+  </script>
+</body>
+</html>

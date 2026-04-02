@@ -694,8 +694,37 @@
         function saveSettings() {
             appData.settings.teamsCount = parseInt(document.getElementById('setting-teams').value);
             appData.settings.draftType = document.getElementById('setting-draft-type').value;
-            Object.keys(appData.settings.posLimits).forEach(pos => { const el = document.getElementById(`limit-${pos}`); if (el) appData.settings.posLimits[pos] = parseInt(el.value); });
-            appData.draft.active = false; appData.draft.teams = []; setupUI(); switchTab('dashboard'); showToast("Settings Saved");
+            
+            // Save position limits
+            Object.keys(appData.settings.posLimits).forEach(pos => { 
+                const el = document.getElementById(`limit-${pos}`); 
+                if (el) appData.settings.posLimits[pos] = parseInt(el.value); 
+            });
+            
+            // Save scoring weights from UI
+            appData.settings.scoring.r = parseFloat(document.getElementById('score-r')?.value || 1);
+            appData.settings.scoring.rbi = parseFloat(document.getElementById('score-rbi')?.value || 1);
+            appData.settings.scoring.hr = parseFloat(document.getElementById('score-hr')?.value || 4);
+            appData.settings.scoring.sb = parseFloat(document.getElementById('score-sb')?.value || 2);
+            appData.settings.scoring.win = parseFloat(document.getElementById('score-win')?.value || 5);
+            appData.settings.scoring.k = parseFloat(document.getElementById('score-k')?.value || 1);
+            appData.settings.scoring.sv = parseFloat(document.getElementById('score-sv')?.value || 5);
+            
+            // Recalculate all player fantasy points with new formula
+            recalculateAllPlayerPoints();
+            
+            appData.draft.active = false; appData.draft.teams = []; setupUI(); switchTab('dashboard'); showToast("✨ Formula Updated & Scores Recalculated");
+        }
+        
+        function recalculateAllPlayerPoints() {
+            appData.players.forEach(p => {
+                if (p.stats2025 && Object.keys(p.stats2025).length > 0) {
+                    p.stats2025.points = calculateFantasyPoints(p.stats2025, p.posGroup);
+                }
+                if (p.careerStats && Object.keys(p.careerStats).length > 0) {
+                    p.careerStats.points = calculateFantasyPoints(p.careerStats, p.posGroup);
+                }
+            });
         }
 
         function setupUI() {
