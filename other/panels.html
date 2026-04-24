@@ -38,26 +38,53 @@
     <main id="mainGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 grid-rows-layout gap-4 flex-grow h-full">
 
         <!-- 1. CLOCK -->
-        <div id="tileClock" class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
+        <div id="tileClock" 
+             class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
-            <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
-            <div id="militaryTime" class="text-xl font-bold text-slate-400 mt-2 z-10">--:--</div>
+            
+            <div id="clock" 
+                 class="clock-text font-black text-white tracking-tighter leading-none z-10">
+                --:--
+            </div>
+            
+            <div id="militaryTime" 
+                 class="text-xl font-bold text-slate-400 mt-2 z-10">
+                --:--
+            </div>
+            
             <div class="mt-4 w-full grid grid-cols-2 gap-4 z-10">
                 <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
-                    <div id="sunTimes" class="text-lg font-black text-orange-300 whitespace-pre-line leading-tight">--</div>
+                    <div id="sunTimes" 
+                         class="text-lg font-black text-orange-300 whitespace-pre-line leading-tight">
+                        --
+                    </div>
                 </div>
+                
                 <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
-                    <div id="moonPhase" class="text-lg font-black text-purple-300">--</div>
-                    <div id="moonDates" class="text-[10px] text-slate-500 leading-tight mt-1">--</div>
+                    <div id="moonPhase" 
+                         class="text-lg font-black text-purple-300">
+                        --
+                    </div>
+                    <div id="moonDates" 
+                         class="text-[10px] text-slate-500 leading-tight mt-1">
+                        --
+                    </div>
                 </div>
             </div>
-            <div id="currentWeather" class="mt-4 text-xl font-black text-blue-200 z-10">Loading...</div>
+            
+            <div id="currentWeather" 
+                 class="mt-4 text-xl font-black text-blue-200 z-10">
+                Loading...
+            </div>
         </div>
 
-        <!-- 2. SPEED/STOCKS/GAS -->
-        <div id="tileSpeed" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
-            <div id="speed" class="flex-grow flex flex-col justify-center items-center w-full h-full p-6">Loading data...</div>
-            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="speedSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
+        <!-- 2. HISTORICAL WEATHER STATS -->
+        <div id="tileHistoryWeather" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div class="p-2 text-[10px] font-black uppercase text-slate-500 text-center bg-slate-900/30">Parker CO - Last 365 Days</div>
+            <div id="weatherHistory" class="flex-grow flex flex-col w-full h-full p-3 overflow-y-auto no-scrollbar">
+                <div class="text-[9px] text-slate-400 text-center">Loading historical data...</div>
+            </div>
+            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="historySlider" class="h-full bg-cyan-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 3. WEATHER ROTATION -->
@@ -66,9 +93,13 @@
             <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="weatherSlider" class="h-full bg-blue-500 w-0 progress-bar"></div></div>
         </div>
 
-        <!-- 4. FORECAST -->
-        <div id="tileForecast" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
-            <div id="forecast" class="flex-grow flex flex-col w-full h-full p-4 overflow-hidden">Loading forecast...</div>
+        <!-- 4. SPORTS SCORES -->
+        <div id="tileSportsScores" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="scoresContent" class="flex-grow flex flex-col w-full h-full p-4 overflow-hidden">
+                <div class="text-[10px] font-black uppercase text-slate-500 mb-4 text-center border-b border-slate-700 pb-2">Today's Scores</div>
+                <div id="scoresGrid" class="flex-grow flex flex-col gap-2 overflow-y-auto no-scrollbar"></div>
+            </div>
+            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="scoresSlider" class="h-full bg-amber-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 5. CALENDAR -->
@@ -80,11 +111,11 @@
             </div>
         </div>
 
-        <!-- 6. BGG -->
-        <div id="tileBGG" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
-            <div class="p-2 text-[10px] font-black uppercase text-slate-500 text-center bg-slate-900/30">BGG Top 25</div>
-            <div id="bggGrid" class="grid grid-cols-5 gap-1 p-2 overflow-y-auto no-scrollbar flex-grow content-start">Loading...</div>
-            <div class="h-1 w-full bg-slate-800 mt-auto"><div id="bggSlider" class="h-full bg-orange-500 w-0 progress-bar"></div></div>
+        <!-- 6. SPEED/STOCKS/GAS/BGG/FACTS ROTATION -->
+        <div id="tileStack" class="glass-tile rounded-3xl cursor-pointer hover:border-slate-500 transition">
+            <div id="stackContent" class="flex-grow flex flex-col justify-center items-center w-full h-full p-4 overflow-hidden">Loading stack...</div>
+            <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="stackSlider" class="h-full bg-fuchsia-500 w-0 progress-bar"></div></div>
+        </div>
         </div>
 
         <!-- 7. LEAGUE RANKINGS -->
@@ -106,14 +137,14 @@
 
 <script>
 const CONFIG={rotateIntervalMs:10000};
-const pauseStates={speed:false,weather:false,forecast:false,bgg:false,fun:false,sports:false};
+const pauseStates={weather:false,scores:false,sports:false,stack:false,history:false,fun:false};
 
 function setupPauseHandlers(){
-  ['speed','weather','forecast','BGG','Fun','Sports'].forEach(id=>{
+  ['weather','SportsScores','Sports','Stack','HistoryWeather','Fun'].forEach(id=>{
       const el = document.getElementById('tile'+id);
       if(el) {
           el.addEventListener('click', () => {
-              const key = id.toLowerCase();
+              const key = id === 'SportsScores' ? 'scores' : id === 'HistoryWeather' ? 'history' : id.toLowerCase();
               pauseStates[key] = !pauseStates[key];
               if(pauseStates[key]) el.classList.add('border-white/40', 'bg-slate-800');
               else el.classList.remove('border-white/40', 'bg-slate-800');
@@ -163,25 +194,274 @@ function findFullMoonDates(){
 }
 setInterval(updateClock,1000);
 
-/* ========== SPEED/STOCKS ========== */
-let speedData={download:0,upload:0,lastChecked:null}, speedIndex=0, speedViews=["speed","stocks","gas","mortgage"];
-async function testSpeed(){
-  try{ const dlStart=performance.now(); await fetch("https://speed.hetzner.de/1MB.bin",{method:'GET',cache:'no-cache'}).then(r=>r.blob()); const dlDuration=(performance.now()-dlStart)/1000; speedData.download=((8/dlDuration)).toFixed(1); speedData.lastChecked=new Date(); }catch{}
+/* ========== HISTORICAL WEATHER - PARKER CO 80134 (TILE 2) ========== */
+let historicalWeatherData = null;
+let historyIndex = 0;
+
+async function loadHistoricalWeather(){
+  try{
+    const lat=39.5186, lon=-104.7614;
+    const today = new Date();
+    const oneYearAgo = new Date(today);
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    
+    const startDate = oneYearAgo.toISOString().split('T')[0];
+    const endDate = today.toISOString().split('T')[0];
+    
+    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startDate}&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`);
+    const data = await res.json();
+    
+    if(data.daily) {
+      historicalWeatherData = data.daily;
+      renderHistoricalWeather();
+    }
+  } catch(e) { console.error('Historical weather load failed:', e); }
 }
-async function rotateSpeedTile(){
-  if(pauseStates.speed) return;
-  const el=document.getElementById("speed"); const view=speedViews[speedIndex];
+
+let historyViewIndex = 0;
+const historyViews = ['temps', 'precipitation'];
+
+function renderHistoricalWeather(){
+  if(!historicalWeatherData) return;
+  const view = historyViews[historyViewIndex];
+  
+  if(view === 'temps') renderTempStats();
+  else renderPrecipitationStats();
+}
+
+function renderTempStats(){
+  const el = document.getElementById('weatherHistory');
+  const highs = historicalWeatherData.temperature_2m_max;
+  
+  const tempRanges = [
+    {label:'<0°', min:-Infinity, max:0, color:'blue'},
+    {label:'0-10°', min:0, max:10, color:'cyan'},
+    {label:'10-20°', min:10, max:20, color:'sky'},
+    {label:'20-30°', min:20, max:30, color:'slate'},
+    {label:'30-40°', min:30, max:40, color:'lime'},
+    {label:'40-50°', min:40, max:50, color:'green'},
+    {label:'50-60°', min:50, max:60, color:'yellow'},
+    {label:'60-70°', min:60, max:70, color:'orange'},
+    {label:'70-80°', min:70, max:80, color:'red'},
+    {label:'80-90°', min:80, max:90, color:'rose'},
+    {label:'90-100°', min:90, max:100, color:'pink'},
+    {label:'100+°', min:100, max:Infinity, color:'purple'}
+  ];
+  
+  const stats = tempRanges.map(range => {
+    const daysInRange = highs.filter(h => h >= range.min && h < range.max).length;
+    let lastIndex = -1;
+    for(let i = highs.length - 1; i >= 0; i--) {
+      if(highs[i] >= range.min && highs[i] < range.max) {
+        lastIndex = i;
+        break;
+      }
+    }
+    const daysSince = lastIndex === -1 ? 999 : highs.length - 1 - lastIndex;
+    const pct = Math.round((daysInRange / 365) * 100);
+    return { range: range.label, days: daysInRange, daysSince, pct, color: range.color };
+  });
+  
+  const avgHigh = (highs.reduce((a,b) => a+b, 0) / highs.length).toFixed(1);
+  
+  let html = `
+    <div class="grid grid-cols-2 gap-2 text-[9px]">
+      <div class="col-span-2 font-bold text-slate-300 text-center pb-1 border-b border-slate-600">
+        <div class="text-sm">365 Days</div>
+        <div class="text-slate-400 text-[8px]">Avg High: ${avgHigh}°</div>
+      </div>
+      ${stats.map((s, idx) => `
+        <div class="flex flex-col gap-1 bg-slate-800/30 p-2 rounded border border-slate-700/50">
+          <div class="flex justify-between items-center">
+            <span class="font-bold text-slate-300">${s.range}</span>
+            <span class="text-slate-300 font-bold">${s.days}d</span>
+          </div>
+          <div class="w-full bg-slate-700 rounded h-1.5">
+            <div class="bg-${s.color}-500 h-full rounded" style="width:${s.pct}%"></div>
+          </div>
+          <div class="flex justify-between text-[7px]">
+            <span class="text-slate-400">${s.pct}%</span>
+            <span class="text-orange-300">${s.daysSince === 999 ? 'N/A' : s.daysSince + 'd ago'}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  el.innerHTML = html;
+}
+
+function renderPrecipitationStats(){
+  const el = document.getElementById('weatherHistory');
+  const rains = historicalWeatherData.rain_sum;
+  const snows = historicalWeatherData.snowfall_sum;
+  
+  const daysWithRain = rains.filter(r => r > 0).length;
+  const daysWithSnow = snows.filter(s => s > 0).length;
+  const daysWithNeither = 365 - daysWithRain - daysWithSnow;
+  
+  let lastRain = 999, lastSnow = 999, lastClear = 999;
+  for(let i = rains.length - 1; i >= 0; i--) {
+    if(lastRain === 999 && rains[i] > 0) lastRain = rains.length - 1 - i;
+    if(lastSnow === 999 && snows[i] > 0) lastSnow = snows.length - 1 - i;
+    if(lastClear === 999 && rains[i] === 0 && snows[i] === 0) lastClear = rains.length - 1 - i;
+  }
+  
+  const precipData = [
+    { emoji: '🌧️', label: 'Rain Days', count: daysWithRain, pct: Math.round((daysWithRain/365)*100), days: lastRain, color: 'blue' },
+    { emoji: '❄️', label: 'Snow Days', count: daysWithSnow, pct: Math.round((daysWithSnow/365)*100), days: lastSnow, color: 'cyan' },
+    { emoji: '☀️', label: 'Clear Days', count: daysWithNeither, pct: Math.round((daysWithNeither/365)*100), days: lastClear, color: 'yellow' }
+  ];
+  
+  let html = `
+    <div class="space-y-3 text-[9px]">
+      <div class="font-bold text-slate-300 text-center pb-1 border-b border-slate-600 text-sm">Precipitation</div>
+      ${precipData.map(p => `
+        <div class="flex flex-col gap-1.5 bg-slate-800/30 p-2 rounded border border-slate-700/50">
+          <div class="flex items-center justify-between">
+            <span class="text-2xl">${p.emoji}</span>
+            <div class="text-right">
+              <div class="font-bold text-slate-300">${p.label}</div>
+              <div class="text-slate-400 text-[8px]">Last: ${p.days === 999 ? 'N/A' : p.days + 'd ago'}</div>
+            </div>
+          </div>
+          <div class="flex justify-between items-end gap-2">
+            <div class="flex-1">
+              <div class="w-full bg-slate-700 rounded h-2">
+                <div class="bg-${p.color}-500 h-full rounded" style="width:${p.pct}%"></div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="font-black text-${p.color}-400 text-sm">${p.count}</div>
+              <div class="text-slate-500">${p.pct}%</div>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  el.innerHTML = html;
+}
+
+function rotateHistoryView(){
+  if(pauseStates.history) return;
+  historyViewIndex = (historyViewIndex + 1) % historyViews.length;
+  renderHistoricalWeather();
+  startTileSlider('historySlider', CONFIG.rotateIntervalMs);
+}
+
+loadHistoricalWeather();
+setInterval(loadHistoricalWeather, 3600000);
+setInterval(rotateHistoryView, CONFIG.rotateIntervalMs);
+
+/* ========== STACK ROTATION (SPEED/STOCKS/GAS/MORTGAGE/BGG/FACTS) - TILE 6 ========== */
+let speedData={download:0,upload:0,lastChecked:null};
+let stackIndex = 0;
+const stackViews = ["speed","stocks","gas","mortgage","bgg","facts"];
+
+async function testSpeed(){
+  try{ const dlStart=performance.now(); await fetch("https://www.gstatic.com/generate_204",{method:'GET',cache:'no-cache'}).then(r=>r.blob()); const dlDuration=(performance.now()-dlStart)/1000; speedData.download=((8/dlDuration)).toFixed(1); speedData.lastChecked=new Date(); }catch(e){console.warn('Speed test failed:', e);}
+}
+
+function renderStackView(){
+  const el = document.getElementById('stackContent');
+  const view = stackViews[stackIndex];
+  
   if(view==="speed"){
     el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-sm font-black uppercase text-slate-500 mb-4">Network</div><div class="flex gap-8 mb-2"><div class="text-center"><div class="text-4xl font-black text-emerald-400">${speedData.download}</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Down</div></div><div class="text-center"><div class="text-4xl font-black text-blue-400">12.5</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Up</div></div></div><div class="text-[10px] text-slate-600 font-mono mt-2">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
   } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Market</div><div class="space-y-4"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="text-lg font-black text-white">6,920.93</div><div class="text-xs font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="text-lg font-black text-white">23,584.27</div><div class="text-xs font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
   else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-4 mt-1"><div class="bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-xl text-center"><div class="text-[8px] text-emerald-400 font-bold uppercase mb-1">Costco</div><div class="text-2xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-2 rounded-xl text-center"><div class="text-[8px] text-slate-400 font-bold uppercase mb-1">Avg</div><div class="text-2xl font-black text-white">$2.41</div></div></div></div>`;
   else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Mortgage</div><div class="space-y-4 mt-1"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">30-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">15-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.25%</span></div></div></div>`;
-  speedIndex=(speedIndex+1)%speedViews.length; startTileSlider("speedSlider",CONFIG.rotateIntervalMs);
+  else if(view==="bgg") renderBGGStack();
+  else if(view==="facts") renderFactStack();
 }
-testSpeed(); rotateSpeedTile(); setInterval(rotateSpeedTile,CONFIG.rotateIntervalMs); setInterval(testSpeed,300000);
+
+function rotateStack(){
+  if(pauseStates.stack) return;
+  stackIndex = (stackIndex + 1) % stackViews.length;
+  renderStackView();
+  startTileSlider("stackSlider", CONFIG.rotateIntervalMs);
+}
+
+function renderBGGStack(){
+  const el = document.getElementById('stackContent');
+  el.innerHTML = `
+    <div class="w-full h-full flex flex-col">
+      <div class="text-[10px] font-black uppercase text-slate-500 p-2 text-center border-b border-slate-700 mb-2">BGG Top 25</div>
+      <div class="grid grid-cols-5 gap-1 p-2 overflow-y-auto no-scrollbar flex-grow content-start">
+        ${BGG_TOP_25.slice(0, 10).map(g => `
+          <div class="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700 flex items-center justify-center text-center">
+            <img src="${g.img}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition" onerror="this.style.display='none';this.parentElement.innerHTML='<div class=\"text-[8px] font-bold text-slate-300 px-1\">${g.name}</div>'">
+            <div class="absolute top-0.5 left-0.5 bg-blue-600 text-white text-[6px] font-black px-0.5 rounded">#${g.rank}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+const FACTS = [
+  "Honey never spoils. Archaeologists found 3,000-year-old honey in Egyptian tombs still edible.",
+  "Octopuses have three hearts: two pump blood to gills, one to the rest of the body.",
+  "A group of flamingos is called a 'flamboyance'.",
+  "Bananas are berries, but strawberries aren't technically berries.",
+  "The Eiffel Tower grows taller in summer due to thermal expansion of metal.",
+  "Cleopatra lived closer to iPhone invention than Great Pyramid construction.",
+  "Wombats have cube-shaped poop to mark territory.",
+  "Otters hold hands while sleeping so they don't drift apart.",
+  "Fresh-cut grass smell is a plant distress signal.",
+  "Puffins have one mate for life and return to same burrow yearly.",
+  "Venus rotates so slowly its day is longer than its year.",
+  "Scotland's national animal is a unicorn.",
+  "Koalas have fingerprints almost identical to humans.",
+  "Shortest war lasted 38 minutes (Anglo-Zanzibar War, 1896).",
+  "Honey bees communicate by dancing.",
+  "Cockroaches can live a week without their head.",
+  "Orange was named after the fruit, not the other way around.",
+  "Sharks have been around longer than dinosaurs.",
+  "A sneeze travels at 100 mph.",
+  "Sloths only defecate once a week.",
+  "Human brain uses 20% of body's energy while being 2% of body weight.",
+  "Cats have 20+ vocalizations to communicate with other cats.",
+  "Tardigrades (water bears) can survive in space.",
+  "Lightning contains about 1 billion volts."
+];
+
+let factIndex = 0;
+
+function renderFactStack(){
+  const el = document.getElementById('stackContent');
+  const fact = FACTS[factIndex];
+  el.innerHTML = `
+    <div class="w-full h-full flex flex-col justify-center items-center p-4">
+      <div class="text-[10px] font-black uppercase text-slate-500 mb-4 text-center border-b border-slate-700 pb-2">📚 Fact of the Day</div>
+      <div class="flex-grow flex items-center justify-center text-center">
+        <div class="text-sm font-bold text-blue-200 line-clamp-8">${fact}</div>
+      </div>
+      <div class="text-[8px] text-slate-500 mt-2">${factIndex + 1}/${FACTS.length}</div>
+    </div>
+  `;
+}
+
+function initFacts(){
+  const today = new Date().toDateString();
+  const lastFactDate = localStorage.getItem('lastFactDate');
+  if(lastFactDate !== today) {
+    factIndex = Math.floor(Math.random() * FACTS.length);
+    localStorage.setItem('lastFactDate', today);
+    localStorage.setItem('lastFactIndex', factIndex);
+  } else {
+    factIndex = parseInt(localStorage.getItem('lastFactIndex')) || 0;
+  }
+}
+
+initFacts();
+
+testSpeed(); renderStackView(); setInterval(rotateStack, CONFIG.rotateIntervalMs); setInterval(testSpeed, 300000);
 
 /* ========== WEATHER ========== */
-let weatherData=null, weatherIndex=0, weatherViews=["forecast","radar"];
+let weatherData=null, weatherIndex=0, weatherViews=["12hour","forecast","radar"];
 let forecastData=[]; 
 async function loadWeather(){
   try{
@@ -195,7 +475,6 @@ async function loadWeather(){
     updateClock();
     forecastData=d.daily; 
     renderWeatherTile();
-    renderForecast(); 
   }catch(e){console.error("Weather load failed:", e);}
 }
 
@@ -204,7 +483,7 @@ function renderWeatherTile(){
     const el = document.getElementById('weather');
     const view = weatherViews[weatherIndex];
     
-    if(view === "forecast") {
+    if(view === "12hour") {
         el.innerHTML = `
             <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full pt-4">12-Hour Forecast</div>
             <div class="flex-grow flex flex-col gap-1.5 w-full overflow-y-auto no-scrollbar px-4 pb-4">
@@ -219,6 +498,26 @@ function renderWeatherTile(){
                             <span class="w-8 text-slate-400 text-left">${hour % 12 || 12}${hour < 12 ? 'a' : 'p'}</span>
                             <span class="text-sm">${getWeatherIcon(weatherCode)}</span>
                             <span class="text-white">${temp}°</span>
+                            <span class="text-blue-300">${pop}%</span>
+                            <span class="text-emerald-300">${windSpeed}mph</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    } else if(view === "forecast") {
+        el.innerHTML = `
+            <div class="text-[10px] font-black uppercase text-slate-500 mb-2 text-center border-b border-slate-700 pb-1 w-full pt-4">7-Day Outlook</div>
+            <div class="flex-grow flex flex-col gap-1.5 w-full px-4 pb-4 overflow-y-auto no-scrollbar">
+                ${forecastData.time.slice(0, 7).map((time, i) => {
+                    const d = new Date(time);
+                    const pop = forecastData.precipitation_probability_max[i];
+                    const windSpeed = Math.round(forecastData.windspeed_10m_max[i]);
+                    return `
+                        <div class="flex justify-between items-center bg-white/5 p-1.5 rounded text-[10px] font-bold">
+                            <span class="w-8 text-slate-400 text-left">${i===0?"Today":d.toLocaleDateString([],{weekday:'short'})}</span>
+                            <span class="text-sm">${getWeatherIcon(forecastData.weathercode[i])}</span>
+                            <span class="text-white">${Math.round(forecastData.temperature_2m_max[i])}° <span class="text-slate-600 text-[8px]">/ ${Math.round(forecastData.temperature_2m_min[i])}°</span></span>
                             <span class="text-blue-300">${pop}%</span>
                             <span class="text-emerald-300">${windSpeed}mph</span>
                         </div>
@@ -304,13 +603,22 @@ const BGG_TOP_25=[{rank:1,name:'Brass: Birmingham',img:'https://cf.geekdo-images
 function renderBGGGrid(){
   const grid=document.getElementById('bggGrid'); grid.innerHTML='';
   BGG_TOP_25.forEach(g=>{
-      const div=document.createElement('div'); div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700";
-      div.innerHTML=`<img src="${g.img}" class="w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500"><div class="absolute bottom-0 left-0 w-full bg-black/80 p-0.5"><div class="text-[7px] font-bold text-white truncate text-center leading-tight">${g.name}</div></div><div class="absolute top-0.5 left-0.5 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow">#${g.rank}</div>`;
+      const div=document.createElement('div'); 
+      div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700 flex items-center justify-center";
+      const img = document.createElement('img');
+      img.src = g.img;
+      img.className = "w-full h-full object-cover opacity-70 group-hover:opacity-100 transition duration-500";
+      img.onerror = function() {
+        this.style.display = 'none';
+        div.innerHTML = `<div class="flex flex-col items-center justify-center h-full w-full bg-slate-700"><div class="text-[8px] font-bold text-slate-300 text-center px-1 line-clamp-3">${g.name}</div></div>`;
+      };
+      div.appendChild(img);
+      div.innerHTML += `<div class="absolute bottom-0 left-0 w-full bg-black/80 p-0.5"><div class="text-[7px] font-bold text-white truncate text-center leading-tight">${g.name}</div></div><div class="absolute top-0.5 left-0.5 bg-blue-600 text-white text-[7px] font-black px-1 rounded shadow">#${g.rank}</div>`;
       grid.appendChild(div);
   });
 }
 function rotateBGG(){ if(!pauseStates.bgg) startTileSlider("bggSlider", CONFIG.rotateIntervalMs); }
-renderBGGGrid(); setInterval(rotateBGG, CONFIG.rotateIntervalMs);
+// BGG rendering moved to stack rotation
 
 /* ========== LEAGUE RANKINGS ========== */
 const LEAGUES={
@@ -364,7 +672,145 @@ function renderRankings(teams, leagueName){
 function rotateFun(){ if(!pauseStates.fun){ funIdx=(funIdx+1)%funKeys.length; fetchRankings(); startTileSlider("funSlider", CONFIG.rotateIntervalMs); }}
 fetchRankings(); setInterval(rotateFun, CONFIG.rotateIntervalMs);
 
-/* ========== SPORTS SCHEDULE ========== */
+/* ========== SPORTS SCORES - ROTATING BY LEAGUE ========== */
+const SCORE_LEAGUES = [
+  { name: 'NFL', league: 'nfl', sport: 'football', icon: '🏈' },
+  { name: 'NBA', league: 'nba', sport: 'basketball', icon: '🏀' },
+  { name: 'NHL', league: 'nhl', sport: 'hockey', icon: '🏒' },
+  { name: 'MLB', league: 'mlb', sport: 'baseball', icon: '⚾' }
+];
+
+let scoresLeagueIdx = 0;
+let scoresData = {};
+
+async function loadSportsScoresByLeague(){
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    for(const league of SCORE_LEAGUES) {
+      try {
+        const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${league.sport}/${league.league}/scoreboard`);
+        const data = await res.json();
+        
+        if(data.events) {
+          const todayGames = data.events
+            .filter(e => {
+              const eventDate = new Date(e.date).toISOString().split('T')[0];
+              return eventDate === todayStr || e.competitions[0].status.type.state === 'in';
+            })
+            .map(e => {
+              const comp = e.competitions[0];
+              const competitors = comp.competitors;
+              let homeTeam = competitors.find(c => c.homeAway === 'home');
+              let awayTeam = competitors.find(c => c.homeAway === 'away');
+              
+              return {
+                homeTeam: homeTeam?.team?.abbreviation || homeTeam?.team?.name,
+                homeLogo: homeTeam?.team?.logo || homeTeam?.team?.logos?.[0]?.href,
+                homeScore: homeTeam?.score || 0,
+                awayTeam: awayTeam?.team?.abbreviation || awayTeam?.team?.name,
+                awayLogo: awayTeam?.team?.logo || awayTeam?.team?.logos?.[0]?.href,
+                awayScore: awayTeam?.score || 0,
+                status: comp.status.type.description || comp.status.type.state,
+                time: new Date(e.date).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})
+              };
+            });
+          
+          scoresData[league.league] = { games: todayGames, name: league.name, icon: league.icon };
+        }
+      } catch(e) {
+        console.warn(`Failed to load ${league.name} scores:`, e);
+        scoresData[league.league] = { games: [], name: league.name, icon: league.icon };
+      }
+    }
+    
+    renderSportsScoresCurrentLeague();
+  } catch(e) {
+    console.error('Failed to load sports scores:', e);
+  }
+}
+
+function renderSportsScoresCurrentLeague(){
+  const grid = document.getElementById('scoresGrid');
+  grid.innerHTML = '';
+  
+  let leaguesToShow = [];
+  for(let i = 0; i < SCORE_LEAGUES.length; i++) {
+    const idx = (scoresLeagueIdx + i) % SCORE_LEAGUES.length;
+    const leagueData = scoresData[SCORE_LEAGUES[idx].league];
+    if(leagueData && leagueData.games.length > 0) {
+      leaguesToShow.push({ idx, data: leagueData });
+      if(leaguesToShow.length >= 1) break;
+    }
+  }
+  
+  if(leaguesToShow.length === 0) {
+    grid.innerHTML = `<div class="flex items-center justify-center h-full text-slate-400 text-xs">No active games</div>`;
+    return;
+  }
+  
+  const { idx, data: leagueData } = leaguesToShow[0];
+  
+  const header = document.createElement('div');
+  header.className = 'text-[10px] font-black uppercase text-slate-300 text-center mb-2 pb-2 border-b border-slate-700';
+  header.innerHTML = `${leagueData.icon} ${leagueData.name} (${leagueData.games.length})`;
+  grid.appendChild(header);
+  
+  leagueData.games.forEach(game => {
+    const row = document.createElement('div');
+    row.className = 'flex items-center justify-between gap-2 bg-slate-800/40 p-2 rounded-lg border border-slate-700/50';
+    
+    const awayLogoDiv = document.createElement('div');
+    awayLogoDiv.className = 'flex flex-col items-center gap-0.5 flex-1';
+    const awayImg = document.createElement('img');
+    awayImg.src = game.awayLogo;
+    awayImg.className = 'w-6 h-6 object-contain';
+    awayImg.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.8))';
+    awayImg.onerror = function() { 
+      this.style.display = 'none';
+      awayLogoDiv.innerHTML = '<div class="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-700 rounded flex items-center justify-center text-[6px] font-bold text-white text-center px-0.5 border border-slate-400">' + game.awayTeam + '</div><div class="text-[7px] text-slate-300 font-bold text-center">' + Math.round(game.awayScore) + '</div>';
+    };
+    awayLogoDiv.appendChild(awayImg);
+    const awayScore = document.createElement('div');
+    awayScore.className = 'text-xs font-black text-white';
+    awayScore.textContent = Math.round(game.awayScore);
+    awayLogoDiv.appendChild(awayScore);
+    
+    const homeLogoDiv = document.createElement('div');
+    homeLogoDiv.className = 'flex flex-col items-center gap-0.5 flex-1';
+    const homeImg = document.createElement('img');
+    homeImg.src = game.homeLogo;
+    homeImg.className = 'w-6 h-6 object-contain';
+    homeImg.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.8))';
+    homeImg.onerror = function() { 
+      this.style.display = 'none';
+      homeLogoDiv.innerHTML = '<div class="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-700 rounded flex items-center justify-center text-[6px] font-bold text-white text-center px-0.5 border border-slate-400">' + game.homeTeam + '</div><div class="text-[7px] text-slate-300 font-bold text-center">' + Math.round(game.homeScore) + '</div>';
+    };
+    homeLogoDiv.appendChild(homeImg);
+    const homeScore = document.createElement('div');
+    homeScore.className = 'text-xs font-black text-white';
+    homeScore.textContent = Math.round(game.homeScore);
+    homeLogoDiv.appendChild(homeScore);
+    
+    row.appendChild(awayLogoDiv);
+    row.appendChild(homeLogoDiv);
+    grid.appendChild(row);
+  });
+}
+
+function rotateSportsLeague(){
+  if(pauseStates.scores) return;
+  scoresLeagueIdx = (scoresLeagueIdx + 1) % SCORE_LEAGUES.length;
+  renderSportsScoresCurrentLeague();
+  startTileSlider('scoresSlider', CONFIG.rotateIntervalMs);
+}
+
+loadSportsScoresByLeague();
+setInterval(loadSportsScoresByLeague, 300000);
+setInterval(rotateSportsLeague, CONFIG.rotateIntervalMs);
+
+/* ========== SPORTS SCHEDULE - TILE 8 ========== */
 const MY_TEAMS=[
   {id:'nuggets',sport:'basketball',league:'nba',espnId:'den',icon:'🏀'},
   {id:'broncos',sport:'football',league:'nfl',espnId:'den',icon:'🏈'},
@@ -389,7 +835,7 @@ async function loadSportsTeam(){
                     return date >= now || e.competitions[0].status.type.state === 'in';
                 }).slice(0, 5);
             }
-        } catch(e) {}
+        } catch(e) { console.warn('Schedule load failed:', e); }
         if(upcomingGames.length === 0) {
             sportsIdx = (sportsIdx + 1) % MY_TEAMS.length;
             attempts++;
@@ -434,6 +880,7 @@ function rotateSports(){
     loadSportsTeam();
     startTileSlider("sportsSlider", CONFIG.rotateIntervalMs);
 }
+
 loadSportsTeam();
 setInterval(rotateSports, CONFIG.rotateIntervalMs);
 

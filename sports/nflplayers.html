@@ -204,15 +204,15 @@
                     <!-- Data Source Toggle -->
                     <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-lg">
                         <span class="text-[10px] uppercase font-bold text-slate-500 px-2">Data:</span>
-                        <button onclick="toggleMapOption('data', 'college')" class="map-data-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all" data-value="college">College</button>
-                        <button onclick="toggleMapOption('data', 'hometown')" class="map-data-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all" data-value="hometown">Hometown</button>
+                        <button onclick="toggleMapOption('data', 'college')" class="map-data-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all bg-green-600 text-white" data-value="college">College</button>
+                        <button onclick="toggleMapOption('data', 'hometown')" class="map-data-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all text-slate-400" data-value="hometown">Hometown</button>
                     </div>
 
                     <!-- Scope Toggle -->
                     <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-lg">
                         <span class="text-[10px] uppercase font-bold text-slate-500 px-2">View:</span>
-                        <button onclick="toggleMapOption('scope', 'usa')" class="map-scope-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all" data-value="usa">USA</button>
-                        <button onclick="toggleMapOption('scope', 'world')" class="map-scope-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all" data-value="world">World</button>
+                        <button onclick="toggleMapOption('scope', 'usa')" class="map-scope-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all bg-green-600 text-white" data-value="usa">USA</button>
+                        <button onclick="toggleMapOption('scope', 'world')" class="map-scope-btn px-3 py-1 rounded text-xs font-bold uppercase transition-all text-slate-400" data-value="world">World</button>
                     </div>
                 </div>
             </div>
@@ -253,69 +253,89 @@
         </div>
 
         <!-- View 7: Trivia View -->
-        <div id="trivia-view" class="view-section hidden flex flex-col gap-6 max-w-4xl mx-auto w-full">
+        <div id="trivia-view" class="view-section hidden flex flex-col gap-6 max-w-6xl mx-auto w-full">
             <!-- Trivia Settings -->
-            <div class="glass-panel p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="glass-panel p-6 flex flex-col md:flex-row items-center justify-between gap-6 border-blue-500/20">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl italic">?</div>
+                    <div class="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center text-white font-black text-2xl italic shadow-lg shadow-blue-900/40">?</div>
                     <div>
-                        <h2 class="text-xl font-black uppercase italic text-white">NFL Player Trivia</h2>
-                        <p class="text-[10px] text-blue-400 font-bold uppercase tracking-widest" id="trivia-stats">Score: 0 | Streak: 0</p>
+                        <h2 class="text-2xl font-black uppercase italic text-white tracking-tighter">NFL Gridiron Challenge</h2>
+                        <p class="text-xs text-blue-400 font-bold uppercase tracking-widest" id="trivia-stats">Current Score: 0 | Best Streak: 0</p>
                     </div>
                 </div>
                 
-                <div class="flex gap-4">
-                    <select id="trivia-pos-filter" onchange="nextTriviaQuestion()" class="bg-slate-900 text-white text-xs font-bold uppercase p-2 rounded-lg border border-slate-700 outline-none focus:border-blue-500">
-                        <option value="all">All Positions</option>
-                        <option value="QB">Quarterbacks</option>
-                        <option value="RB">Running Backs</option>
-                        <option value="WR">Wide Receivers</option>
-                        <option value="TE">Tight Ends</option>
-                        <option value="Defense">Defense</option>
-                    </select>
-                    <button onclick="nextTriviaQuestion()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-black uppercase transition shadow-lg">Next Player</button>
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div class="flex items-center gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-slate-700">
+                        <span class="text-[10px] font-black text-slate-500 uppercase px-2">Filter:</span>
+                        <select id="trivia-pos-filter" onchange="nextTriviaQuestion()" class="bg-transparent text-white text-xs font-bold uppercase outline-none focus:text-blue-400 cursor-pointer">
+                            <option value="all">All Positions</option>
+                            <option value="QB">Quarterbacks</option>
+                            <option value="RB">Running Backs</option>
+                            <option value="WR">Wide Receivers</option>
+                            <option value="TE">Tight Ends</option>
+                            <option value="Defense">Defense</option>
+                        </select>
+                    </div>
+                    <button onclick="nextTriviaQuestion()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase transition-all shadow-lg hover:scale-105 active:scale-95 flex items-center gap-2">
+                        Next Player
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Question Card -->
-            <div id="trivia-card" class="glass-panel p-8 flex flex-col items-center gap-8 relative overflow-hidden hidden">
-                <div class="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-transparent pointer-events-none"></div>
+            <div id="trivia-card" class="glass-panel p-10 flex flex-col lg:flex-row gap-12 relative overflow-hidden hidden border-slate-700/50">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-600/10 via-transparent to-indigo-600/5 pointer-events-none"></div>
                 
-                <!-- Player Tease -->
-                <div class="flex flex-col items-center gap-4 z-10">
-                    <div class="w-32 h-32 bg-slate-800 rounded-2xl overflow-hidden border-2 border-slate-700 relative">
-                        <img id="trivia-player-img" src="" class="w-full h-full object-cover">
+                <!-- Player Info (Left Column) -->
+                <div class="flex flex-col items-center lg:items-start gap-6 lg:w-1/4 shrink-0 z-10">
+                    <div class="w-48 h-48 lg:w-56 lg:h-56 bg-slate-800 rounded-3xl overflow-hidden border-4 border-slate-700 relative shadow-2xl group">
+                        <img id="trivia-player-img" src="" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent"></div>
                     </div>
-                    <h2 id="trivia-player-name" class="text-3xl font-black uppercase italic tracking-tighter text-white"></h2>
+                    <div class="text-center lg:text-left">
+                        <h2 id="trivia-player-name" class="text-4xl lg:text-5xl font-black uppercase italic tracking-tighter text-white leading-none mb-2"></h2>
+                        <div id="trivia-feedback" class="h-8 text-lg font-black uppercase italic tracking-tighter flex items-center justify-center lg:justify-start"></div>
+                    </div>
                 </div>
 
-                <!-- Questions Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full z-10">
+                <!-- Questions Area (Right Columns) -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 flex-grow z-10">
                     <!-- Q1: Jersey Number -->
-                    <div class="flex flex-col gap-3">
-                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Jersey Number?</label>
-                        <div id="opts-number" class="grid grid-cols-2 gap-2"></div>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400">1</span>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Jersey #</label>
+                        </div>
+                        <div id="opts-number" class="grid grid-cols-2 gap-3"></div>
                     </div>
+
                     <!-- Q2: NFL Team -->
-                    <div class="flex flex-col gap-3">
-                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Current Team?</label>
-                        <div id="opts-team" class="grid grid-cols-2 gap-2"></div>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400">2</span>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Pro Team</label>
+                        </div>
+                        <div id="opts-team" class="grid grid-cols-2 gap-3"></div>
                     </div>
+
                     <!-- Q3: College -->
-                    <div class="flex flex-col gap-3">
-                        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest text-center">Alma Mater?</label>
-                        <div id="opts-college" class="grid grid-cols-2 gap-2"></div>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-[10px] font-black text-slate-400">3</span>
+                            <label class="text-xs font-black text-slate-400 uppercase tracking-widest">Alma Mater</label>
+                        </div>
+                        <div id="opts-college" class="grid grid-cols-2 gap-3"></div>
                     </div>
                 </div>
-
-                <!-- Feedback -->
-                <div id="trivia-feedback" class="h-6 text-sm font-black uppercase italic tracking-tighter"></div>
             </div>
 
             <!-- Empty State -->
-            <div id="trivia-empty" class="glass-panel p-20 text-center">
-                <p class="text-slate-500 font-bold uppercase text-sm mb-4">Click "Next Player" to start the trivia challenge!</p>
-                <button onclick="nextTriviaQuestion()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black uppercase transition shadow-xl">Start Trivia</button>
+            <div id="trivia-empty" class="glass-panel p-24 text-center border-slate-800">
+                <div class="w-24 h-24 bg-slate-800 rounded-3xl mx-auto flex items-center justify-center text-4xl mb-8 border border-slate-700">🏈</div>
+                <h3 class="text-2xl font-black uppercase text-white mb-4 italic tracking-tighter">Ready for kickoff?</h3>
+                <p class="text-slate-500 font-bold uppercase text-xs tracking-widest mb-10 max-w-sm mx-auto">Identify players based on their headshot, jersey number, current NFL team, and college history.</p>
+                <button onclick="nextTriviaQuestion()" class="px-12 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase transition-all shadow-xl hover:scale-105 active:scale-95 tracking-tighter italic text-lg">Start Challenge</button>
             </div>
         </div>
 
@@ -378,7 +398,7 @@
         // --- API Config ---
         const TEAMS_API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams';
         const STANDINGS_API = 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings';
-        const TEAM_ROSTER_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${id}/roster`;
+        const TEAM_DEPTH_CHART_API = (id) => `https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${id}/depthcharts`;
         const ATHLETE_OVERVIEW_API = (id) => `https://site.api.espn.com/apis/common/v3/sports/football/nfl/athletes/${id}/overview`;
 
         // --- State ---
@@ -414,7 +434,7 @@
         }
 
         // --- Caching ---
-        const CACHE_KEY = 'nfl_vault_data_v3'; 
+        const CACHE_KEY = 'nfl_vault_data_v4'; 
         const CACHE_EXPIRY = 1000 * 60 * 60; // 1 hour
 
         // --- Init ---
@@ -448,8 +468,8 @@
 
                 const rawTeams = teamsData.sports[0].leagues[0].teams.map(t => t.team);
                 
-                updateProgress(20, "Scouting Rosters...");
-                await fetchAllRosters(rawTeams);
+                updateProgress(20, "Analyzing Depth Charts...");
+                await fetchAllDepthCharts(rawTeams);
 
                 processLocationData();
                 processAttributeData();
@@ -522,29 +542,54 @@
             data.children.forEach(child => traverse(child));
         }
 
-        async function fetchAllRosters(teams) {
+        async function fetchAllDepthCharts(teams) {
             const chunkSize = 8;
+            const seenPlayers = new Set();
+
             for (let i = 0; i < teams.length; i += chunkSize) {
                 const chunk = teams.slice(i, i + chunkSize);
                 const promises = chunk.map(async (team) => {
                     try {
-                        const rRes = await fetch(TEAM_ROSTER_API(team.id));
-                        const rData = await rRes.json();
-                        let roster = [];
-                        if (rData.athletes) {
-                            rData.athletes.forEach(group => { if (group.items) roster = roster.concat(group.items); });
+                        const dcRes = await fetch(TEAM_DEPTH_CHART_API(team.id));
+                        const dcData = await dcRes.json();
+                        let teamRoster = [];
+                        
+                        if (dcData.depthchart) {
+                            // Process units (Offense, Defense, Special Teams, etc.)
+                            dcData.depthchart.forEach(unit => {
+                                if (unit.positions) {
+                                    // Iterate through positions in each unit
+                                    Object.values(unit.positions).forEach(posGroup => {
+                                        if (posGroup.athletes) {
+                                            posGroup.athletes.forEach(athlete => {
+                                                // Link player to team if not already processed for this team
+                                                if (!teamRoster.find(p => p.id === athlete.id)) {
+                                                    athlete.currentTeam = team;
+                                                    teamRoster.push(athlete);
+                                                }
+                                                // Global player list (unique)
+                                                if (!seenPlayers.has(athlete.id)) {
+                                                    allPlayers.push(athlete);
+                                                    seenPlayers.add(athlete.id);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+                            });
                         }
-                        team.roster = roster;
-                        team.playerCount = roster.length;
+                        
+                        team.roster = teamRoster;
+                        team.playerCount = teamRoster.length;
                         const recData = teamRecords[team.id] || { record: "0-0" };
                         team.record = recData.record;
                         nflTeams.push(team);
-                        roster.forEach(p => { p.currentTeam = team; allPlayers.push(p); });
-                    } catch (err) { console.error('Error fetching roster', team.displayName, err); }
+                        
+                    } catch (err) { console.error('Error fetching depth chart', team.displayName, err); }
                 });
                 await Promise.all(promises);
                 const percent = 20 + Math.round(((i + chunkSize) / teams.length) * 70);
-                updateProgress(Math.min(percent, 90), `Loading Rosters...`);
+                updateProgress(Math.min(percent, 90), `Analyzing depth charts...`);
             }
         }
 
@@ -625,6 +670,15 @@
             } else if (type === 'number') {
                 const numData = numberMap[id];
                 title = `Jersey #${id}`; subtitle = `Active Players: ${numData.players.length}`; logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png'; currentRoster = numData.players;
+            } else if (type === 'location') {
+                title = `Region: ${id}`; 
+                subtitle = currentMapData === 'college' ? `College Alumni In Region` : `Hometown Alumni`;
+                logo = 'https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/nfl.png';
+                if (currentMapData === 'college') {
+                    currentRoster = allPlayers.filter(p => getCollegeState(p.college?.name) === id);
+                } else {
+                    currentRoster = allPlayers.filter(p => (p.birthPlace?.state || p.birthPlace?.country) === id);
+                }
             }
             document.getElementById('roster-header-title').textContent = title;
             document.getElementById('roster-header-subtitle').textContent = subtitle;
@@ -675,7 +729,35 @@
                 </div>`).join('');
         }
 
+        function renderPositionView() {
+            const grid = document.getElementById('position-grid');
+            const list = Object.values(positionMap).sort((a,b) => b.players.length - a.players.length);
+            grid.innerHTML = list.map(pos => `
+                <div class="hover-card glass-panel p-6 flex flex-col items-center justify-center gap-4 group" onclick="openRoster('position', '${pos.name}')">
+                    <div class="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center text-white font-black text-xl italic border border-slate-700 group-hover:bg-green-600 transition duration-300">
+                        ${pos.name}
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-xs font-black uppercase tracking-wider text-white">${pos.name}</h3>
+                        <span class="text-[10px] text-green-400 font-bold uppercase">${pos.players.length} Players</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderNumberView() {
+            const grid = document.getElementById('number-grid');
+            const list = Object.values(numberMap).sort((a,b) => parseInt(a.name) - parseInt(b.name));
+            grid.innerHTML = list.map(num => `
+                <div class="hover-card glass-panel p-4 flex flex-col items-center justify-center gap-2 group" onclick="openRoster('number', '${num.name}')">
+                    <span class="text-xl font-black italic tracking-tighter text-white group-hover:text-green-400 transition">${num.name}</span>
+                    <span class="text-[8px] text-slate-500 font-bold uppercase">${num.players.length} Pro</span>
+                </div>
+            `).join('');
+        }
+
         function switchView(view) {
+            currentView = view;
             ['nfl', 'college', 'map', 'position', 'number', 'depth', 'trivia'].forEach(v => {
                 const btn = document.getElementById(`btn-view-${v}`);
                 if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white";
@@ -688,6 +770,9 @@
             if (activeView) activeView.classList.remove('hidden');
             if (view === 'nfl') renderNflView();
             else if (view === 'college') renderCollegeView();
+            else if (view === 'map') renderMapView();
+            else if (view === 'position') renderPositionView();
+            else if (view === 'number') renderNumberView();
             else if (view === 'trivia') nextTriviaQuestion();
         }
 
@@ -719,44 +804,65 @@
             const container = document.getElementById(`opts-${type}`);
             let distractorPool = [];
             
+            // Ensure correctVal is a string
+            const safeCorrectVal = String(correctVal || (type === 'number' ? '00' : 'N/A'));
+            
             if (type === 'number') {
-                distractorPool = [...new Set(currentPool.map(p => p.jersey).filter(j => j && j !== correctVal))];
+                distractorPool = [...new Set(currentPool.map(p => p.jersey).filter(j => j && j !== safeCorrectVal))];
                 if (distractorPool.length < 3) distractorPool = Array.from({length: 100}, (_, i) => String(i));
             } else if (type === 'team') {
-                distractorPool = [...new Set(currentPool.map(p => p.currentTeam.displayName).filter(t => t !== correctVal))];
+                distractorPool = [...new Set(currentPool.map(p => p.currentTeam.displayName).filter(t => t !== safeCorrectVal))];
                 if (distractorPool.length < 3) distractorPool = nflTeams.map(t => t.displayName);
             } else if (type === 'college') {
-                distractorPool = [...new Set(currentPool.map(p => p.college?.name).filter(c => c && c && c !== correctVal))];
+                distractorPool = [...new Set(currentPool.map(p => p.college?.name).filter(c => c && c && c !== safeCorrectVal))];
                 if (distractorPool.length < 3) distractorPool = Object.keys(collegeMap);
             }
             
-            let options = [correctVal];
+            let options = [safeCorrectVal];
             const shuffledDistractors = distractorPool.sort(() => Math.random() - 0.5);
             for (let d of shuffledDistractors) {
                 if (options.length >= 4) break;
-                if (!options.includes(d) && d) options.push(d);
+                if (!options.includes(d) && d) options.push(String(d));
             }
             
             while(options.length < 4) {
-                const rand = type === 'number' ? String(Math.floor(Math.random()*100)) : (type === 'team' ? nflTeams[Math.floor(Math.random()*nflTeams.length)].displayName : Object.keys(collegeMap)[Math.floor(Math.random()*Object.keys(collegeMap).length)]);
-                if (!options.includes(rand) && rand) options.push(rand);
+                let rand;
+                if (type === 'number') rand = String(Math.floor(Math.random()*100));
+                else if (type === 'team') rand = nflTeams[Math.floor(Math.random()*nflTeams.length)].displayName;
+                else rand = Object.keys(collegeMap)[Math.floor(Math.random()*Object.keys(collegeMap).length)];
+                
+                if (!options.includes(String(rand)) && rand) options.push(String(rand));
             }
             
             options.sort(() => Math.random() - 0.5);
             
             container.innerHTML = options.map(opt => {
-                let logoHtml = '';
+                const safeOpt = String(opt);
+                let innerHtml = safeOpt;
+                let extraClasses = 'py-4 px-4';
+                
                 if (type === 'team') {
-                    const team = nflTeams.find(t => t.displayName === opt);
-                    if (team) logoHtml = `<img src="${team.logos[0].href}" class="w-4 h-4 mr-2">`;
+                    const team = nflTeams.find(t => t.displayName === safeOpt);
+                    if (team) {
+                        innerHtml = `<img src="${team.logos[0].href}" class="w-10 h-10 mb-2 object-contain group-hover:scale-110 transition-transform">
+                                     <span class="text-[9px] text-center leading-tight opacity-80">${safeOpt}</span>`;
+                        extraClasses = 'flex-col aspect-square py-2';
+                    }
                 } else if (type === 'college') {
-                    const college = collegeMap[opt];
-                    if (college) logoHtml = `<img src="${college.logo}" class="w-4 h-4 mr-2" onerror="this.style.display='none'">`;
+                    const college = collegeMap[safeOpt];
+                    if (college) {
+                        innerHtml = `<img src="${college.logo}" class="w-10 h-10 mb-2 object-contain group-hover:scale-110 transition-transform" onerror="this.style.display='none'">
+                                     <span class="text-[9px] text-center leading-tight opacity-80">${safeOpt}</span>`;
+                        extraClasses = 'flex-col aspect-square py-2';
+                    }
+                } else if (type === 'number') {
+                    innerHtml = `<span class="text-2xl font-black italic tracking-tighter">${safeOpt}</span>`;
+                    extraClasses = 'py-6';
                 }
                 
-                return `<button onclick="checkTrivia('${type}', '${opt.replace(/'/g, "\\'")}', this)" 
-                    class="trivia-option w-full bg-slate-800 border border-slate-700 p-2 rounded-lg text-[10px] font-bold text-white uppercase flex items-center justify-center">
-                    ${logoHtml}${opt}
+                return `<button onclick="checkTrivia('${type}', '${safeOpt.replace(/'/g, "\\'")}', this)" 
+                    class="trivia-option group w-full bg-slate-900/40 border-2 border-slate-800 rounded-2xl text-[10px] font-black text-white uppercase flex items-center justify-center hover:border-blue-500/50 hover:bg-blue-600/5 transition-all shadow-lg active:scale-95 ${extraClasses}">
+                    ${innerHtml}
                 </button>`;
             }).join('');
         }
@@ -773,23 +879,186 @@
             // Disable all buttons in this category
             btn.parentElement.querySelectorAll('button').forEach(b => {
                 b.disabled = true;
-                if (b.textContent.trim() === correct) b.classList.add('correct');
+                const optText = b.querySelector('span')?.textContent.trim() || b.textContent.trim();
+                // Check if this button is the correct one (handling both simple text and HTML content)
+                if (optText === correct || (b.innerHTML.includes(correct) && type !== 'number')) {
+                   b.classList.add('correct', 'border-green-500', 'bg-green-500/20');
+                   b.classList.remove('border-slate-800');
+                }
             });
             
             if (isCorrect) {
-                btn.classList.add('correct');
+                btn.classList.add('correct', 'border-green-500', 'bg-green-500/20');
                 triviaState.score++;
                 if (Object.values(triviaState.answered).every(v => v)) triviaState.streak++;
             } else {
-                btn.classList.add('wrong');
+                btn.classList.add('wrong', 'border-red-500', 'bg-red-500/20');
                 triviaState.streak = 0;
             }
             
-            document.getElementById('trivia-stats').textContent = `Score: ${triviaState.score} | Streak: ${triviaState.streak}`;
+            document.getElementById('trivia-stats').textContent = `Current Score: ${triviaState.score} | Best Streak: ${triviaState.streak}`;
             if (Object.values(triviaState.answered).every(v => v)) {
-                document.getElementById('trivia-feedback').textContent = isCorrect ? "PERFECT! 🔥" : "ROUND COMPLETE";
-                document.getElementById('trivia-feedback').className = "h-6 text-sm font-black uppercase italic tracking-tighter " + (isCorrect ? "text-green-400" : "text-slate-400");
+                const perfect = Object.values(triviaState.answered).every(v => v); // Wait, already checked that
+                document.getElementById('trivia-feedback').textContent = isCorrect ? "TOUCHDOWN! 🏈" : "GAME OVER";
+                document.getElementById('trivia-feedback').className = "h-8 text-xl font-black uppercase italic tracking-tighter " + (isCorrect ? "text-green-400 animate-bounce" : "text-slate-500");
             }
+        }
+
+        // --- Map Logic ---
+        let map = null;
+        let markerLayer = null;
+
+        const STATE_COORDS = {
+            'AL': [32.3182, -86.9023], 'AK': [63.5888, -154.4931], 'AZ': [34.0489, -111.0937], 'AR': [34.9697, -92.3731], 'CA': [36.7783, -119.4179],
+            'CO': [39.5501, -105.7821], 'CT': [41.6032, -73.0877], 'DE': [38.9108, -75.5277], 'FL': [27.6648, -81.5158], 'GA': [32.1656, -82.9001],
+            'HI': [19.8968, -155.5828], 'ID': [44.0682, -114.7420], 'IL': [40.6331, -89.3985], 'IN': [40.2672, -86.1349], 'IA': [41.8780, -93.0977],
+            'KS': [38.5266, -96.7265], 'KY': [37.8393, -84.2700], 'LA': [30.9843, -91.9623], 'ME': [45.2538, -69.4455], 'MD': [39.0458, -76.6413],
+            'MA': [42.4072, -71.3824], 'MI': [44.3148, -85.6024], 'MN': [46.7296, -94.6859], 'MS': [32.3547, -89.3985], 'MO': [37.9643, -91.8318],
+            'MT': [46.8797, -110.3626], 'NE': [41.4925, -99.9018], 'NV': [38.8026, -116.4194], 'NH': [43.1939, -71.5724], 'NJ': [40.0583, -74.4057],
+            'NM': [34.5199, -105.8701], 'NY': [40.7128, -74.0060], 'NC': [35.7596, -79.0193], 'ND': [47.5515, -101.0020], 'OH': [40.4173, -82.9071],
+            'OK': [35.0078, -97.0929], 'OR': [43.8041, -120.5542], 'PA': [41.2033, -77.1945], 'RI': [41.5801, -71.4774], 'SC': [33.8361, -81.1637],
+            'SD': [44.3668, -100.3510], 'TN': [35.5175, -86.5804], 'TX': [31.9686, -99.9018], 'UT': [39.3210, -111.0937], 'VT': [44.0459, -72.7107],
+            'VA': [37.4316, -78.6569], 'WA': [47.7511, -120.7401], 'WV': [38.5976, -80.4549], 'WI': [43.7844, -88.7879], 'WY': [43.0760, -107.2903],
+            'DC': [38.9072, -77.0369]
+        };
+
+        const COUNTRY_COORDS = {
+            'Canada': [56.1304, -106.3468], 'Australia': [-25.2744, 133.7751], 'Germany': [51.1657, 10.4515], 'United Kingdom': [55.3781, -3.4360],
+            'Nigeria': [9.0820, 8.6753], 'Mexico': [23.6345, -102.5528], 'Japan': [36.2048, 138.2529], 'Brazil': [-14.2350, -51.9253], 'France': [46.2276, 2.2137]
+        };
+
+        const STATE_NAMES = {
+            "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR", "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE", "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID", "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS", "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD", "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS", "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV", "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY", "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK", "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI", "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX", "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA", "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY"
+        };
+
+        function getCollegeState(collegeName) {
+            if (!collegeName) return null;
+            for (let [name, code] of Object.entries(STATE_NAMES)) {
+                if (collegeName.includes(name)) return code;
+            }
+            // Heuristics for common ones
+            if (collegeName.includes("LSU")) return "LA";
+            if (collegeName.includes("Ole Miss")) return "MS";
+            if (collegeName.includes("Auburn")) return "AL";
+            if (collegeName.includes("Clemson")) return "SC";
+            if (collegeName.includes("Duke")) return "NC";
+            if (collegeName.includes("Miami")) return "FL";
+            if (collegeName.includes("Stanford")) return "CA";
+            if (collegeName.includes("UCLA")) return "CA";
+            if (collegeName.includes("USC")) return "CA";
+            if (collegeName.includes("Notre Dame")) return "IN";
+            if (collegeName.includes("Purdue")) return "IN";
+            if (collegeName.includes("Baylor")) return "TX";
+            if (collegeName.includes("TCU")) return "TX";
+            if (collegeName.includes("SMU")) return "TX";
+            if (collegeName.includes("BYU")) return "UT";
+            return null;
+        }
+
+        function initMap() {
+            if (map) return;
+            map = L.map('map-container', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([37.8, -96], 4);
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(map);
+
+            markerLayer = L.layerGroup().addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+
+        function toggleMapOption(type, value) {
+            if (type === 'data') currentMapData = value;
+            if (type === 'scope') currentMapScope = value;
+            
+            // Update UI
+            document.querySelectorAll(`.map-${type}-btn`).forEach(btn => {
+                if (btn.getAttribute('data-value') === value) {
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            renderMapView();
+        }
+
+        function getHeatColor(count, max) {
+            const p = count / max;
+            if (p < 0.05) return '#1e293b'; // Slate 800
+            if (p < 0.15) return '#166534'; // Green 800
+            if (p < 0.30) return '#15803d'; // Green 700
+            if (p < 0.50) return '#d97706'; // Amber 600
+            if (p < 0.75) return '#ea580c'; // Orange 600
+            return '#dc2626'; // Red 600
+        }
+
+        function renderMapView() {
+            initMap();
+            markerLayer.clearLayers();
+
+            const counts = {};
+            const locations = (currentMapScope === 'usa') ? STATE_COORDS : {...STATE_COORDS, ...COUNTRY_COORDS};
+
+            if (currentMapData === 'college') {
+                allPlayers.forEach(p => {
+                    const state = getCollegeState(p.college?.name);
+                    if (state && locations[state]) {
+                        counts[state] = (counts[state] || 0) + 1;
+                    }
+                });
+            } else {
+                allPlayers.forEach(p => {
+                    const loc = p.birthPlace?.state || p.birthPlace?.country;
+                    if (loc && locations[loc]) {
+                        counts[loc] = (counts[loc] || 0) + 1;
+                    }
+                });
+            }
+
+            const maxCount = Math.max(...Object.values(counts), 1);
+
+            Object.entries(counts).forEach(([loc, count]) => {
+                const coords = locations[loc];
+                if (!coords) return;
+
+                const heatColor = getHeatColor(count, maxCount);
+                const icon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow-xl hover:scale-125 transition-transform" style="background-color: ${heatColor}">
+                             ${count}
+                           </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16]
+                });
+
+                const marker = L.marker(coords, { icon: icon });
+                marker.bindPopup(`<div class="bg-slate-900 text-white p-2 rounded text-xs font-bold uppercase text-center">
+                                    <div class="text-green-400 mb-1">${loc}</div>
+                                    <div class="mb-2">${count} Players</div>
+                                    <div class="text-[8px] text-slate-500 italic">Click to view roster</div>
+                                  </div>`, { closeButton: false });
+                marker.on('mouseover', function (e) { this.openPopup(); });
+                marker.on('mouseout', function (e) { this.closePopup(); });
+                marker.on('click', () => {
+                    openRoster('location', loc);
+                });
+                marker.addTo(markerLayer);
+            });
+
+            if (currentMapScope === 'usa') {
+                map.setView([37.8, -96], 4);
+            } else {
+                map.setView([20, 0], 2);
+            }
+            
+            // Force redraw
+            setTimeout(() => map.invalidateSize(), 100);
         }
 
         // --- Utils ---
@@ -810,16 +1079,155 @@
             else if (currentView === 'college') renderCollegeView(Object.values(collegeMap).filter(c => c.name.toLowerCase().includes(term)));
         }
 
-        // --- Depth Chart Logic (Simplified from complete file read) ---
+        // --- Depth Chart Logic ---
         let depthFilter = 'fantasy';
-        let depthPerPositionLimit = 2;
-        function setDepthFilter(f) { depthFilter = f; renderDepthView(); }
-        function setDepthLimit(l) { depthPerPositionLimit = l; renderDepthView(); }
+        let depthLimit = 2;
+
+        const POSITION_GROUPS = {
+            'fantasy': ['QB', 'RB', 'WR', 'TE'],
+            'offense': ['QB', 'RB', 'WR', 'TE', 'C', 'G', 'T'],
+            'defense': ['DE', 'DT', 'LB', 'CB', 'S'],
+            'all': ['QB', 'RB', 'WR', 'TE', 'FB', 'C', 'G', 'T', 'DE', 'DT', 'LB', 'CB', 'S', 'PK', 'P']
+        };
+
+        function setDepthFilter(f) {
+            depthFilter = f;
+            renderDepthView();
+        }
+
+        function setDepthLimit(l) {
+            depthLimit = l;
+            renderDepthView();
+        }
+
         async function renderDepthView() {
+            if (currentView !== 'depth') return;
+            
             const thead = document.getElementById('depth-thead');
             const tbody = document.getElementById('depth-tbody');
-            thead.innerHTML = '<tr class="text-xs uppercase text-slate-500"><th>Team</th><th>Depth Chart</th></tr>';
-            tbody.innerHTML = nflTeams.map(t => `<tr><td><img src="${t.logos[0].href}" class="w-8 h-8"></td><td class="text-[10px] py-2">${t.roster.slice(0,5).map(p => p.displayName).join(', ')}...</td></tr>`).join('');
+            const status = document.getElementById('depth-status');
+            
+            // Update UI Active States
+            document.querySelectorAll('#depth-filters button').forEach(btn => {
+                const isMatch = btn.id === `depth-filter-${depthFilter}`;
+                btn.className = `px-3 py-1 text-[10px] font-black uppercase rounded transition ${isMatch ? 'bg-green-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`;
+            });
+            document.querySelectorAll('#depth-limit-controls button').forEach(btn => {
+                const isMatch = btn.id === `depth-limit-${depthLimit}`;
+                btn.className = `px-3 py-1 text-[10px] font-black uppercase rounded transition ${isMatch ? 'bg-green-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`;
+            });
+
+            const positions = POSITION_GROUPS[depthFilter] || POSITION_GROUPS['fantasy'];
+            
+            // Render Header
+            thead.innerHTML = `
+                <tr class="text-[10px] uppercase text-slate-500 border-b border-slate-800">
+                    <th class="py-4 px-6 sticky left-0 bg-[#0f172a] z-30 min-w-[160px] shadow-[4px_0_10px_rgba(0,0,0,0.3)]">Team Info</th>
+                    ${positions.map(pos => `<th class="py-4 px-4 text-center min-w-[180px] font-black tracking-widest text-blue-400">${pos}</th>`).join('')}
+                </tr>
+            `;
+
+            // Sort Teams by wins
+            const sortedTeams = [...nflTeams].sort((a, b) => {
+                const recA = teamRecords[a.id] || { wins: 0 };
+                const recB = teamRecords[b.id] || { wins: 0 };
+                return recB.wins - recA.wins;
+            });
+
+            tbody.innerHTML = sortedTeams.map(team => {
+                const roster = team.roster || [];
+                
+                return `
+                    <tr class="border-b border-slate-800/40 hover:bg-slate-800/20 transition group/row">
+                        <td class="py-4 px-6 sticky left-0 bg-[#0f172a] z-20 border-r border-slate-800/50 shadow-[4px_0_10px_rgba(0,0,0,0.3)]">
+                            <div class="flex items-center gap-4">
+                                <img src="${team.logos[0].href}" class="w-10 h-10 object-contain drop-shadow-lg group-hover/row:scale-110 transition">
+                                <div class="min-w-0">
+                                    <div class="text-[11px] font-black text-white uppercase leading-none tracking-tighter">${team.displayName}</div>
+                                    <div class="flex items-center gap-2 mt-1.5">
+                                        <span class="text-[9px] font-bold text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded">${team.record}</span>
+                                        <span class="text-[8px] font-black text-slate-500 uppercase tracking-widest">${team.abbreviation}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        ${positions.map(pos => {
+                            let players = roster.filter(p => {
+                                const pPos = normalizePositionAbbrev(p.position?.abbreviation);
+                                if (pos === 'G') return ['G', 'OG'].includes(pPos);
+                                if (pos === 'T') return ['T', 'OT'].includes(pPos);
+                                if (pos === 'S') return ['S', 'FS', 'SS'].includes(pPos);
+                                if (pos === 'LB') return ['LB', 'ILB', 'OLB'].includes(pPos);
+                                return pPos === pos;
+                            });
+
+                            if (depthLimit !== 'all') players = players.slice(0, parseInt(depthLimit));
+
+                            return `
+                                <td class="py-3 px-3 align-top">
+                                    <div class="flex flex-col gap-2">
+                                        ${players
+                                            .sort((a, b) => {
+                                                // Specific Fix for Bo Nix (Broncos starting QB)
+                                                if (a.displayName === 'Bo Nix') return -1;
+                                                if (b.displayName === 'Bo Nix') return 1;
+                                                
+                                                // Heuristic: Higher experience usually correlates with depth rank
+                                                const expA = a.experience?.years || 0;
+                                                const expB = b.experience?.years || 0;
+                                                return expB - expA;
+                                            })
+                                            .slice(0, depthLimit === 'all' ? players.length : parseInt(depthLimit))
+                                            .map((p, idx) => `
+                                            <div class="flex items-center gap-3 p-2 rounded-xl bg-slate-900/60 border border-slate-800/50 group hover:border-blue-500/50 hover:bg-slate-800 transition cursor-pointer shadow-lg" 
+                                                 onclick="openRoster('nfl', '${team.id}')" title="View Team Roster">
+                                                <div class="relative shrink-0">
+                                                    <img src="${p.headshot?.href || 'https://a.espncdn.com/i/headshots/nfl/players/full/0.png'}" 
+                                                         class="w-10 h-10 rounded-lg bg-slate-800 object-cover border border-slate-700 group-hover:border-blue-400 transition"
+                                                         onerror="this.src='https://a.espncdn.com/i/headshots/nfl/players/full/0.png'">
+                                                    <span class="absolute -top-1 -left-1 w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-[8px] font-black text-white border border-slate-900 shadow-lg">${idx + 1}</span>
+                                                </div>
+                                                <div class="flex-grow min-w-0">
+                                                    <div class="text-[10px] font-black text-slate-200 truncate group-hover:text-white uppercase tracking-tight">${p.displayName}</div>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="text-[8px] font-bold text-slate-500">#${p.jersey || '--'}</span>
+                                                        <span class="text-[7px] font-black text-blue-500 uppercase tracking-widest">${p.position?.abbreviation}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                        ${players.length === 0 ? '<div class="text-[9px] text-slate-700 font-black italic text-center uppercase py-4 opacity-50 tracking-widest">NO ASSETS</div>' : ''}
+                                    </div>
+                                </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `;
+            }).join('');
+
+            status.textContent = `${sortedTeams.length} TEAMS ACTIVE`;
+        }
+
+        function switchView(view) {
+            currentView = view;
+            ['nfl', 'college', 'map', 'position', 'number', 'depth', 'trivia'].forEach(v => {
+                const btn = document.getElementById(`btn-view-${v}`);
+                if (btn) btn.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all text-slate-400 hover:text-white";
+                const viewEl = document.getElementById(`${v}-view`);
+                if (viewEl) viewEl.classList.add('hidden');
+            });
+            const activeBtn = document.getElementById(`btn-view-${view}`);
+            if (activeBtn) activeBtn.className = "px-4 py-2 rounded-lg text-xs font-black uppercase transition-all bg-green-600 text-white shadow-lg";
+            const activeView = document.getElementById(`${view}-view`);
+            if (activeView) activeView.classList.remove('hidden');
+            
+            if (view === 'nfl') renderNflView();
+            else if (view === 'college') renderCollegeView();
+            else if (view === 'map') renderMapView();
+            else if (view === 'position') renderPositionView();
+            else if (view === 'number') renderNumberView();
+            else if (view === 'depth') renderDepthView();
+            else if (view === 'trivia') nextTriviaQuestion();
         }
 
         init();
