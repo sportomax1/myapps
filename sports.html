@@ -1,507 +1,829 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- SPORTS_DASHBOARD_v3 --><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>🏈🏀⚾🏒 Sports Dashboard (ESPN API SPA)</title>
+  <title>🏈🏀⚾🏒 Sports Dashboard</title>
   <style>
     :root {
-      --bg: #0b1220;
-      --panel: #111a2b;
-      --panel-2: #17233a;
-      --text: #e8eefc;
-      --muted: #9fb0d4;
-      --accent: #4c8dff;
-      --ok: #22c55e;
-      --warn: #f59e0b;
-      --border: #233252;
+      --bg: #0b1220; --panel: #111a2b; --panel-2: #17233a;
+      --text: #e8eefc; --muted: #9fb0d4; --accent: #4c8dff;
+      --ok: #22c55e; --warn: #f59e0b; --border: #233252;
     }
-
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg, #0b1220 0%, #0a1020 100%);
-      color: var(--text);
-      min-height: 100vh;
+    body { margin:0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: linear-gradient(180deg,#0b1220 0%,#0a1020 100%); color:var(--text); min-height:100vh; }
+    .container { width:min(1320px,97vw); margin:14px auto 50px; display:grid; gap:12px; padding:0 4px; }
+    .topbar,.panel { background:var(--panel); border:1px solid var(--border); border-radius:14px; }
+    .topbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 14px; }
+    .brand { font-weight:700; font-size:14px; letter-spacing:.2px; white-space:nowrap; flex:1 1 auto; }
+    .league-group { display:flex; gap:6px; flex-wrap:wrap; }
+    .controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .league-btn,.tab-btn,.action-btn { background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:6px 11px; cursor:pointer; font-weight:600; font-size:13px; white-space:nowrap; }
+    .league-btn:hover,.action-btn:hover { background:#1a2b48; }
+    .league-btn.active,.tab-btn.active { border-color:var(--accent); background:#1d325d; }
+    .dk-sel { background:var(--panel-2); color:var(--text); border:1px solid var(--border); border-radius:10px; padding:6px 9px; cursor:pointer; font-size:13px; max-width:155px; }
+    .dk-inp { background:#0b1426; border:1px solid var(--border); color:var(--text); border-radius:10px; padding:6px 9px; font-size:13px; }
+    input[type="date"].dk-inp { color-scheme:dark; min-width:130px; }
+    /* Scoreboard */
+    .scoreboard { padding:12px 14px; }
+    .sb-header { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .panel-title { font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.6px; white-space:nowrap; }
+    .tz-badge { font-size:10px; background:#1d325d; border:1px solid var(--border); border-radius:6px; padding:2px 7px; color:var(--accent); font-weight:700; white-space:nowrap; }
+    .date-nav { display:flex; gap:5px; align-items:center; flex-wrap:wrap; margin-left:auto; }
+    .games-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:9px; }
+    .game-card { background:var(--panel-2); border:1px solid var(--border); border-radius:12px; padding:10px; display:grid; gap:5px; }
+    .team-row { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; }
+    .team-row-left { display:flex; align-items:center; gap:6px; overflow:hidden; flex:1; }
+    .team-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+    /* Logos */
+    .logo-lg { width:30px; height:30px; object-fit:contain; flex-shrink:0; }
+    .logo-sm { width:20px; height:20px; object-fit:contain; flex-shrink:0; vertical-align:middle; margin-right:4px; }
+    .logo-xs { width:16px; height:16px; object-fit:contain; vertical-align:middle; margin-right:3px; }
+    .logo-md { width:44px; height:44px; object-fit:contain; flex-shrink:0; border-radius:4px; }
+    .meta { color:var(--muted); font-size:11px; }
+    .status-live  { color:var(--ok);   font-weight:700; }
+    .status-final { color:var(--warn); font-weight:700; }
+    /* Tabs */
+    .tabs { padding:9px 14px 0; display:flex; gap:6px; flex-wrap:nowrap; overflow-x:auto; border-bottom:1px solid var(--border); scrollbar-width:none; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tab-btn { flex-shrink:0; padding:6px 10px; font-size:12px; border-radius:8px 8px 0 0; border-bottom:none; }
+    .tab-content { padding:12px; overflow-x:hidden; }
+    /* Tables */
+    .tbl-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; border-radius:10px; border:1px solid var(--border); margin-bottom:12px; }
+    .tbl-wrap table { border:none; border-radius:0; margin:0; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--border); white-space:nowrap; }
+    th { background:#12203b; color:#c6d7ff; font-size:11px; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; user-select:none; }
+    th:hover { background:#192d4a; }
+    tr:last-child td { border-bottom:none; }
+    .empty { color:var(--muted); border:1px dashed var(--border); border-radius:10px; padding:14px; }
+    .loading { color:var(--muted); font-size:13px; margin-bottom:10px; }
+    /* Section titles */
+    .section-title { font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:.6px; margin:14px 0 7px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+    /* Stat cards */
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:7px; margin-bottom:10px; }
+    .stat-card { background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:9px 11px; }
+    .stat-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+    .stat-value { font-size:20px; font-weight:700; color:var(--accent); line-height:1.2; }
+    .stat-desc  { font-size:10px; color:var(--muted); margin-top:2px; }
+    /* Roster */
+    .roster-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:8px; margin-bottom:12px; }
+    .player-card { display:flex; align-items:center; gap:10px; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:9px 11px; }
+    .player-info { flex:1; min-width:0; }
+    .player-name { font-weight:600; font-size:13px; }
+    .player-meta { color:var(--muted); font-size:11px; }
+    .player-num { width:42px; height:42px; background:var(--panel); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:var(--accent); flex-shrink:0; }
+    /* Tab controls bar */
+    .tab-ctrl { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; }
+    /* Search */
+    .search { display:flex; gap:6px; align-items:center; }
+    .color-swatch { display:inline-block; width:13px; height:13px; border-radius:3px; border:1px solid #333; vertical-align:middle; margin-right:4px; }
+    /* Mobile */
+    @media (max-width:600px) {
+      .container { padding:0 2px; gap:8px; }
+      .topbar { padding:8px 10px; }
+      .brand { font-size:12px; }
+      .league-btn { padding:5px 8px; font-size:12px; }
+      .games-grid { grid-template-columns:1fr 1fr; gap:7px; }
+      .game-card { padding:8px; }
+      .tab-content { padding:8px; }
+      th,td { padding:6px 7px; font-size:12px; }
+      .stat-grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); }
+      .roster-grid { grid-template-columns:1fr; }
+      .dk-sel { max-width:120px; }
+      .date-nav { width:100%; }
     }
-
-    .container {
-      width: min(1200px, 94vw);
-      margin: 24px auto 40px;
-      display: grid;
-      gap: 16px;
-    }
-
-    .topbar, .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-    }
-
-    .topbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 10px;
-      padding: 14px;
-      justify-content: space-between;
-    }
-
-    .brand {
-      font-weight: 700;
-      letter-spacing: .2px;
-    }
-
-    .league-group {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .league-btn, .tab-btn, .search-btn {
-      background: var(--panel-2);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .league-btn.active, .tab-btn.active {
-      border-color: var(--accent);
-      background: #1d325d;
-    }
-
-    .search {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .search input {
-      background: #0b1426;
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 8px 10px;
-      min-width: 200px;
-    }
-
-    .scoreboard {
-      padding: 14px;
-    }
-
-    .panel-title {
-      font-size: 13px;
-      text-transform: uppercase;
-      color: var(--muted);
-      letter-spacing: .6px;
-      margin-bottom: 10px;
-    }
-
-    .games-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 10px;
-    }
-
-    .game-card {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      display: grid;
-      gap: 7px;
-    }
-
-    .team-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      font-size: 14px;
-    }
-
-    .meta {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .tabs {
-      padding: 10px 14px 0;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .tab-content {
-      padding: 14px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-    }
-
-    th, td {
-      text-align: left;
-      padding: 9px 10px;
-      border-bottom: 1px solid var(--border);
-      font-size: 14px;
-    }
-
-    th {
-      background: #12203b;
-      color: #c6d7ff;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .5px;
-    }
-
-    .status-live { color: var(--ok); font-weight: 700; }
-    .status-final { color: var(--warn); font-weight: 700; }
-
-    .empty {
-      color: var(--muted);
-      border: 1px dashed var(--border);
-      border-radius: 10px;
-      padding: 14px;
-    }
-
-    .loading {
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    @media (max-width: 640px) {
-      .search input { min-width: 150px; width: 100%; }
-      .search { width: 100%; }
-      .search-btn { width: 100%; }
-    }
+    @media (max-width:380px) { .games-grid { grid-template-columns:1fr; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <section class="topbar">
-      <div class="brand">🏈🏀⚾🏒 Sports Dashboard (ESPN API SPA)</div>
-      <div class="league-group" id="league-group"></div>
+<div class="container">
+
+  <section class="topbar">
+    <div class="brand">🏈🏀⚾🏒 Sports Dashboard</div>
+    <div class="league-group" id="league-group"></div>
+    <div class="controls">
+      <select id="year-select" class="dk-sel" title="Season Year"></select>
       <div class="search">
-        <input id="search-input" type="text" placeholder="Search teams or abbreviations..." />
-        <button class="search-btn" id="search-btn">🔍 Search</button>
+        <input id="search-input" type="text" class="dk-inp" placeholder="Search teams…" />
+        <button class="action-btn" id="search-btn">🔍</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="panel scoreboard">
+  <section class="panel scoreboard">
+    <div class="sb-header">
       <div class="panel-title" id="scoreboard-title">Scoreboard</div>
-      <div id="scoreboard-loading" class="loading">Loading live and final games...</div>
-      <div id="games-grid" class="games-grid"></div>
-    </section>
+      <span class="tz-badge">Mountain Time</span>
+      <div class="date-nav">
+        <button class="action-btn" id="date-prev" title="Previous day">&#9664;</button>
+        <input type="date" id="date-picker" class="dk-inp" />
+        <button class="action-btn" id="date-next" title="Next day">&#9654;</button>
+        <button class="action-btn" id="date-today">Today</button>
+      </div>
+    </div>
+    <div id="scoreboard-loading" class="loading">Loading games…</div>
+    <div id="games-grid" class="games-grid"></div>
+  </section>
 
-    <section class="panel">
-      <div class="tabs" id="tabs"></div>
-      <div class="tab-content" id="tab-content"></div>
-    </section>
+  <section class="panel">
+    <div class="tabs" id="tabs"></div>
+    <div class="tab-content" id="tab-content"></div>
+  </section>
+
+</div>
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────────
+const CUR_YEAR = new Date().getFullYear();
+
+const LEAGUES = {
+  nfl: { label: 'NFL 🏈', sport: 'football',   league: 'nfl'  },
+  nba: { label: 'NBA 🏀', sport: 'basketball', league: 'nba'  },
+  mlb: { label: 'MLB ⚾', sport: 'baseball',   league: 'mlb'  },
+  nhl: { label: 'NHL 🏒', sport: 'hockey',     league: 'nhl'  }
+};
+
+const TABS = ['Scores', 'Standings', 'Stats', 'Schedule', 'Roster', 'Teams'];
+// ── MOUNTAIN TIME ──────────────────────────────────────────────────────────────
+const MT_TZ = 'America/Denver';
+function fmtMT(dateVal, opts = {}) {
+  const d = typeof dateVal === 'string' ? new Date(dateVal) : dateVal;
+  return d.toLocaleString('en-US', {
+    timeZone: MT_TZ, month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true, ...opts
+  }) + ' MT';
+}
+function fmtDateLabelMT(d) {
+  return d.toLocaleDateString('en-US', { timeZone: MT_TZ, weekday: 'short', month: 'short', day: 'numeric' });
+}
+function toYMD(d) { // YYYYMMDD string in Mountain Time calendar
+  const mt = new Date(d.toLocaleString('en-US', { timeZone: MT_TZ }));
+  return `${mt.getFullYear()}${String(mt.getMonth()+1).padStart(2,'0')}${String(mt.getDate()).padStart(2,'0')}`;
+}
+function toInputVal(d) { // YYYY-MM-DD for <input type="date">
+  const mt = new Date(d.toLocaleString('en-US', { timeZone: MT_TZ }));
+  return `${mt.getFullYear()}-${String(mt.getMonth()+1).padStart(2,'0')}-${String(mt.getDate()).padStart(2,'0')}`;
+}
+
+// ── State ──────────────────────────────────────────────────────────────────────
+const state = {
+  league:     localStorage.getItem('sports-league') || 'nfl',
+  year:       parseInt(localStorage.getItem('sports-year') || CUR_YEAR, 10),
+  tab:        'Scores',
+  scoreDate:  null,   // null = today, otherwise Date object
+  scoreboard: null,
+  standings:  null,
+  teams:      null,
+  logos:      {}
+};
+
+// ── API Helpers ────────────────────────────────────────────────────────────────
+// ESPN APIs block CORS from localhost — route through corsproxy.io
+const CORS_PROXY = 'https://corsproxy.io/?url=';
+
+function espnBase() {
+  const { sport, league } = LEAGUES[state.league];
+  return `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}`;
+}
+
+function scoreboardUrl() {
+  const base = espnBase();
+  if (state.scoreDate) return `${base}/scoreboard?dates=${toYMD(state.scoreDate)}`;
+  return `${base}/scoreboard`;
+}
+
+function apiUrl(type, extra) {
+  const { sport, league } = LEAGUES[state.league];
+  const yr = state.year;
+  const base = espnBase();
+
+  switch (type) {
+    case 'scoreboard':   return scoreboardUrl();
+    // standings uses the web API (different path structure)
+    case 'standings':    return `https://site.web.api.espn.com/apis/v2/sports/${sport}/${league}/standings?season=${yr}&type=0&level=3`;
+    case 'teams':        return `${base}/teams?limit=50`;
+    case 'teamStats':    return `${base}/teams/${extra}/statistics?season=${yr}`;
+    case 'teamSchedule': return `${base}/teams/${extra}/schedule?season=${yr}`;
+    case 'roster':       return `${base}/teams/${extra}/roster`;
+    default: return '';
+  }
+}
+
+async function fetchJson(url) {
+  try {
+    // First try direct (works when hosted on a real domain)
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (res.ok) return res.json();
+  } catch (_) { /* fall through to proxy */ }
+  // Fallback: route through CORS proxy
+  const res = await fetch(CORS_PROXY + encodeURIComponent(url));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+// ── Logo Helpers ───────────────────────────────────────────────────────────────
+function buildLogoMap() {
+  state.logos = {};
+  (state.teams?.sports?.[0]?.leagues?.[0]?.teams || []).forEach(t => {
+    const team = t.team;
+    const abbr = team?.abbreviation?.toLowerCase();
+    const url  = team?.logos?.[0]?.href || team?.logo || '';
+    if (abbr && url) state.logos[abbr] = url;
+  });
+}
+
+function logoUrl(abbr) {
+  if (!abbr) return '';
+  const key = abbr.toLowerCase();
+  if (state.logos[key]) return state.logos[key];
+  const { league } = LEAGUES[state.league];
+  return `https://a.espncdn.com/i/teamlogos/${league}/500/${key}.png`;
+}
+
+function logoImg(abbr, name, cls = 'logo-xs') {
+  const url = logoUrl(abbr);
+  return url ? `<img src="${url}" alt="${name || abbr || ''}" class="${cls}" onerror="this.style.display='none'">` : '';
+}
+
+// ── Utility ────────────────────────────────────────────────────────────────────
+const safe = (v, fb = '-') => (v !== undefined && v !== null) ? v : fb;
+
+function statusClass(d = '') {
+  d = d.toLowerCase();
+  if (d.includes('final')) return 'status-final';
+  if (d.includes('live') || d.includes('period') || /\bq\d\b/.test(d) || /\d(st|nd|rd|th)/.test(d)) return 'status-live';
+  return '';
+}
+
+function wrapTbl(html) {
+  return `<div class="tbl-wrap">${html}</div>`;
+}
+
+// ── Date Nav ──────────────────────────────────────────────────────────────────
+function initDateNav() {
+  state.scoreDate = new Date();
+  const picker = document.getElementById('date-picker');
+  picker.value  = toInputVal(state.scoreDate);
+  document.getElementById('date-prev').onclick  = () => shiftDay(-1);
+  document.getElementById('date-next').onclick  = () => shiftDay(+1);
+  document.getElementById('date-today').onclick = () => {
+    state.scoreDate = new Date();
+    picker.value    = toInputVal(state.scoreDate);
+    reloadScoreboard();
+  };
+  picker.onchange = () => {
+    if (!picker.value) return;
+    const [y, m, d] = picker.value.split('-').map(Number);
+    state.scoreDate = new Date(y, m - 1, d, 12, 0, 0);
+    reloadScoreboard();
+  };
+}
+
+function shiftDay(delta) {
+  const d = new Date(state.scoreDate);
+  d.setDate(d.getDate() + delta);
+  state.scoreDate = d;
+  document.getElementById('date-picker').value = toInputVal(d);
+  reloadScoreboard();
+}
+
+async function reloadScoreboard() {
+  const loading = document.getElementById('scoreboard-loading');
+  const grid    = document.getElementById('games-grid');
+  loading.style.display = 'block'; grid.innerHTML = '';
+  try {
+    state.scoreboard = await fetchJson(scoreboardUrl());
+    renderScoreboardCards();
+    if (state.tab === 'Scores' || state.tab === 'Schedule') renderActiveTab();
+  } catch (err) { loading.textContent = `Failed: ${err.message}`; }
+}
+function renderYearSelect() {
+  const sel = document.getElementById('year-select');
+  sel.innerHTML = '';
+  for (let y = CUR_YEAR; y >= 2010; y--) {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = `${y} Season`;
+    if (y === state.year) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  sel.onchange = () => {
+    state.year = parseInt(sel.value, 10);
+    localStorage.setItem('sports-year', state.year);
+    loadLeagueData();
+  };
+}
+
+// ── League Toggle ──────────────────────────────────────────────────────────────
+function renderLeagueToggle() {
+  const wrap = document.getElementById('league-group');
+  wrap.innerHTML = Object.entries(LEAGUES).map(([key, def]) =>
+    `<button class="league-btn ${key === state.league ? 'active' : ''}" data-league="${key}">${def.label}</button>`
+  ).join('');
+  wrap.querySelectorAll('.league-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.league = btn.dataset.league;
+      localStorage.setItem('sports-league', state.league);
+      renderLeagueToggle(); loadLeagueData();
+    });
+  });
+}
+
+// ── Tabs ───────────────────────────────────────────────────────────────────────
+function renderTabs() {
+  const root = document.getElementById('tabs');
+  root.innerHTML = TABS.map(t =>
+    `<button class="tab-btn ${t === state.tab ? 'active' : ''}" data-tab="${t}">${t}</button>`
+  ).join('');
+  root.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => { state.tab = btn.dataset.tab; renderTabs(); renderActiveTab(); });
+  });
+}
+
+// ── Scoreboard Cards ───────────────────────────────────────────────────────────
+function renderScoreboardCards() {
+  const grid = document.getElementById('games-grid');
+  const loading = document.getElementById('scoreboard-loading');
+  const events = state.scoreboard?.events || [];
+  loading.style.display = 'none';
+
+  if (!events.length) {
+    grid.innerHTML = `<div class="empty">No games found for the ${state.year} season.</div>`;
+    return;
+  }
+
+  grid.innerHTML = events.map(event => {
+    const comp = event.competitions?.[0];
+    const competitors = comp?.competitors || [];
+    const away = competitors.find(c => c.homeAway === 'away') || {};
+    const home = competitors.find(c => c.homeAway === 'home') || {};
+    const detail = event.status?.type?.shortDetail || 'Scheduled';
+    return `<article class="game-card">
+      <div class="meta ${statusClass(detail)}">${detail}</div>
+      <div class="team-row">
+        <div class="team-row-left">
+          ${logoImg(away.team?.abbreviation, away.team?.displayName, 'logo-lg')}
+          <span class="team-name">${safe(away.team?.displayName, 'Away')}</span>
+        </div>
+        <strong>${safe(away.score, '–')}</strong>
+      </div>
+      <div class="team-row">
+        <div class="team-row-left">
+          ${logoImg(home.team?.abbreviation, home.team?.displayName, 'logo-lg')}
+          <span class="team-name">${safe(home.team?.displayName, 'Home')}</span>
+        </div>
+        <strong>${safe(home.score, '–')}</strong>
+      </div>
+      <div class="meta">${fmtMT(event.date)}</div>
+    </article>`;
+  }).join('');
+}
+
+// ── Scores Tab ─────────────────────────────────────────────────────────────────
+function renderScoresTab() {
+  const events = state.scoreboard?.events || [];
+  if (!events.length) return `<div class="empty">No score data for ${state.year} season.</div>`;
+  const rows = events.map(ev => {
+    const cx = ev.competitions?.[0]?.competitors || [];
+    const aw = cx.find(c => c.homeAway === 'away') || {};
+    const hm = cx.find(c => c.homeAway === 'home') || {};
+    const st = ev.status?.type?.shortDetail || 'Scheduled';
+    return `<tr>
+      <td>${logoImg(aw.team?.abbreviation, aw.team?.displayName)} ${safe(aw.team?.abbreviation)}
+          &nbsp;@&nbsp;
+          ${logoImg(hm.team?.abbreviation, hm.team?.displayName)} ${safe(hm.team?.abbreviation)}</td>
+      <td>${safe(aw.score, '–')} – ${safe(hm.score, '–')}</td>
+      <td class="${statusClass(st)}">${st}</td>
+      <td>${fmtMT(ev.date)}</td>
+    </tr>`;
+  }).join('');
+  return wrapTbl(`<table><thead><tr><th>Matchup</th><th>Score</th><th>Status</th><th>Date (MT)</th></tr></thead><tbody>${rows}</tbody></table>`);
+}
+
+// ── Standings Helpers ──────────────────────────────────────────────────────────
+function extractGroups(node, results = []) {
+  // Handle root standings object (some leagues have entries directly at root)
+  if (node?.standings?.entries?.length) {
+    results.push({ name: node.name || 'League', entries: node.standings.entries });
+  }
+  // Recurse into children for hierarchical structures (Conferences, Divisions)
+  if (node?.children?.length) {
+    node.children.forEach(c => extractGroups(c, results));
+  }
+  return results;
+}
+
+function parseEntry(entry, groupName) {
+  const team = entry.team || {};
+  const s    = Object.fromEntries((entry.stats || []).map(x => [x.name, x]));
+  const val  = (...keys) => {
+    for (const k of keys) { const v = s[k]?.displayValue ?? s[k]?.value; if (v !== undefined) return v; }
+    return '-';
+  };
+  return {
+    group: groupName,
+    id:    team.id,
+    abbr:  team.abbreviation || '-',
+    name:  team.displayName  || '-',
+    logo:  team.logos?.[0]?.href || team.logo || '',
+    w:     val('wins'),
+    l:     val('losses'),
+    t:     val('ties'),
+    pct:   val('winPercent','winPercentage'),
+    pf:    val('pointsFor'),
+    pa:    val('pointsAgainst'),
+    diff:  val('pointDifferential','differential'),
+    streak:val('streak'),
+    home:  val('Home','homeRecord'),
+    away:  val('Road','awayRecord'),
+    div:   val('vs. Div.','divisionRecord','Division'),
+    conf:  val('vs. Conf.','conferenceRecord','Conference')
+  };
+}
+
+function flattenStandings(data) {
+  if (!data) return [];
+  const groups = extractGroups(data);
+  const out = [];
+  groups.forEach(g => {
+    if (g.entries && Array.isArray(g.entries)) {
+      g.entries.forEach(e => out.push(parseEntry(e, g.name)));
+    }
+  });
+  return out;
+}
+
+// ── Standings Tab ──────────────────────────────────────────────────────────────
+function renderStandingsTab() {
+  const rows = flattenStandings(state.standings);
+  if (!rows.length) return `<div class="empty">No standings data. Check back soon!</div>`;
+  const groups = {};
+  rows.forEach(r => { (groups[r.group] = groups[r.group] || []).push(r); });
+  const groupHTML = Object.entries(groups).map(([grp, entries]) => `
+    <div class="section-title">${grp}</div>
+    ${wrapTbl(`<table>
+      <thead><tr><th>Team</th><th>W</th><th>L</th><th>T</th><th>Pct</th><th>PF</th><th>PA</th><th>Diff</th><th>Home</th><th>Away</th><th>Streak</th></tr></thead>
+      <tbody>${entries.map(r => `<tr>
+        <td>${r.logo ? `<img src="${r.logo}" class="logo-sm" alt="${r.abbr}" onerror="this.style.display='none'">` : logoImg(r.abbr, r.name, 'logo-sm')} ${r.name}</td>
+        <td>${r.w}</td><td>${r.l}</td><td>${r.t}</td><td>${r.pct}</td>
+        <td>${r.pf}</td><td>${r.pa}</td><td>${r.diff}</td>
+        <td>${r.home}</td><td>${r.away}</td><td>${r.streak}</td>
+      </tr>`).join('')}</tbody>
+    </table>`)}`).join('');
+  return groupHTML || `<div class="empty">Standings not available.</div>`;
+}
+
+// ── Stats Tab ──────────────────────────────────────────────────────────────────
+function buildTeamOptions() {
+  const list = state.teams?.sports?.[0]?.leagues?.[0]?.teams || [];
+  if (!list.length) return '<option value="">No teams loaded</option>';
+  return `<option value="">— Select a team —</option>` +
+    [...list].map(t => t.team)
+      .sort((a, b) => (a.displayName||'').localeCompare(b.displayName||''))
+      .map(t => `<option value="${t.id}">${t.displayName || t.abbreviation}</option>`)
+      .join('');
+}
+
+function statCard(s) {
+  return `<div class="stat-card">
+    <div class="stat-label">${s.displayName || s.name || ''}</div>
+    <div class="stat-value">${s.displayValue ?? s.value ?? '–'}</div>
+    ${s.description ? `<div class="stat-desc">${s.description}</div>` : ''}
+  </div>`;
+}
+
+function renderStatsPanel(data) {
+  const cats = data?.results?.stats?.categories ||
+               data?.statistics?.categories     ||
+               data?.stats?.categories          || [];
+  if (cats.length) {
+    return cats.map(cat => `
+      <div class="section-title">${cat.displayName || cat.name}</div>
+      <div class="stat-grid">${(cat.stats || []).map(s => statCard(s)).join('')}</div>`).join('');
+  }
+  const flat = data?.results?.stats?.stats ||
+               data?.statistics?.stats    ||
+               data?.stats?.stats         || [];
+  return flat.length
+    ? `<div class="stat-grid">${flat.map(s => statCard(s)).join('')}</div>`
+    : `<div class="empty">No detailed stats returned for this team / season.</div>`;
+}
+
+function parsePlayerStats(rosterData) {
+  // Handle grouped athletes (position -> items) or flat roster
+  const grouped = rosterData?.athletes;
+  if (Array.isArray(grouped) && grouped[0]?.items) {
+    return grouped.flatMap(g => (g.items || []).map(p => ({...p, posGroup: g.position?.displayName || ''})));
+  }
+  return rosterData?.roster || rosterData?.athletes || [];
+}
+
+function renderPlayerStats(players, limit = 12) {
+  if (!players.length) return `<div class="empty">No player data.</div>`;
+  
+  const html = players.slice(0, limit).map(p => {
+    const headshot = p.headshot?.href || p.headshotUrl || '';
+    const num = p.jersey || p.displayName?.split('#')[1] || '';
+    const pos = p.position?.displayName || p.position?.abbreviation || p.posGroup || 'N/A';
+    const ht = p.displayHeight || p.height || '';
+    const wt = p.displayWeight || (p.weight ? p.weight + ' lbs' : '') || '';
+    const status = p.status?.type?.description || p.status?.displayValue || '';
+    
+    // Extract key stats if available
+    const stats = p.stats || {};
+    const statStr = Object.entries(stats)
+      .slice(0, 2)
+      .map(([k, v]) => `${v.displayValue || v.value}${v.abbreviation || ''}`)
+      .join(' / ') || 'No stats';
+    
+    return `<div class="player-card" style="flex-direction: column; text-align: center">
+      ${headshot ? `<img src="${headshot}" style="width:100px;height:100px;border-radius:8px;object-fit:cover;margin:0 auto" alt="${p.displayName}" onerror="this.style.display='none'">` : `<div class="player-num" style="font-size:24px;width:80px;height:80px;margin:0 auto">${num || '?'}</div>`}
+      <div style="margin-top:8px;font-weight:600;font-size:13px">${p.displayName || p.fullName || '-'}</div>
+      <div style="font-size:11px;color:var(--muted)">#${num || '?'} · ${pos}</div>
+      ${ht || wt ? `<div style="font-size:10px;color:var(--muted)">${[ht, wt].filter(Boolean).join(', ')}</div>` : ''}
+      <div style="font-size:11px;color:var(--accent);font-weight:600;margin-top:4px">${statStr}</div>
+      ${status ? `<div style="font-size:9px;color:var(--warn)">${status}</div>` : ''}
+    </div>`;
+  }).join('');
+  
+  return `<div class="roster-grid">${html}</div>`;
+}
+
+function renderStatsTab() {
+  const rows = flattenStandings(state.standings);
+  const league = LEAGUES[state.league].label;
+
+  let overviewTable = '';
+  if (rows.length) {
+    overviewTable = `<div class="section-title">${league} · ${state.year} Season — All Teams</div>`;
+    const tableRows = rows.map(r => {
+      const img = r.logo 
+        ? `<img src="${r.logo}" class="logo-sm" alt="${r.abbr}" onerror="this.style.display='none'">`
+        : logoImg(r.abbr, r.name, 'logo-sm');
+      return `<tr><td>${img} ${r.name}</td><td>${r.w}</td><td>${r.l}</td><td>${r.pct}</td><td>${r.pf}</td><td>${r.pa}</td><td>${r.diff}</td><td>${r.home}</td><td>${r.away}</td><td>${r.streak}</td></tr>`;
+    }).join('');
+    const table = `<table><thead><tr><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>PF</th><th>PA</th><th>Diff</th><th>Home</th><th>Away</th><th>Streak</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+    overviewTable += wrapTbl(table);
+  } else {
+    overviewTable = `<div class="empty">No season stats available for ${state.year}.</div>`;
+  }
+
+  return `<div class="tab-ctrl">
+    <strong>Team Stats:</strong>
+    <select id="stats-team-select" class="dk-sel">${buildTeamOptions()}</select>
+    <button class="action-btn" id="stats-load-btn">Load Team Stats</button>
+    <button class="action-btn" id="player-load-btn" style="margin-left:10px">Load Player Stats</button>
+    <span id="stats-team-label" style="color:var(--muted);font-size:12px;margin-left:10px"></span>
   </div>
+  <div id="team-stats-content"></div>
+  ${overviewTable}`;
+}
 
-  <script>
-    const leagues = {
-      nfl: {
-        label: 'NFL',
-        sport: 'football',
-        league: 'nfl',
-        scoreboard: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
-        standings: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings',
-        teams: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams'
-      },
-      nba: {
-        label: 'NBA',
-        sport: 'basketball',
-        league: 'nba',
-        scoreboard: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
-        standings: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/standings',
-        teams: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams'
-      },
-      mlb: {
-        label: 'MLB',
-        sport: 'baseball',
-        league: 'mlb',
-        scoreboard: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard',
-        standings: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/standings',
-        teams: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams'
-      },
-      nhl: {
-        label: 'NHL',
-        sport: 'hockey',
-        league: 'nhl',
-        scoreboard: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard',
-        standings: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/standings',
-        teams: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams'
-      }
-    };
+function bindStatsTab() {
+  const teamBtn = document.getElementById('stats-load-btn');
+  const playerBtn = document.getElementById('player-load-btn');
+  if (!teamBtn && !playerBtn) return;
 
-    const tabs = ['Scores', 'Standings', 'Schedule', 'Teams'];
-    const state = {
-      league: localStorage.getItem('sports-dashboard-league') || 'nfl',
-      tab: 'Scores',
-      scoreboard: null,
-      standings: null,
-      teams: null
-    };
-
-    function safe(value, fallback = '-') {
-      return value ?? fallback;
-    }
-
-    async function fetchJson(url) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Request failed (${res.status})`);
-      return res.json();
-    }
-
-    function renderLeagueToggle() {
-      const wrap = document.getElementById('league-group');
-      wrap.innerHTML = Object.entries(leagues).map(([key, def]) => `
-        <button class="league-btn ${key === state.league ? 'active' : ''}" data-league="${key}">${def.label}</button>
-      `).join('');
-
-      wrap.querySelectorAll('.league-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.league = btn.dataset.league;
-          localStorage.setItem('sports-dashboard-league', state.league);
-          renderLeagueToggle();
-          loadLeagueData();
-        });
-      });
-    }
-
-    function renderTabs() {
-      const tabRoot = document.getElementById('tabs');
-      tabRoot.innerHTML = tabs.map(tab => `
-        <button class="tab-btn ${tab === state.tab ? 'active' : ''}" data-tab="${tab}">${tab}</button>
-      `).join('');
-
-      tabRoot.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          state.tab = btn.dataset.tab;
-          renderTabs();
-          renderActiveTab();
-        });
-      });
-    }
-
-    function statusClass(detail = '') {
-      const d = detail.toLowerCase();
-      if (d.includes('final')) return 'status-final';
-      if (d.includes('live') || d.includes('q') || d.includes('period')) return 'status-live';
-      return '';
-    }
-
-    function renderScoreboardCards() {
-      const grid = document.getElementById('games-grid');
-      const loading = document.getElementById('scoreboard-loading');
-      const events = state.scoreboard?.events || [];
-      loading.style.display = 'none';
-
-      if (!events.length) {
-        grid.innerHTML = `<div class="empty">No games returned for this league right now.</div>`;
-        return;
-      }
-
-      grid.innerHTML = events.map(event => {
-        const comp = event.competitions?.[0];
-        const competitors = comp?.competitors || [];
-        const away = competitors.find(c => c.homeAway === 'away') || {};
-        const home = competitors.find(c => c.homeAway === 'home') || {};
-        const detail = event.status?.type?.shortDetail || event.status?.type?.description || 'Scheduled';
-        return `
-          <article class="game-card">
-            <div class="meta ${statusClass(detail)}">${detail}</div>
-            <div class="team-row"><span>${safe(away.team?.displayName, 'Away')}</span><strong>${safe(away.score, '0')}</strong></div>
-            <div class="team-row"><span>${safe(home.team?.displayName, 'Home')}</span><strong>${safe(home.score, '0')}</strong></div>
-            <div class="meta">${new Date(event.date).toLocaleString()}</div>
-          </article>
-        `;
-      }).join('');
-    }
-
-    function renderScoresTab() {
-      const events = state.scoreboard?.events || [];
-      if (!events.length) return '<div class="empty">No score data available.</div>';
-      const rows = events.map(event => {
-        const comp = event.competitions?.[0];
-        const competitors = comp?.competitors || [];
-        const away = competitors.find(c => c.homeAway === 'away') || {};
-        const home = competitors.find(c => c.homeAway === 'home') || {};
-        const status = event.status?.type?.shortDetail || 'Scheduled';
-        return `<tr>
-          <td>${safe(away.team?.abbreviation)} @ ${safe(home.team?.abbreviation)}</td>
-          <td>${safe(away.score, '0')} - ${safe(home.score, '0')}</td>
-          <td class="${statusClass(status)}">${status}</td>
-          <td>${new Date(event.date).toLocaleString()}</td>
-        </tr>`;
-      }).join('');
-
-      return `<table>
-        <thead><tr><th>Matchup</th><th>Score</th><th>Status</th><th>Date</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    }
-
-    function flattenStandings(data) {
-      const out = [];
-      (data?.children || []).forEach(group => {
-        (group.standings?.entries || []).forEach(entry => {
-          const team = entry.team || {};
-          const stats = Object.fromEntries((entry.stats || []).map(s => [s.name, s.displayValue || s.value]));
-          out.push({
-            group: group.name || '-',
-            team: team.displayName || '-',
-            abbreviation: team.abbreviation || '-',
-            wins: stats.wins ?? stats.w ?? '-',
-            losses: stats.losses ?? stats.l ?? '-',
-            pct: stats.winPercent ?? stats.winPercentage ?? '-',
-            streak: stats.streak ?? '-'
-          });
-        });
-      });
-      return out;
-    }
-
-    function renderStandingsTab() {
-      const rowsData = flattenStandings(state.standings);
-      if (!rowsData.length) return '<div class="empty">No standings data available.</div>';
-      const rows = rowsData.map(item => `<tr>
-        <td>${item.group}</td><td>${item.team}</td><td>${item.wins}</td><td>${item.losses}</td><td>${item.pct}</td><td>${item.streak}</td>
-      </tr>`).join('');
-      return `<table>
-        <thead><tr><th>Division/Conference</th><th>Team</th><th>W</th><th>L</th><th>Pct</th><th>Streak</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    }
-
-    function renderScheduleTab() {
-      const events = (state.scoreboard?.events || []).slice().sort((a, b) => new Date(a.date) - new Date(b.date));
-      if (!events.length) return '<div class="empty">No schedule data available.</div>';
-      const rows = events.map(event => {
-        const comp = event.competitions?.[0];
-        const competitors = comp?.competitors || [];
-        const away = competitors.find(c => c.homeAway === 'away') || {};
-        const home = competitors.find(c => c.homeAway === 'home') || {};
-        return `<tr>
-          <td>${safe(away.team?.displayName)} @ ${safe(home.team?.displayName)}</td>
-          <td>${new Date(event.date).toLocaleString()}</td>
-          <td>${safe(event.venue?.fullName, 'TBD')}</td>
-        </tr>`;
-      }).join('');
-
-      return `<table>
-        <thead><tr><th>Game</th><th>Date</th><th>Venue</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    }
-
-    function teamRows() {
-      return (state.teams?.sports?.[0]?.leagues?.[0]?.teams || []).map(t => {
-        const team = t.team || {};
-        return {
-          name: team.displayName || '-',
-          abbr: team.abbreviation || '-',
-          location: team.location || '-',
-          venue: team.venue?.fullName || '-',
-          color: team.color || '---'
-        };
-      });
-    }
-
-    function renderTeamsTab(filtered = '') {
-      const rowsData = teamRows();
-      const q = filtered.trim().toLowerCase();
-      const rowsFiltered = q
-        ? rowsData.filter(row => `${row.name} ${row.abbr} ${row.location}`.toLowerCase().includes(q))
-        : rowsData;
-
-      if (!rowsFiltered.length) return '<div class="empty">No teams matched your search.</div>';
-
-      const rows = rowsFiltered.map(team => `<tr>
-        <td>${team.name}</td><td>${team.abbr}</td><td>${team.location}</td><td>${team.venue}</td><td>#${team.color}</td>
-      </tr>`).join('');
-
-      return `<table>
-        <thead><tr><th>Team</th><th>Abbr</th><th>Location</th><th>Venue</th><th>Color</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>`;
-    }
-
-    function renderActiveTab(search = '') {
-      const title = document.getElementById('scoreboard-title');
-      const leagueLabel = leagues[state.league].label;
-      title.textContent = `${leagueLabel} Scoreboard · Live / Final Games`;
-
-      const root = document.getElementById('tab-content');
-      if (state.tab === 'Scores') root.innerHTML = renderScoresTab();
-      if (state.tab === 'Standings') root.innerHTML = renderStandingsTab();
-      if (state.tab === 'Schedule') root.innerHTML = renderScheduleTab();
-      if (state.tab === 'Teams') root.innerHTML = renderTeamsTab(search);
-    }
-
-    async function loadLeagueData() {
-      const loading = document.getElementById('scoreboard-loading');
-      const grid = document.getElementById('games-grid');
-      loading.style.display = 'block';
-      grid.innerHTML = '';
-      document.getElementById('tab-content').innerHTML = '<div class="empty">Loading league data...</div>';
-
+  if (teamBtn) {
+    teamBtn.addEventListener('click', async () => {
+      const sel    = document.getElementById('stats-team-select');
+      const lbl    = document.getElementById('stats-team-label');
+      const teamId = sel?.value;
+      if (!teamId) return;
+      const content = document.getElementById('team-stats-content');
+      const teamName = sel.options[sel.selectedIndex]?.text || '';
+      if (lbl) lbl.textContent = `Loading ${teamName}…`;
+      content.innerHTML = '<div class="loading">Fetching team stats…</div>';
       try {
-        const cfg = leagues[state.league];
-        const [scoreboard, standings, teams] = await Promise.all([
-          fetchJson(cfg.scoreboard),
-          fetchJson(cfg.standings),
-          fetchJson(cfg.teams)
-        ]);
-
-        state.scoreboard = scoreboard;
-        state.standings = standings;
-        state.teams = teams;
-
-        renderScoreboardCards();
-        renderActiveTab(document.getElementById('search-input').value);
+        const data = await fetchJson(apiUrl('teamStats', teamId));
+        if (lbl) lbl.textContent = teamName;
+        content.innerHTML = renderStatsPanel(data);
       } catch (err) {
-        loading.textContent = 'Failed to load data. Please retry.';
-        document.getElementById('tab-content').innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+        if (lbl) lbl.textContent = '';
+        content.innerHTML = `<div class="empty">Stats unavailable: ${err.message}</div>`;
       }
-    }
+    });
+  }
 
-    function bindSearch() {
-      const input = document.getElementById('search-input');
-      const btn = document.getElementById('search-btn');
-
-      function runSearch() {
-        state.tab = 'Teams';
-        renderTabs();
-        renderActiveTab(input.value);
+  if (playerBtn) {
+    playerBtn.addEventListener('click', async () => {
+      const sel    = document.getElementById('stats-team-select');
+      const lbl    = document.getElementById('stats-team-label');
+      const teamId = sel?.value;
+      if (!teamId) return;
+      const content = document.getElementById('team-stats-content');
+      const teamName = sel.options[sel.selectedIndex]?.text || '';
+      if (lbl) lbl.textContent = `Loading ${teamName} roster…`;
+      content.innerHTML = '<div class="loading">Fetching player stats…</div>';
+      try {
+        const data = await fetchJson(apiUrl('roster', teamId));
+        const players = parsePlayerStats(data);
+        if (lbl) lbl.textContent = `${teamName} - ${players.length} players`;
+        content.innerHTML = `<div class="section-title">Top Players</div>` + renderPlayerStats(players, 12);
+      } catch (err) {
+        if (lbl) lbl.textContent = '';
+        content.innerHTML = `<div class="empty">Player data unavailable: ${err.message}</div>`;
       }
+    });
+  }
+}
 
-      btn.addEventListener('click', runSearch);
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') runSearch();
-      });
-    }
+// ── Schedule Tab ───────────────────────────────────────────────────────────────
+function renderSchedEvents(events) {
+  if (!events.length) return `<div class="empty">No games found.</div>`;
+  const rows = events.slice().sort((a,b)=>new Date(a.date)-new Date(b.date)).map(ev => {
+    const comp = ev.competitions?.[0];
+    const cx   = comp?.competitors || [];
+    const aw   = cx.find(c => c.homeAway === 'away') || {};
+    const hm   = cx.find(c => c.homeAway === 'home') || {};
+    const st   = ev.status?.type?.shortDetail || 'Scheduled';
+    const score = (aw.score != null && hm.score != null) ? `${aw.score}–${hm.score}` : '–';
+    return `<tr>
+      <td>${logoImg(aw.team?.abbreviation, aw.team?.displayName)} ${safe(aw.team?.abbreviation, '?')}
+          &nbsp;@&nbsp;
+          ${logoImg(hm.team?.abbreviation, hm.team?.displayName)} ${safe(hm.team?.abbreviation, '?')}</td>
+      <td>${score}</td>
+      <td>${fmtMT(ev.date)}</td>
+      <td>${safe(comp?.venue?.fullName, 'TBD')}</td>
+      <td class="${statusClass(st)}">${st}</td>
+    </tr>`;
+  }).join('');
+  return wrapTbl(`<table><thead><tr><th>Game</th><th>Score</th><th>Date (MT)</th><th>Venue</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`);
+}
 
-    function init() {
-      if (!leagues[state.league]) state.league = 'nfl';
-      renderLeagueToggle();
-      renderTabs();
-      bindSearch();
-      loadLeagueData();
-    }
+function renderScheduleTab() {
+  return `<div class="tab-ctrl">
+    <select id="sched-team-sel" class="dk-sel">
+      <option value="">All teams (today's scoreboard)</option>
+      ${buildTeamOptions().replace('<option value="">\u2014 Select a team \u2014</option>','')}
+    </select>
+    <select id="sched-year-sel" class="dk-sel">${Array.from({length:CUR_YEAR-2009},(_,i)=>CUR_YEAR-i).map(y=>`<option value="${y}"${y===state.year?' selected':''}>${y}</option>`).join('')}</select>
+    <button class="action-btn" id="sched-load-btn">View Schedule</button>
+  </div>
+  <div id="sched-content">${renderSchedEvents(state.scoreboard?.events || [])}</div>`;
+}
 
-    init();
-  </script>
+function bindScheduleTab() {
+  const btn = document.getElementById('sched-load-btn');
+  if (!btn) return;
+  btn.onclick = async () => {
+    const teamId = document.getElementById('sched-team-sel').value;
+    const yr     = document.getElementById('sched-year-sel').value;
+    const box    = document.getElementById('sched-content');
+    box.innerHTML = '<div class="loading">Loading schedule…</div>';
+    try {
+      if (teamId) {
+        const { sport, league } = LEAGUES[state.league];
+        const url  = `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/teams/${teamId}/schedule?season=${yr}`;
+        const data = await fetchJson(url);
+        const events = data?.events || data?.schedule?.events || [];
+        box.innerHTML = renderSchedEvents(events);
+      } else {
+        const url  = `https://site.api.espn.com/apis/site/v2/sports/${LEAGUES[state.league].sport}/${LEAGUES[state.league].league}/scoreboard?dates=${yr}0901`;
+        const data = await fetchJson(url);
+        box.innerHTML = renderSchedEvents(data?.events || []);
+      }
+    } catch (err) { box.innerHTML = `<div class="empty">Failed: ${err.message}</div>`; }
+  };
+}
+
+// ── Roster Tab ────────────────────────────────────────────────────────────────
+function renderRosterTab() {
+  return `<div class="tab-ctrl">
+    <select id="roster-team-sel" class="dk-sel">${buildTeamOptions()}</select>
+    <button class="action-btn" id="roster-load-btn">Load Roster</button>
+  </div>
+  <div id="roster-content"><div class="empty">Select a team above.</div></div>`;
+}
+
+function parseRosterData(data) {
+  // ESPN returns athletes in two shapes: grouped by position or flat
+  const grouped = data?.athletes; // array of {position:{displayName}, items:[]}
+  if (Array.isArray(grouped) && grouped[0]?.items) {
+    return grouped.flatMap(g => (g.items || []).map(p => ({...p, posGroup: g.position?.displayName || ''})));
+  }
+  return data?.roster || data?.athletes || [];
+}
+
+function renderRosterData(players) {
+  if (!players.length) return `<div class="empty">No roster data found.</div>`;
+  return `<div class="roster-grid">${players.map(p => {
+    const hs  = p.headshot?.href || '';
+    const num = p.jersey || p.displayName?.split('#')[1] || '';
+    const pos = p.position?.abbreviation || p.position?.displayName || p.posGroup || '';
+    const ht  = p.displayHeight || p.height || '';
+    const wt  = p.displayWeight || (p.weight ? p.weight + ' lbs' : '') || '';
+    const status = p.status?.type?.description || p.status?.displayValue || '';
+    return `<div class="player-card">
+      ${hs ? `<img src="${hs}" class="logo-md" alt="${p.displayName || ''}" onerror="this.src=''">` : `<div class="player-num">${num||'#'}</div>`}
+      <div class="player-info">
+        <div class="player-name">${p.displayName || p.fullName || '-'}</div>
+        <div class="player-meta">${[pos, num ? '#'+num : '', ht, wt].filter(Boolean).join(' · ')}</div>
+        ${status ? `<div class="player-meta">${status}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function bindRosterTab() {
+  const btn = document.getElementById('roster-load-btn');
+  if (!btn) return;
+  btn.onclick = async () => {
+    const teamId = document.getElementById('roster-team-sel').value;
+    if (!teamId) return;
+    const box = document.getElementById('roster-content');
+    box.innerHTML = '<div class="loading">Loading roster…</div>';
+    try {
+      const data    = await fetchJson(apiUrl('roster', teamId));
+      const players = parseRosterData(data);
+      box.innerHTML = renderRosterData(players);
+    } catch (err) { box.innerHTML = `<div class="empty">Failed: ${err.message}</div>`; }
+  };
+}
+
+// ── Teams Tab ──────────────────────────────────────────────────────────────────
+function renderTeamsTab(search = '') {
+  const list = state.teams?.sports?.[0]?.leagues?.[0]?.teams || [];
+  const q    = search.trim().toLowerCase();
+  const filtered = list.map(t => t.team)
+    .filter(t => !q || `${t.displayName} ${t.abbreviation} ${t.location}`.toLowerCase().includes(q))
+    .sort((a, b) => (a.displayName||'').localeCompare(b.displayName||''));
+  if (!filtered.length) return '<div class="empty">No teams matched.</div>';
+  const rows = filtered.map(team => {
+    const logo  = team.logos?.[0]?.href || team.logo || logoUrl(team.abbreviation);
+    const color = team.color ? `#${team.color}` : null;
+    return `<tr>
+      <td>${logo ? `<img src="${logo}" class="logo-sm" alt="${team.abbreviation}" onerror="this.style.display='none'">` : ''} ${team.displayName||'-'}</td>
+      <td>${team.abbreviation||'-'}</td>
+      <td>${team.location||'-'}</td>
+      <td>${team.venue?.fullName||'-'}</td>
+      <td>${color ? `<span class="color-swatch" style="background:${color}"></span>${color}` : '-'}</td>
+    </tr>`;
+  }).join('');
+  return wrapTbl(`<table><thead><tr><th>Team</th><th>Abbr</th><th>Location</th><th>Venue</th><th>Color</th></tr></thead><tbody>${rows}</tbody></table>`);
+}
+
+// ── Active Tab Dispatcher ──────────────────────────────────────────────────────
+function renderActiveTab(search = '') {
+  const label = LEAGUES[state.league].label;
+  document.getElementById('scoreboard-title').textContent =
+    `${label} · ${state.year} Season — Live / Recent Games`;
+  const root = document.getElementById('tab-content');
+  switch (state.tab) {
+    case 'Scores':    root.innerHTML = renderScoresTab();    break;
+    case 'Standings': root.innerHTML = renderStandingsTab(); break;
+    case 'Stats':     root.innerHTML = renderStatsTab();     bindStatsTab(); break;
+    case 'Schedule':  root.innerHTML = renderScheduleTab();  bindScheduleTab(); break;
+    case 'Roster':    root.innerHTML = renderRosterTab();    bindRosterTab(); break;
+    case 'Teams':     root.innerHTML = renderTeamsTab(search); break;
+  }
+}
+
+// ── Data Loader ────────────────────────────────────────────────────────────────
+async function loadLeagueData() {
+  const loading = document.getElementById('scoreboard-loading');
+  const grid    = document.getElementById('games-grid');
+  loading.style.display = 'block';
+  grid.innerHTML = '';
+  document.getElementById('tab-content').innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const [scoreboard, standings, teams] = await Promise.all([
+      fetchJson(scoreboardUrl()),
+      fetchJson(apiUrl('standings')),
+      fetchJson(apiUrl('teams'))
+    ]);
+    state.scoreboard = scoreboard;
+    state.standings  = standings;
+    state.teams      = teams;
+    buildLogoMap();
+    renderScoreboardCards();
+    renderActiveTab(document.getElementById('search-input').value);
+  } catch (err) {
+    loading.textContent = `Failed to load: ${err.message}`;
+    document.getElementById('tab-content').innerHTML = `<div class="empty">Error: ${err.message}</div>`;
+  }
+}
+
+// ── Search ─────────────────────────────────────────────────────────────────────
+function bindSearch() {
+  const input = document.getElementById('search-input');
+  const btn   = document.getElementById('search-btn');
+  const go = () => { state.tab = 'Teams'; renderTabs(); renderActiveTab(input.value); };
+  btn.addEventListener('click', go);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+function init() {
+  if (!LEAGUES[state.league]) state.league = 'nfl';
+  renderYearSelect();
+  renderLeagueToggle();
+  renderTabs();
+  bindSearch();
+  initDateNav();
+  loadLeagueData();
+}
+
+init();
+</script>
 </body>
 </html>
