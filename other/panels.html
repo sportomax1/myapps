@@ -25,6 +25,7 @@
         .progress-bar { transition: width 0.1s linear; }
         .grid-rows-layout { grid-template-rows: repeat(2, minmax(0, 1fr)); }
         .clock-text { font-size: clamp(2.5rem, 6vw, 4rem); }
+        .photo-fade { transition: opacity 0.6s ease; }
     </style>
 </head>
 <body class="h-screen w-screen flex flex-col p-2 md:p-4 gap-4 overflow-hidden">
@@ -37,45 +38,47 @@
     <!-- Main Grid -->
     <main id="mainGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 grid-rows-layout gap-4 flex-grow h-full">
 
-        <!-- 1. CLOCK -->
-        <div id="tileClock" 
-             class="glass-tile rounded-3xl p-4 items-center justify-center text-center relative group cursor-pointer hover:bg-slate-800/50 transition">
+        <!-- 1. CLOCK / CALENDAR ROTATION -->
+        <div id="tileClock" class="glass-tile rounded-3xl relative group cursor-pointer hover:bg-slate-800/50 transition">
             <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-50 pointer-events-none"></div>
             
-            <div id="clock" 
-                 class="clock-text font-black text-white tracking-tighter leading-none z-10">
-                --:--
+            <div class="p-4 pb-3 text-center">
+                <div id="clock" class="clock-text font-black text-white tracking-tighter leading-none z-10">--:--</div>
+                <div id="militaryTime" class="text-xl font-bold text-slate-400 mt-2 z-10">--:--</div>
             </div>
-            
-            <div id="militaryTime" 
-                 class="text-xl font-bold text-slate-400 mt-2 z-10">
-                --:--
-            </div>
-            
-            <div class="mt-4 w-full grid grid-cols-2 gap-4 z-10">
-                <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
-                    <div id="sunTimes" 
-                         class="text-lg font-black text-orange-300 whitespace-pre-line leading-tight">
-                        --
+
+            <div id="clockView" class="flex-grow px-4 pb-4 flex flex-col items-center justify-center text-center">
+                <div class="w-full grid grid-cols-2 gap-3 z-10">
+                    <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
+                        <div id="sunTimes" class="text-lg font-black text-orange-300 whitespace-pre-line leading-tight">
+                            --
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
+                        <div id="moonPhase" class="text-lg font-black text-purple-300">
+                            --
+                        </div>
+                        <div id="moonDates" class="text-[10px] text-slate-500 leading-tight mt-1">
+                            --
+                        </div>
                     </div>
                 </div>
                 
-                <div class="bg-slate-900/50 rounded-2xl p-3 flex flex-col justify-center border border-white/5">
-                    <div id="moonPhase" 
-                         class="text-lg font-black text-purple-300">
-                        --
-                    </div>
-                    <div id="moonDates" 
-                         class="text-[10px] text-slate-500 leading-tight mt-1">
-                        --
-                    </div>
+                <div id="currentWeather" class="mt-3 text-xl font-black text-blue-200 z-10">
+                    Loading...
                 </div>
             </div>
-            
-            <div id="currentWeather" 
-                 class="mt-4 text-xl font-black text-blue-200 z-10">
-                Loading...
+
+            <div id="clockCalendarView" class="hidden flex-grow px-4 pb-4 flex flex-col gap-2 relative">
+                <div id="holidayCountdown" class="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest leading-relaxed"></div>
+                <div id="calendar" class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-300 mt-1 flex-grow content-center"></div>
+                <div class="mt-auto pt-2 border-t border-slate-700/50">
+                    <div id="upcomingHolidays" class="text-[9px] font-semibold text-slate-300 space-y-1"></div>
+                </div>
             </div>
+
+            <div class="h-1 w-full bg-slate-800/80 mt-auto"><div id="clockSlider" class="h-full bg-blue-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 2. HISTORICAL WEATHER STATS -->
@@ -102,13 +105,13 @@
             <div class="h-1.5 w-full bg-slate-800 mt-auto"><div id="scoresSlider" class="h-full bg-amber-500 w-0 progress-bar"></div></div>
         </div>
 
-        <!-- 5. CALENDAR -->
-        <div id="tileCalendar" class="glass-tile rounded-3xl p-4 flex flex-col gap-2 relative">
-            <div id="holidayCountdown" class="text-center text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed"></div>
-            <div id="calendar" class="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-300 mt-1 flex-grow content-center"></div>
-            <div class="mt-auto pt-2 border-t border-slate-700/50">
-                <div id="upcomingHolidays" class="text-[9px] font-semibold text-slate-400 space-y-1"></div>
-            </div>
+        <!-- 5. PHOTOS (FULL TILE) -->
+        <div id="tilePhotos" class="glass-tile rounded-3xl relative cursor-pointer hover:border-slate-500 transition">
+            <img id="photosImage" class="photo-fade absolute inset-0 h-full w-full object-cover" alt="Slideshow photo">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/10 to-transparent pointer-events-none"></div>
+            <div class="absolute top-3 right-3 rounded-full bg-slate-950/70 px-2 py-1 text-[9px] font-bold text-slate-200 backdrop-blur-sm" id="photosCounter"></div>
+            <div class="absolute bottom-3 left-3 text-[9px] font-black uppercase tracking-[0.2em] text-white/80">Photos</div>
+            <div class="absolute bottom-0 left-0 h-1 w-full bg-slate-800/80"><div id="photosSlider" class="h-full bg-emerald-500 w-0 progress-bar"></div></div>
         </div>
 
         <!-- 6. SPEED/STOCKS/GAS/BGG/FACTS ROTATION -->
@@ -137,14 +140,22 @@
 
 <script>
 const CONFIG={rotateIntervalMs:10000};
-const pauseStates={weather:false,scores:false,sports:false,stack:false,history:false,fun:false};
+const pauseStates={weather:false,scores:false,sports:false,stack:false,history:false,fun:false,photos:false,clock:false};
 
 function setupPauseHandlers(){
-  ['weather','SportsScores','Sports','Stack','HistoryWeather','Fun'].forEach(id=>{
-      const el = document.getElementById('tile'+id);
+  [
+      ['tileClock', 'clock'],
+      ['tileWeather', 'weather'],
+      ['tileSportsScores', 'scores'],
+      ['tileSports', 'sports'],
+      ['tileStack', 'stack'],
+      ['tileHistoryWeather', 'history'],
+      ['tileFun', 'fun'],
+      ['tilePhotos', 'photos']
+  ].forEach(([tileId, key])=>{
+      const el = document.getElementById(tileId);
       if(el) {
           el.addEventListener('click', () => {
-              const key = id === 'SportsScores' ? 'scores' : id === 'HistoryWeather' ? 'history' : id.toLowerCase();
               pauseStates[key] = !pauseStates[key];
               if(pauseStates[key]) el.classList.add('border-white/40', 'bg-slate-800');
               else el.classList.remove('border-white/40', 'bg-slate-800');
@@ -194,6 +205,35 @@ function findFullMoonDates(){
 }
 setInterval(updateClock,1000);
 
+const CLOCK_VIEWS = ["clock","calendar"];
+let clockViewIndex = 0;
+
+function setClockView(view){
+  const clockEl = document.getElementById("clockView");
+  const calEl = document.getElementById("clockCalendarView");
+  if(!clockEl || !calEl) return;
+
+  if(view === "calendar"){
+    clockEl.classList.add("hidden");
+    calEl.classList.remove("hidden");
+    renderCalendar();
+  } else {
+    calEl.classList.add("hidden");
+    clockEl.classList.remove("hidden");
+  }
+}
+
+function rotateClockView(){
+  if(pauseStates.clock) return;
+  clockViewIndex = (clockViewIndex + 1) % CLOCK_VIEWS.length;
+  setClockView(CLOCK_VIEWS[clockViewIndex]);
+  startTileSlider("clockSlider", CONFIG.rotateIntervalMs);
+}
+
+setClockView(CLOCK_VIEWS[clockViewIndex]);
+startTileSlider("clockSlider", CONFIG.rotateIntervalMs);
+setInterval(rotateClockView, CONFIG.rotateIntervalMs);
+
 /* ========== HISTORICAL WEATHER - PARKER CO 80134 (TILE 2) ========== */
 let historicalWeatherData = null;
 let historyIndex = 0;
@@ -232,6 +272,15 @@ function renderHistoricalWeather(){
 function renderTempStats(){
   const el = document.getElementById('weatherHistory');
   const highs = historicalWeatherData.temperature_2m_max;
+  const tempRanges20 = [
+    {label:'<0', min:-Infinity, max:0, color:'blue'},
+    {label:'0-20', min:0, max:20, color:'cyan'},
+    {label:'20-40', min:20, max:40, color:'lime'},
+    {label:'40-60', min:40, max:60, color:'yellow'},
+    {label:'60-80', min:60, max:80, color:'orange'},
+    {label:'80-100', min:80, max:100, color:'rose'},
+    {label:'100+', min:100, max:Infinity, color:'purple'}
+  ];
   
   const tempRanges = [
     {label:'<0°', min:-Infinity, max:0, color:'blue'},
@@ -248,7 +297,7 @@ function renderTempStats(){
     {label:'100+°', min:100, max:Infinity, color:'purple'}
   ];
   
-  const stats = tempRanges.map(range => {
+  const stats = tempRanges20.map(range => {
     const daysInRange = highs.filter(h => h >= range.min && h < range.max).length;
     let lastIndex = -1;
     for(let i = highs.length - 1; i >= 0; i--) {
@@ -358,7 +407,79 @@ setInterval(rotateHistoryView, CONFIG.rotateIntervalMs);
 /* ========== STACK ROTATION (SPEED/STOCKS/GAS/MORTGAGE/BGG/FACTS) - TILE 6 ========== */
 let speedData={download:0,upload:0,lastChecked:null};
 let stackIndex = 0;
-const stackViews = ["speed","stocks","gas","mortgage","bgg","facts"];
+let stackViews = ["speed","stocks","bgg","facts"];
+
+let stockQuotes = {};
+let stocksLastLoaded = null;
+const STOCK_SYMBOLS = [
+  { label: "Apple", symbol: "aapl.us", ticker: "AAPL" },
+  { label: "Amazon", symbol: "amzn.us", ticker: "AMZN" },
+  { label: "Disney", symbol: "dis.us", ticker: "DIS" },
+  { label: "Microsoft", symbol: "msft.us", ticker: "MSFT" },
+  { label: "Nvidia", symbol: "nvda.us", ticker: "NVDA" },
+  { label: "Tesla", symbol: "tsla.us", ticker: "TSLA" },
+  { label: "Meta", symbol: "meta.us", ticker: "META" },
+  { label: "Google", symbol: "googl.us", ticker: "GOOGL" }
+];
+
+async function fetchStooqQuote(symbol){
+  const res = await fetch(`https://stooq.com/q/l/?s=${encodeURIComponent(symbol)}&f=sd2t2ohlcv&h&e=csv`);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  if(lines.length < 2) return null;
+  const parts = lines[1].trim().split(',');
+  const close = parseFloat(parts[6]);
+  const open = parseFloat(parts[3]);
+  if(!isFinite(close) || !isFinite(open)) return null;
+  const pct = ((close - open) / open) * 100;
+  return { close, open, pct, date: parts[1], time: parts[2] };
+}
+
+async function loadStocks(){
+  try{
+    const results = await Promise.all(STOCK_SYMBOLS.map(async s => {
+      try{ return [s.symbol, await fetchStooqQuote(s.symbol)]; } catch(e){ return [s.symbol, null]; }
+    }));
+    results.forEach(([sym, q]) => { if(q) stockQuotes[sym] = q; });
+    stocksLastLoaded = new Date();
+  } catch(e) { console.warn('Stocks load failed:', e); }
+}
+
+function ensureStackView(viewName, shouldInclude, insertAfter){
+  const idx = stackViews.indexOf(viewName);
+  if(shouldInclude && idx === -1){
+    const insertIdx = Math.max(0, stackViews.indexOf(insertAfter) + 1);
+    stackViews.splice(insertIdx, 0, viewName);
+    if(stackIndex >= insertIdx) stackIndex++;
+  } else if(!shouldInclude && idx !== -1){
+    stackViews.splice(idx, 1);
+    if(stackIndex >= stackViews.length) stackIndex = 0;
+  }
+}
+
+let gasLive = null;      // { regular, asOf, area }
+let mortgageLive = null; // { rate30, rate15, asOf }
+
+async function loadGasIfAvailable(){
+  try{
+    const res = await fetch('https://r.jina.ai/http://gasprices.aaa.com/?state=CO');
+    const text = await res.text();
+    // Try to find a Denver-area metro section; if missing, treat as unavailable (per "Parker" requirement).
+    const metroMatch =
+      text.match(/###\s*(Denver[^\n]*)\s*[\s\S]*?\|\s*Current Avg\.\s*\|\s*\$([0-9]+\.[0-9]+)/i) ||
+      text.match(/###\s*(Aurora[^\n]*)\s*[\s\S]*?\|\s*Current Avg\.\s*\|\s*\$([0-9]+\.[0-9]+)/i);
+    if(!metroMatch) { gasLive = null; ensureStackView('gas', false); return; }
+    const asOfMatch = text.match(/Price as of\s*([0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4})/i);
+    gasLive = { area: metroMatch[1].trim(), regular: parseFloat(metroMatch[2]), asOf: asOfMatch ? asOfMatch[1] : null };
+    ensureStackView('gas', true, 'stocks');
+  } catch(e) { gasLive = null; ensureStackView('gas', false); }
+}
+
+async function loadMortgageIfAvailable(){
+  // No built-in free/CORS-friendly source wired up; keep hidden unless we successfully populate mortgageLive.
+  mortgageLive = null;
+  ensureStackView('mortgage', false);
+}
 
 async function testSpeed(){
   try{ const dlStart=performance.now(); await fetch("https://www.gstatic.com/generate_204",{method:'GET',cache:'no-cache'}).then(r=>r.blob()); const dlDuration=(performance.now()-dlStart)/1000; speedData.download=((8/dlDuration)).toFixed(1); speedData.lastChecked=new Date(); }catch(e){console.warn('Speed test failed:', e);}
@@ -370,11 +491,82 @@ function renderStackView(){
   
   if(view==="speed"){
     el.innerHTML=`<div class="flex flex-col items-center justify-center h-full w-full"><div class="text-sm font-black uppercase text-slate-500 mb-4">Network</div><div class="flex gap-8 mb-2"><div class="text-center"><div class="text-4xl font-black text-emerald-400">${speedData.download}</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Down</div></div><div class="text-center"><div class="text-4xl font-black text-blue-400">12.5</div><div class="text-[10px] font-bold text-slate-500 uppercase mt-1">Up</div></div></div><div class="text-[10px] text-slate-600 font-mono mt-2">Last: ${speedData.lastChecked?speedData.lastChecked.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}):"--:--"}</div></div>`;
-  } else if(view==="stocks") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Market</div><div class="space-y-4"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">S&P 500</span><div class="text-right"><div class="text-lg font-black text-white">6,920.93</div><div class="text-xs font-bold text-red-400">-0.34%</div></div></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-300">NASDAQ</span><div class="text-right"><div class="text-lg font-black text-white">23,584.27</div><div class="text-xs font-bold text-emerald-400">+0.16%</div></div></div></div></div>`;
-  else if(view==="gas") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Gas (Parker, CO)</div><div class="grid grid-cols-2 gap-4 mt-1"><div class="bg-emerald-900/20 border border-emerald-500/20 p-2 rounded-xl text-center"><div class="text-[8px] text-emerald-400 font-bold uppercase mb-1">Costco</div><div class="text-2xl font-black text-white">$1.99</div></div><div class="bg-slate-800/50 p-2 rounded-xl text-center"><div class="text-[8px] text-slate-400 font-bold uppercase mb-1">Avg</div><div class="text-2xl font-black text-white">$2.41</div></div></div></div>`;
-  else if(view==="mortgage") el.innerHTML=`<div class="w-full h-full flex flex-col justify-center px-4"><div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Mortgage</div><div class="space-y-4 mt-1"><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">30-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.75%</span></div><div class="flex justify-between items-center"><span class="text-sm font-bold text-slate-400">15-Yr Fixed</span><span class="text-xl font-black text-blue-300">6.25%</span></div></div></div>`;
+  } else if(view==="stocks") renderStocksStack();
+  else if(view==="gas") renderGasStack();
+  else if(view==="mortgage") renderMortgageStack();
   else if(view==="bgg") renderBGGStack();
   else if(view==="facts") renderFactStack();
+}
+
+function renderStocksStack(){
+  const el = document.getElementById('stackContent');
+  const updated = stocksLastLoaded ? stocksLastLoaded.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : null;
+  const rows = STOCK_SYMBOLS.map(s => {
+    const q = stockQuotes[s.symbol];
+    if(!q) return { ticker: s.ticker, price: '--', pct: null };
+    const pct = q.pct;
+    return { ticker: s.ticker, price: q.close.toFixed(2), pct };
+  });
+  el.innerHTML = `
+    <div class="w-full h-full flex flex-col px-4 py-4">
+      <div class="text-[10px] font-black uppercase text-slate-500 mb-3 border-b border-slate-700 pb-1 text-center">Stocks ${updated ? `• ${updated}` : ''}</div>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px]">
+        ${rows.map(r => {
+          const pct = r.pct;
+          const pctText = pct === null ? '--' : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+          const pctCls = pct === null ? 'text-slate-500' : pct >= 0 ? 'text-emerald-300' : 'text-red-300';
+          return `
+            <div class="flex items-center justify-between bg-slate-800/40 border border-white/5 rounded-lg px-2 py-1">
+              <span class="font-black text-slate-200">${r.ticker}</span>
+              <span class="font-black text-white">${r.price}</span>
+              <span class="font-black ${pctCls}">${pctText}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function renderGasStack(){
+  const el = document.getElementById('stackContent');
+  if(!gasLive){
+    el.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xs">Gas data unavailable</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="w-full h-full flex flex-col justify-center px-4">
+      <div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Gas (Near Parker)${gasLive.asOf ? ` • ${gasLive.asOf}` : ''}</div>
+      <div class="bg-slate-800/50 p-3 rounded-xl text-center border border-white/5">
+        <div class="text-[8px] text-slate-400 font-bold uppercase mb-1">${gasLive.area}</div>
+        <div class="text-3xl font-black text-white">$${gasLive.regular.toFixed(3)}</div>
+        <div class="text-[9px] text-slate-500 font-bold mt-1">Regular</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderMortgageStack(){
+  const el = document.getElementById('stackContent');
+  if(!mortgageLive){
+    el.innerHTML = `<div class="w-full h-full flex items-center justify-center text-slate-500 text-xs">Mortgage data unavailable</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="w-full h-full flex flex-col justify-center px-4">
+      <div class="text-[10px] font-black uppercase text-slate-500 mb-4 border-b border-slate-700 pb-1 text-center">Mortgage${mortgageLive.asOf ? ` • ${mortgageLive.asOf}` : ''}</div>
+      <div class="space-y-3">
+        <div class="flex justify-between items-center bg-slate-800/40 border border-white/5 rounded-xl px-3 py-2">
+          <span class="text-sm font-bold text-slate-300">30-Yr Fixed</span>
+          <span class="text-xl font-black text-blue-300">${mortgageLive.rate30}%</span>
+        </div>
+        <div class="flex justify-between items-center bg-slate-800/40 border border-white/5 rounded-xl px-3 py-2">
+          <span class="text-sm font-bold text-slate-300">15-Yr Fixed</span>
+          <span class="text-xl font-black text-blue-300">${mortgageLive.rate15}%</span>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function rotateStack(){
@@ -458,7 +650,15 @@ function initFacts(){
 
 initFacts();
 
-testSpeed(); renderStackView(); setInterval(rotateStack, CONFIG.rotateIntervalMs); setInterval(testSpeed, 300000);
+testSpeed();
+loadStocks();
+loadGasIfAvailable();
+loadMortgageIfAvailable();
+renderStackView();
+setInterval(rotateStack, CONFIG.rotateIntervalMs);
+setInterval(testSpeed, 300000);
+setInterval(loadStocks, 600000);
+setInterval(loadGasIfAvailable, 21600000);
 
 /* ========== WEATHER ========== */
 let weatherData=null, weatherIndex=0, weatherViews=["12hour","forecast","radar"];
@@ -526,7 +726,15 @@ function renderWeatherTile(){
             </div>
         `;
     } else {
-        el.innerHTML = `<iframe src="https://embed.windy.com/embed2.html?lat=39.519&lon=-104.761&detailLat=39.519&detailLon=-104.761&width=650&height=450&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" class="w-full h-full" frameborder="0"></iframe>`;
+        if(location.protocol === 'file:') {
+            el.innerHTML = `
+              <div class="w-full h-full flex items-center justify-center text-center p-6">
+                <div class="text-xs font-bold text-slate-400">Radar embed requires http(s). Open this dashboard via a local server.</div>
+              </div>
+            `;
+        } else {
+            el.innerHTML = `<iframe src="https://embed.windy.com/embed2.html?lat=39.519&lon=-104.761&detailLat=39.519&detailLon=-104.761&width=650&height=450&zoom=7&level=surface&overlay=radar&product=radar&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=default&metricTemp=default&radarRange=-1" class="w-full h-full" frameborder="0" loading="lazy"></iframe>`;
+        }
     }
 }
 
@@ -563,6 +771,93 @@ function renderForecast(){
 
 loadWeather(); setInterval(loadWeather,1800000); setInterval(rotateWeatherTile, CONFIG.rotateIntervalMs);
 
+/* ========== PHOTOS (TILE 5) ========== */
+const PHOTO_FILES = [
+  "../img/GPTempDownload.jpg",
+  "../img/IMG_0035.JPEG",
+  "../img/IMG_1099.JPG",
+  "../img/IMG_1262.JPG",
+  "../img/IMG_1414.JPEG",
+  "../img/IMG_2353.JPEG",
+  "../img/IMG_2436.JPEG",
+  "../img/IMG_2556.JPEG",
+  "../img/IMG_2975.JPEG",
+  "../img/IMG_3359.JPEG",
+  "../img/IMG_3456.JPEG",
+  "../img/IMG_5844.JPG",
+  "../img/IMG_5853.JPG",
+  "../img/IMG_6093.JPEG",
+  "../img/IMG_6532.JPEG",
+  "../img/IMG_8021_Original.JPEG",
+  "../img/IMG_8481.JPEG",
+  "../img/IMG_8534.JPG",
+  "../img/IMG_8629.JPEG",
+  "../img/IMG_8757.JPG",
+  "../img/IMG_9689.JPG",
+  "../img/Photo_6553732_DJI_132_jpg_4372504_0_2021531125138_photo_original.jpg"
+];
+let photoOrder = [];
+let photoIndex = 0;
+
+function shuffleInPlace(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = arr[i];
+    arr[i] = arr[j];
+    arr[j] = t;
+  }
+  return arr;
+}
+
+function resetPhotoOrder(avoidFirst){
+  photoOrder = PHOTO_FILES.slice();
+  shuffleInPlace(photoOrder);
+  if(avoidFirst && photoOrder.length > 1 && photoOrder[0] === avoidFirst){
+    const swapIdx = 1 + Math.floor(Math.random() * (photoOrder.length - 1));
+    const t = photoOrder[0]; photoOrder[0] = photoOrder[swapIdx]; photoOrder[swapIdx] = t;
+  }
+  photoIndex = 0;
+}
+
+function showPhoto(index){
+  if(!photoOrder.length) resetPhotoOrder();
+  const img = document.getElementById("photosImage");
+  const counter = document.getElementById("photosCounter");
+  if(!img || !counter) return;
+
+  const nextSrc = photoOrder[index];
+  const loader = new Image();
+  img.classList.add("opacity-0");
+  loader.onload = () => {
+    img.src = nextSrc;
+    img.alt = `Slideshow photo ${index + 1}`;
+    counter.textContent = `${index + 1}/${photoOrder.length}`;
+    requestAnimationFrame(() => img.classList.remove("opacity-0"));
+  };
+  loader.onerror = () => {
+    counter.textContent = `${index + 1}/${photoOrder.length}`;
+    img.classList.remove("opacity-0");
+  };
+  loader.src = nextSrc;
+}
+
+function rotatePhotos(){
+  if(pauseStates.photos || PHOTO_FILES.length < 2) return;
+  const last = photoOrder[photoIndex];
+  photoIndex++;
+  if(photoIndex >= photoOrder.length){
+    resetPhotoOrder(last);
+  }
+  showPhoto(photoIndex);
+  startTileSlider("photosSlider", CONFIG.rotateIntervalMs);
+}
+
+resetPhotoOrder();
+photoIndex = Math.floor(Math.random() * photoOrder.length);
+showPhoto(photoIndex);
+startTileSlider("photosSlider", CONFIG.rotateIntervalMs);
+setInterval(rotatePhotos, CONFIG.rotateIntervalMs);
+
 /* ========== CALENDAR ========== */
 function renderCalendar(){
   const now=new Date();
@@ -596,6 +891,7 @@ function renderCalendar(){
   }).join('');
 }
 renderCalendar();
+setInterval(renderCalendar, 3600000);
 
 /* ========== BGG ========== */
 const BGG_TOP_25=[{rank:1,name:'Brass: Birmingham',img:'https://cf.geekdo-images.com/ssLVxklP7smcAuch5NbZFQ__imagepage/img/WNrXV5hXiLz1M6dEPHw-Bwc3Y4E=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3505132.jpg'},{rank:2,name:'Ark Nova',img:'https://cf.geekdo-images.com/zxeRjiKuU_0BY-gKQFjZIQ__imagepage/img/lHl-vDRPyALGK5mzjEyVkp-_S3I=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6294115.jpg'},{rank:3,name:'Pandemic Legacy',img:'https://cf.geekdo-images.com/wndsKfZQcVIbKZ03nVbUJg__imagepage/img/XhpXHj0yKYXx3KeQ_63gMqLVBo8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2452841.jpg'},{rank:4,name:'Gloomhaven',img:'https://cf.geekdo-images.com/PrgvAVnDHJbHvFEaV1q1Iw__imagepage/img/tL-F1WhWaBUUK4DDFSX6CaL9EYk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2437871.jpg'},{rank:5,name:'Dune: Imperium',img:'https://cf.geekdo-images.com/TnUvRVDusVcROeDP73UC_A__imagepage/img/KHc8BHdXVfaYwVWUEPPNtqO6-Eg=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5666597.jpg'},{rank:6,name:'Twilight Imperium',img:'https://cf.geekdo-images.com/4h1QyC-jYMQzh0uaqy3a_w__imagepage/img/1z96cObVEsAfJ4A_VrAy7XBBwWw=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3727516.jpg'},{rank:7,name:'Dune: Uprising',img:'https://cf.geekdo-images.com/Aj_D-5KzYgTMXn0TwOc7qA__imagepage/img/NMcNT9phwrCH3SDcQYJEPF5A63w=/fit-in/900x600/filters:no_upscale():strip_icc()/pic6718999.jpg'},{rank:8,name:'War of the Ring',img:'https://cf.geekdo-images.com/JMHcnvAjLHNdNxK7W7hJ1A__imagepage/img/5lVqB7xn3DG2rHj6M8lAqWzJqH8=/fit-in/900x600/filters:no_upscale():strip_icc()/pic5160037.jpg'},{rank:9,name:'Terraforming Mars',img:'https://cf.geekdo-images.com/oMtSjfzUlYYCnhk_OZr0dA__imagepage/img/Sm_FzQhKoX4-Trc5k7cbVuPhxhA=/fit-in/900x600/filters:no_upscale():strip_icc()/pic3398571.jpg'},{rank:10,name:'Star Wars: Rebellion',img:'https://cf.geekdo-images.com/_nHjbpKlGjCqEgbJtBzHsw__imagepage/img/EVKEeI5F2bBELq0-OFG7LE7Bvkk=/fit-in/900x600/filters:no_upscale():strip_icc()/pic2396598.jpg'}];
@@ -665,7 +961,12 @@ function renderRankings(teams, leagueName){
     teams.forEach((t, i)=>{
         const div=document.createElement('div');
         div.className="aspect-square bg-slate-800 rounded-lg relative overflow-hidden group border border-slate-700 flex items-center justify-center p-1";
-        div.innerHTML=`<img src="${t.logo}" class="w-full h-full object-contain opacity-80 group-hover:opacity-100 transition"><div class="absolute top-0 left-0 bg-white text-black text-[7px] font-black px-1 rounded-br">#${i+1}</div>`;
+        div.innerHTML=`
+          <div class="w-full h-full rounded-md bg-slate-50/95 flex items-center justify-center ring-1 ring-white/10">
+            <img src="${t.logo}" class="w-10 h-10 object-contain opacity-95 group-hover:opacity-100 transition" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.45));" onerror="this.onerror=null; this.outerHTML='<div class=\\'text-[8px] font-black text-slate-900\\'>${t.name}</div>';">
+          </div>
+          <div class="absolute top-0 left-0 bg-white text-black text-[7px] font-black px-1 rounded-br">#${i+1}</div>
+        `;
         grid.appendChild(div);
     });
 }
@@ -763,15 +1064,18 @@ function renderSportsScoresCurrentLeague(){
     
     const awayLogoDiv = document.createElement('div');
     awayLogoDiv.className = 'flex flex-col items-center gap-0.5 flex-1';
+    const awayBadge = document.createElement('div');
+    awayBadge.className = 'w-9 h-9 rounded-xl bg-slate-50/95 flex items-center justify-center ring-1 ring-white/10';
     const awayImg = document.createElement('img');
     awayImg.src = game.awayLogo;
     awayImg.className = 'w-6 h-6 object-contain';
-    awayImg.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.8))';
+    awayImg.style.filter = 'drop-shadow(0 2px 6px rgba(0,0,0,0.45))';
     awayImg.onerror = function() { 
       this.style.display = 'none';
-      awayLogoDiv.innerHTML = '<div class="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-700 rounded flex items-center justify-center text-[6px] font-bold text-white text-center px-0.5 border border-slate-400">' + game.awayTeam + '</div><div class="text-[7px] text-slate-300 font-bold text-center">' + Math.round(game.awayScore) + '</div>';
+      awayBadge.innerHTML = '<div class="text-[8px] font-black text-slate-900">' + game.awayTeam + '</div>';
     };
-    awayLogoDiv.appendChild(awayImg);
+    awayBadge.appendChild(awayImg);
+    awayLogoDiv.appendChild(awayBadge);
     const awayScore = document.createElement('div');
     awayScore.className = 'text-xs font-black text-white';
     awayScore.textContent = Math.round(game.awayScore);
@@ -779,15 +1083,18 @@ function renderSportsScoresCurrentLeague(){
     
     const homeLogoDiv = document.createElement('div');
     homeLogoDiv.className = 'flex flex-col items-center gap-0.5 flex-1';
+    const homeBadge = document.createElement('div');
+    homeBadge.className = 'w-9 h-9 rounded-xl bg-slate-50/95 flex items-center justify-center ring-1 ring-white/10';
     const homeImg = document.createElement('img');
     homeImg.src = game.homeLogo;
     homeImg.className = 'w-6 h-6 object-contain';
-    homeImg.style.filter = 'drop-shadow(0 0 2px rgba(0,0,0,0.8))';
+    homeImg.style.filter = 'drop-shadow(0 2px 6px rgba(0,0,0,0.45))';
     homeImg.onerror = function() { 
       this.style.display = 'none';
-      homeLogoDiv.innerHTML = '<div class="w-6 h-6 bg-gradient-to-br from-slate-500 to-slate-700 rounded flex items-center justify-center text-[6px] font-bold text-white text-center px-0.5 border border-slate-400">' + game.homeTeam + '</div><div class="text-[7px] text-slate-300 font-bold text-center">' + Math.round(game.homeScore) + '</div>';
+      homeBadge.innerHTML = '<div class="text-[8px] font-black text-slate-900">' + game.homeTeam + '</div>';
     };
-    homeLogoDiv.appendChild(homeImg);
+    homeBadge.appendChild(homeImg);
+    homeLogoDiv.appendChild(homeBadge);
     const homeScore = document.createElement('div');
     homeScore.className = 'text-xs font-black text-white';
     homeScore.textContent = Math.round(game.homeScore);
@@ -819,6 +1126,17 @@ const MY_TEAMS=[
 ];
 let sportsIdx=0;
 
+function getDayBadge(gameDate){
+    const startOfToday = new Date();
+    startOfToday.setHours(0,0,0,0);
+    const startOfGameDay = new Date(gameDate);
+    startOfGameDay.setHours(0,0,0,0);
+    const diffDays = Math.round((startOfGameDay - startOfToday) / (1000*60*60*24));
+    if(diffDays === 0) return { label: "Today", cls: "bg-emerald-500/15 text-emerald-200 border-emerald-400/20" };
+    if(diffDays === 1) return { label: "Tomorrow", cls: "bg-amber-500/15 text-amber-200 border-amber-400/20" };
+    return { label: gameDate.toLocaleDateString([], { weekday: "short" }), cls: "bg-slate-500/10 text-slate-200 border-white/10" };
+}
+
 async function loadSportsTeam(){
     let attempts = 0;
     let upcomingGames = [];
@@ -846,28 +1164,54 @@ async function loadSportsTeam(){
         container.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500 text-xs">No games found</div>`;
         return;
     }
-    const teamLogo = upcomingGames[0].competitions[0].competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId)?.team.logos[0].href;
-    let html = `<div class="flex items-center justify-between border-b border-slate-700 pb-2 mb-2 p-4">
+    const teamLogo = upcomingGames[0].competitions[0].competitors
+        .find(c => c.team.abbreviation.toLowerCase() === team.espnId)
+        ?.team?.logos?.[0]?.href;
+    let html = `<div class="flex items-center justify-between border-b border-slate-700/70 pb-3 mb-2 p-4">
             <div class="flex items-center gap-3">
-                <img src="${teamLogo}" class="w-10 h-10 object-contain">
+                <div class="w-12 h-12 rounded-2xl bg-slate-50/95 flex items-center justify-center ring-1 ring-white/10">
+                    ${teamLogo ? `<img src="${teamLogo}" class="w-9 h-9 object-contain" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.45));">` : `<div class="text-xl">${team.icon}</div>`}
+                </div>
                 <div>
-                    <div class="text-xl font-black text-white uppercase tracking-wider">${team.id}</div>
-                    <div class="text-[10px] font-bold text-slate-500 uppercase">Schedule</div>
+                    <div class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">${team.league.toUpperCase()} Schedule</div>
+                    <div class="text-[11px] font-bold text-slate-200">${upcomingGames.length} Upcoming</div>
                 </div>
             </div>
+            <div class="text-[9px] font-bold text-slate-500">${new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })}</div>
         </div>
-        <div class="space-y-1.5 overflow-y-auto no-scrollbar px-4 pb-4">`;
+        <div class="space-y-2 overflow-y-auto no-scrollbar px-4 pb-4">`;
     upcomingGames.forEach(evt => {
         const comp = evt.competitions[0];
         const date = new Date(evt.date);
-        const dateStr = date.toLocaleDateString([],{month:'numeric',day:'numeric'}) + ' ' + date.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+        const timeStr = date.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+        const dayBadge = getDayBadge(date);
+        const statusState = comp.status?.type?.state;
+        const isLive = statusState === 'in';
+        const myComp = comp.competitors.find(c => c.team.abbreviation.toLowerCase() === team.espnId);
+        const venueMark = myComp?.homeAway === 'away' ? '@' : 'vs';
         const vs = comp.competitors.find(c => c.team.abbreviation.toLowerCase() !== team.espnId);
-        html += `<div class="flex justify-between items-center bg-slate-800/50 p-2 rounded-lg text-sm border border-white/5">
-                <div class="flex items-center gap-3">
-                    <span class="font-black text-slate-400">vs ${vs.team.abbreviation}</span>
-                    <img src="${vs.team.logos?.[0]?.href}" class="w-6 h-6 object-contain">
+        const oppLogo = vs.team.logos?.[0]?.href || vs.team.logo;
+        const oppAbbr = vs.team.abbreviation || vs.team.shortDisplayName || vs.team.displayName;
+        const oppAbbrSafe = String(oppAbbr || '').replace(/['"]/g, '');
+        const whenStr = (dayBadge.label === "Today" || dayBadge.label === "Tomorrow")
+            ? timeStr
+            : (date.toLocaleDateString([],{month:'numeric',day:'numeric'}) + ' ' + timeStr);
+        html += `<div class="flex items-center justify-between gap-3 bg-slate-800/50 p-2 rounded-xl text-sm border border-white/5">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50/95 flex items-center justify-center ring-1 ring-white/10 shrink-0">
+                        <img src="${oppLogo}" class="w-7 h-7 object-contain" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.45));" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'text-[9px] font-black text-slate-900\\'>${oppAbbrSafe}</div>';">
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black border ${dayBadge.cls}">${dayBadge.label}</span>
+                            ${isLive ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black border bg-red-500/15 text-red-200 border-red-400/20">LIVE</span>` : ``}
+                        </div>
+                        <div class="text-[10px] font-bold text-slate-400 truncate">${whenStr}</div>
+                    </div>
                 </div>
-                <span class="font-black text-white">${dateStr}</span>
+                <div class="text-right shrink-0">
+                    <div class="text-[10px] font-black text-white">${venueMark} ${oppAbbr}</div>
+                </div>
             </div>`;
     });
     html += `</div>`;
