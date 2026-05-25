@@ -12,6 +12,7 @@
             --text: #ffffff;
             --text-secondary: #8e8e93;
             --separator: #38383a;
+            --empty-cell-bg: rgba(255,255,255,0.02);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -150,7 +151,7 @@
         .current-year-col { font-weight: 800; }
         .heat-cell { transition: transform 0.1s ease; }
         .heat-cell:hover { transform: scale(1.08); outline: 1px solid rgba(255,255,255,0.85); }
-        .empty-cell { color: #5d5d61; background: rgba(255,255,255,0.02); }
+        .empty-cell { color: #5d5d61; background: var(--empty-cell-bg); }
 
         #status {
             color: var(--text-secondary);
@@ -205,7 +206,7 @@
             longitude: -110.7071
         };
 
-        const YEARS_TO_SHOW = 15;
+        const YEARS_TO_SHOW = 15; // Keeps the table readable while still showing meaningful history.
         const tableHead = document.getElementById("tableHead");
         const tableBody = document.getElementById("tableBody");
         const statusEl = document.getElementById("status");
@@ -216,7 +217,7 @@
         }
 
         function getColor(value, min, max) {
-            if (value === null || Number.isNaN(value)) return "rgba(255,255,255,0.02)";
+            if (value === null || Number.isNaN(value)) return "var(--empty-cell-bg)";
             const ratio = Math.max(0, Math.min(1, (value - min) / ((max - min) || 1)));
             const hue = 220 - (ratio * 220);
             const lightness = 18 + ratio * 40;
@@ -280,10 +281,15 @@
                     if (typeof v === "number") allTemps.push(v);
                 });
             });
-            const min = Math.min(...allTemps);
-            const max = Math.max(...allTemps);
+            const min = allTemps.length ? Math.min(...allTemps) : 0;
+            const max = allTemps.length ? Math.max(...allTemps) : 1;
 
-            tableHead.innerHTML = `<th class="date-col">Date</th>${years.map((y, i) => `<th class="${i === 0 ? "current-year-col" : ""}">${y}${i === 0 ? " (This Year)" : ""}</th>`).join("")}`;
+            const yearHeaders = years.map((year, i) => {
+                const suffix = i === 0 ? " (This Year)" : "";
+                const klass = i === 0 ? "current-year-col" : "";
+                return `<th class="${klass}">${year}${suffix}</th>`;
+            }).join("");
+            tableHead.innerHTML = `<th class="date-col">Date</th>${yearHeaders}`;
 
             tableBody.innerHTML = dateRows.map(row => {
                 const cells = years.map((year, i) => {
@@ -307,7 +313,8 @@
             } catch (err) {
                 statusEl.textContent = "Unable to load weather data for that location.";
                 tableHead.innerHTML = "";
-                tableBody.innerHTML = `<tr><td class="date-col">Error</td><td>${err.message}</td></tr>`;
+                tableBody.innerHTML = `<tr><td class="date-col">Error</td><td id="errorCell"></td></tr>`;
+                document.getElementById("errorCell").textContent = err && err.message ? err.message : "Unknown error";
             } finally {
                 showLoader(false);
             }
