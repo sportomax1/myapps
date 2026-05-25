@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Weather Stats | Historical Data</title>
+    <title>High Temperature Calendar</title>
     <style>
         :root {
             --bg: #000000;
@@ -12,15 +12,10 @@
             --text: #ffffff;
             --text-secondary: #8e8e93;
             --separator: #38383a;
-            --row-alt: #2c2c2e;
-            --winter: #5ac8fa;
-            --spring: #4cd964;
-            --summer: #ffcc00;
-            --fall: #ff9500;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+
         body {
             margin: 0;
             background: var(--bg);
@@ -29,473 +24,322 @@
         }
 
         header {
-            padding: max(20px, env(safe-area-inset-top)) 20px 20px;
-            background: rgba(20, 20, 22, 0.8);
-            backdrop-filter: blur(20px);
             position: sticky;
             top: 0;
-            z-index: 100;
-            border-bottom: 0.5px solid var(--separator);
+            z-index: 20;
+            background: rgba(20, 20, 22, 0.88);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--separator);
+            padding: max(14px, env(safe-area-inset-top)) 16px 14px;
         }
 
-        .header-content {
+        .header-wrap {
             max-width: 1200px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
         }
 
-        .top-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .title {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
         }
 
-        .controls-row {
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .controls {
             display: flex;
+            gap: 8px;
             flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
         }
 
-        input[type="text"], select {
+        input[type="text"] {
+            flex: 1;
+            min-width: 220px;
             background: var(--card-bg);
             border: 1px solid var(--separator);
-            color: white;
-            padding: 8px 12px;
+            color: var(--text);
             border-radius: 10px;
+            padding: 10px 12px;
             font-size: 14px;
             outline: none;
         }
 
+        input[type="text"]:focus { border-color: var(--accent); }
+
         .btn {
-            background: var(--card-bg);
             border: 1px solid var(--separator);
-            color: white;
-            padding: 8px 14px;
+            background: var(--card-bg);
+            color: var(--text);
             border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
+            padding: 10px 14px;
             font-size: 14px;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            font-weight: 700;
+            cursor: pointer;
         }
 
-        .btn-accent {
+        .btn-primary {
             background: var(--accent);
             border-color: var(--accent);
         }
 
-        .location-info h1 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
         main {
             max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 16px;
+            margin: 14px auto 28px;
+            padding: 0 12px;
         }
 
-        .table-container {
-            overflow-x: auto;
+        .table-wrap {
+            overflow: auto;
             border-radius: 12px;
             border: 1px solid var(--separator);
             background: var(--card-bg);
+            max-height: calc(100vh - 190px);
         }
 
-        .stats-table {
-            width: 100%;
+        table {
+            width: max-content;
+            min-width: 100%;
             border-collapse: collapse;
             font-size: 12px;
         }
 
-        .stats-table th {
-            background: #2c2c2e;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-            padding: 10px 4px;
-            text-align: left;
+        thead th {
             position: sticky;
             top: 0;
             z-index: 5;
+            background: #2c2c2e;
+            color: var(--text-secondary);
+            padding: 9px 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-size: 10px;
+            border-bottom: 1px solid var(--separator);
+            text-align: center;
         }
 
-        .stats-table td {
-            padding: 8px 4px;
-            border-bottom: 0.5px solid var(--separator);
+        tbody td {
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            text-align: center;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
             white-space: nowrap;
         }
 
-        .stats-table tr:hover {
-            background: rgba(255,255,255,0.05);
-        }
-
-        .metric-cell { 
-            font-family: 'SF Mono', 'Menlo', monospace; 
-            text-align: center; 
-            min-width: 35px;
-        }
-
-        .heatmap-cell {
-            transition: transform 0.1s;
-            cursor: default;
-        }
-        .heatmap-cell:hover {
-            transform: scale(1.3);
-            z-index: 10;
-            box-shadow: 0 0 15px rgba(0,0,0,0.8);
-            outline: 1.5px solid white;
-            border-radius: 2px;
-        }
-
-        .invalid-day {
-            background: #000 !important;
-            opacity: 0.2;
-        }
-
-        .sticky-col {
+        .date-col {
             position: sticky;
             left: 0;
-            background: var(--card-bg) !important;
-            z-index: 6;
-            border-right: 2px solid var(--separator) !important;
-            font-weight: 800;
-            padding-left: 12px !important;
-            padding-right: 12px !important;
+            z-index: 4;
+            background: var(--card-bg);
+            text-align: left;
+            font-family: inherit;
+            font-weight: 700;
+            border-right: 1px solid var(--separator);
+            min-width: 110px;
         }
 
-        .matrix-total {
-            border-left: 2px solid var(--separator) !important;
-            font-weight: 800;
-            background: rgba(255,255,255,0.05);
+        thead .date-col { z-index: 7; background: #2c2c2e; }
+        .current-year-col { font-weight: 800; }
+        .heat-cell { transition: transform 0.1s ease; }
+        .heat-cell:hover { transform: scale(1.08); outline: 1px solid rgba(255,255,255,0.85); }
+        .empty-cell { color: #5d5d61; background: rgba(255,255,255,0.02); }
+
+        #status {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 0 2px 10px;
         }
 
-        #loader, #locationSelector {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 1000; backdrop-filter: blur(5px);
+        #loader {
+            position: fixed;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.75);
+            z-index: 50;
+            color: white;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
-
-        .selector-content {
-            background: var(--card-bg); border-radius: 16px;
-            width: 90%; max-width: 400px; padding: 20px;
-            border: 1px solid var(--separator);
-        }
-
-        .selector-item { padding: 12px; border-bottom: 0.5px solid var(--separator); cursor: pointer; }
-        .selector-item:hover { background: rgba(255,255,255,0.05); }
-
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-
-    <div id="loader">
-        <div style="font-size: 40px; animation: pulse 1.5s infinite;">⏳</div>
-        <p style="font-weight: 700; color: var(--accent); margin-top: 10px;" id="loaderText">ANALYZING...</p>
-    </div>
-
-    <div id="locationSelector">
-        <div class="selector-content">
-            <h2 style="margin-top:0; font-size: 18px;">Select Exact Location</h2>
-            <div id="selectorList"></div>
-            <button class="btn" style="width:100%; margin-top:15px;" onclick="document.getElementById('locationSelector').style.display='none'">Cancel</button>
-        </div>
-    </div>
+    <div id="loader">Loading historical weather…</div>
 
     <header>
-        <div class="header-content">
-            <div class="top-row">
-                <div class="location-info">
-                    <h1 id="cityName" style="background: linear-gradient(90deg, #fff, #8e8e93); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Stats Explorer</h1>
-                    <p id="locationSubtext" style="color:var(--text-secondary); font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">Search to begin</p>
-                </div>
-                <div class="controls-row">
-                    <input type="text" id="zipInput" placeholder="Zip, City, or State" style="width: 160px;">
-                    <button class="btn" onclick="geolocate()" title="Use My Location">📍</button>
-                    <button class="btn btn-accent" onclick="loadStats()">FETCH DATA</button>
-                </div>
+        <div class="header-wrap">
+            <div>
+                <h1 class="title">High Temperature Calendar</h1>
+                <p class="subtitle" id="locationLabel">Halls Crossing, Utah</p>
             </div>
-            
-            <div class="controls-row" style="background: rgba(255,255,255,0.03); padding: 8px; border-radius: 12px; border: 0.5px solid var(--separator);">
-                <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:10px; font-weight:800; color:var(--text-secondary);">MODE:</span>
-                    <select id="viewMode" onchange="updateUI()">
-                        <option value="matrix-monthly">Monthly Matrix (Year/Month)</option>
-                        <option value="daily-annual">Daily Snapshot (Month/Day - Select Year)</option>
-                        <option value="daily-compare">Monthly Daily Comp (Year/Day - Select Month)</option>
-                    </select>
-                </div>
-
-                <div id="yearSelectorContainer" style="display:none; align-items:center; gap:8px;">
-                    <span style="font-size:10px; font-weight:800; color:var(--text-secondary);">YEAR:</span>
-                    <select id="yearSelect" onchange="processData()"></select>
-                </div>
-
-                <div id="monthSelectorContainer" style="display:none; align-items:center; gap:8px;">
-                    <span style="font-size:10px; font-weight:800; color:var(--text-secondary);">MONTH:</span>
-                    <select id="monthSelect" onchange="processData()">
-                        <option value="0">January</option><option value="1">February</option><option value="2">March</option>
-                        <option value="3">April</option><option value="4">May</option><option value="5">June</option>
-                        <option value="6">July</option><option value="7">August</option><option value="8">September</option>
-                        <option value="9">October</option><option value="10">November</option><option value="11">December</option>
-                    </select>
-                </div>
-
-                <div id="metricContainer" style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:10px; font-weight:800; color:var(--text-secondary);">METRIC:</span>
-                    <select id="metricMode" onchange="processData()">
-                        <option value="tMax">High Temp</option>
-                        <option value="tMin">Low Temp</option>
-                        <option value="tMean">Mean Temp</option>
-                        <option value="precip">Precipitation</option>
-                        <option value="snow">Snowfall</option>
-                    </select>
-                </div>
+            <div class="controls">
+                <input id="locationInput" type="text" placeholder="Change location (city, state, zip)">
+                <button class="btn btn-primary" id="loadBtn">Update</button>
             </div>
         </div>
     </header>
 
-    <main id="mainContent">
-        <div class="table-container">
-            <table class="stats-table" id="statsTable">
-                <thead><tr id="tableHeader"></tr></thead>
+    <main>
+        <p id="status">Showing daily highs for this year compared with previous years.</p>
+        <div class="table-wrap">
+            <table>
+                <thead><tr id="tableHead"></tr></thead>
                 <tbody id="tableBody"></tbody>
             </table>
-        </div>
-        <div id="welcomeMessage" style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-            <div style="font-size: 40px; margin-bottom: 20px;">📊</div>
-            <div style="font-weight: 800; color: white; font-size: 18px; margin-bottom: 8px;">Climate Data Matrix</div>
-            Choose a mode to visualize 25 years of daily historical patterns.
         </div>
     </main>
 
     <script>
-        let rawData = null;
-        let selectedLat = null;
-        let selectedLon = null;
+        const DEFAULT_LOCATION = {
+            name: "Halls Crossing, Utah",
+            latitude: 37.4572,
+            longitude: -110.7071
+        };
 
-        const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const YEARS_TO_SHOW = 15;
+        const tableHead = document.getElementById("tableHead");
+        const tableBody = document.getElementById("tableBody");
+        const statusEl = document.getElementById("status");
+        const loader = document.getElementById("loader");
 
-        function updateUI() {
-            const mode = document.getElementById('viewMode').value;
-            document.getElementById('yearSelectorContainer').style.display = mode === 'daily-annual' ? 'flex' : 'none';
-            document.getElementById('monthSelectorContainer').style.display = mode === 'daily-compare' ? 'flex' : 'none';
-            processData();
+        function showLoader(show) {
+            loader.style.display = show ? "flex" : "none";
         }
 
-        // Helper to check if a day actually exists
-        function isValidDate(y, m, d) {
-            const dt = new Date(y, m, d);
-            return dt.getFullYear() === y && dt.getMonth() === m && dt.getDate() === d;
+        function getColor(value, min, max) {
+            if (value === null || Number.isNaN(value)) return "rgba(255,255,255,0.02)";
+            const ratio = Math.max(0, Math.min(1, (value - min) / ((max - min) || 1)));
+            const hue = 220 - (ratio * 220);
+            const lightness = 18 + ratio * 40;
+            return `hsl(${hue}, 90%, ${lightness}%)`;
         }
 
-        function getMetricColor(val, metric, range) {
-            if (val === null || isNaN(val) || val === undefined) return 'transparent';
-            const { min, max } = range;
-            const ratio = Math.max(0, Math.min(1, (val - min) / (max - min || 1)));
-            
-            if (metric.startsWith('t')) {
-                const r = Math.round(255 * ratio + 50 * (1-ratio));
-                const b = Math.round(255 * (1 - ratio) + 50 * ratio);
-                const g = Math.round(150 * (1 - Math.abs(ratio - 0.5) * 2));
-                return `rgba(${r}, ${g}, ${b}, 0.8)`;
-            } else {
-                return `rgba(10, 132, 255, ${0.1 + ratio * 0.9})`;
+        async function geocodeLocation(query) {
+            const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (!data.results || !data.results.length) return null;
+            const hit = data.results[0];
+            return {
+                name: [hit.name, hit.admin1, hit.country].filter(Boolean).join(", "),
+                latitude: hit.latitude,
+                longitude: hit.longitude
+            };
+        }
+
+        async function fetchArchive(location) {
+            const today = new Date();
+            const currentYear = today.getFullYear();
+            const startYear = currentYear - YEARS_TO_SHOW;
+            const endDate = today.toISOString().slice(0, 10);
+            const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${location.latitude}&longitude=${location.longitude}&start_date=${startYear}-01-01&end_date=${endDate}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
+            const response = await fetch(url);
+            return { payload: await response.json(), currentYear, startYear, today };
+        }
+
+        function buildRows(currentYear, today) {
+            const rows = [];
+            const d = new Date(currentYear, 0, 1);
+            while (d <= today) {
+                rows.push({
+                    monthDay: `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
+                    label: d.toLocaleDateString("en-US", { month: "short", day: "2-digit" })
+                });
+                d.setDate(d.getDate() + 1);
+            }
+            return rows;
+        }
+
+        function renderCalendar(data, currentYear, startYear, today) {
+            const years = [];
+            for (let y = currentYear; y >= startYear; y--) years.push(y);
+
+            const dateRows = buildRows(currentYear, today);
+            const byYear = {};
+            years.forEach(y => { byYear[y] = {}; });
+
+            data.daily.time.forEach((iso, i) => {
+                const [year, month, day] = iso.split("-");
+                if (!byYear[year]) return;
+                byYear[year][`${month}-${day}`] = data.daily.temperature_2m_max[i];
+            });
+
+            const allTemps = [];
+            years.forEach(y => {
+                dateRows.forEach(row => {
+                    const v = byYear[y]?.[row.monthDay];
+                    if (typeof v === "number") allTemps.push(v);
+                });
+            });
+            const min = Math.min(...allTemps);
+            const max = Math.max(...allTemps);
+
+            tableHead.innerHTML = `<th class="date-col">Date</th>${years.map((y, i) => `<th class="${i === 0 ? "current-year-col" : ""}">${y}${i === 0 ? " (This Year)" : ""}</th>`).join("")}`;
+
+            tableBody.innerHTML = dateRows.map(row => {
+                const cells = years.map((year, i) => {
+                    const v = byYear[year]?.[row.monthDay];
+                    if (typeof v !== "number") return `<td class="empty-cell">--</td>`;
+                    const bg = getColor(v, min, max);
+                    return `<td class="heat-cell ${i === 0 ? "current-year-col" : ""}" style="background:${bg}" title="${year} ${row.label}: ${Math.round(v)}°F">${Math.round(v)}°</td>`;
+                }).join("");
+                return `<tr><td class="date-col">${row.label}</td>${cells}</tr>`;
+            }).join("");
+        }
+
+        async function loadForLocation(location) {
+            showLoader(true);
+            try {
+                document.getElementById("locationLabel").textContent = location.name;
+                const { payload, currentYear, startYear, today } = await fetchArchive(location);
+                if (!payload.daily?.time?.length) throw new Error("No archive data returned.");
+                renderCalendar(payload, currentYear, startYear, today);
+                statusEl.textContent = `Daily high temperatures from ${startYear}–${currentYear} for ${location.name}.`;
+            } catch (err) {
+                statusEl.textContent = "Unable to load weather data for that location.";
+                tableHead.innerHTML = "";
+                tableBody.innerHTML = `<tr><td class="date-col">Error</td><td>${err.message}</td></tr>`;
+            } finally {
+                showLoader(false);
             }
         }
 
-        async function loadStats() {
-            const input = document.getElementById('zipInput').value || '80134';
-            const loader = document.getElementById('loader');
-            loader.style.display = 'flex';
-
+        async function updateLocation() {
+            const query = document.getElementById("locationInput").value.trim();
+            if (!query) {
+                await loadForLocation(DEFAULT_LOCATION);
+                return;
+            }
+            showLoader(true);
             try {
-                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(input)}&count=5`;
-                const geoRes = await fetch(geoUrl);
-                const geoData = await geoRes.json();
-
-                if (!geoData.results) { alert("Location not found"); loader.style.display='none'; return; }
-                
-                if (geoData.results.length > 1) {
-                    showLocationSelector(geoData.results);
-                    loader.style.display = 'none';
-                } else {
-                    const loc = geoData.results[0];
-                    await fetchHistoricalData(loc.latitude, loc.longitude, loc.name, loc.admin1);
+                const location = await geocodeLocation(query);
+                if (!location) {
+                    statusEl.textContent = "Location not found. Try a nearby city or zip code.";
+                    showLoader(false);
+                    return;
                 }
-            } catch (e) { loader.style.display='none'; }
-        }
-
-        function geolocate() {
-            const loader = document.getElementById('loader');
-            loader.style.display = 'flex';
-            navigator.geolocation.getCurrentPosition(async pos => {
-                const { latitude, longitude } = pos.coords;
-                // Get name from coordinates
-                const revGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const geoData = await revGeo.json();
-                const name = geoData.address.city || geoData.address.town || "My Location";
-                await fetchHistoricalData(latitude, longitude, name, geoData.address.state);
-            }, err => {
-                alert("Geolocation failed or denied.");
-                loader.style.display = 'none';
-            });
-        }
-
-        function showLocationSelector(results) {
-            const selector = document.getElementById('locationSelector');
-            const list = document.getElementById('selectorList');
-            list.innerHTML = '';
-            results.forEach(loc => {
-                const item = document.createElement('div');
-                item.className = 'selector-item';
-                item.innerHTML = `<b>${loc.name}</b>, ${loc.admin1 || ''} (${loc.country})`;
-                item.onclick = () => { selector.style.display='none'; fetchHistoricalData(loc.latitude, loc.longitude, loc.name, loc.admin1); };
-                list.appendChild(item);
-            });
-            selector.style.display = 'flex';
-        }
-
-        async function fetchHistoricalData(lat, lon, name, admin) {
-            const loader = document.getElementById('loader');
-            loader.style.display = 'flex';
-            try {
-                document.getElementById('cityName').innerText = `${name}, ${admin || ''}`;
-                document.getElementById('locationSubtext').innerText = `STATION: ${lat.toFixed(2)}N ${lon.toFixed(2)}W`;
-                const start = '2000-01-01';
-                const end = new Date().toISOString().split('T')[0];
-                const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&daily=temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_sum,snowfall_sum&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=auto`;
-                const res = await fetch(url);
-                rawData = await res.json();
-                
-                const years = [...new Set(rawData.daily.time.map(t => t.split('-')[0]))].reverse();
-                const yearSelect = document.getElementById('yearSelect');
-                yearSelect.innerHTML = '';
-                years.forEach(y => { const opt = document.createElement('option'); opt.value = y; opt.innerText = y; yearSelect.appendChild(opt); });
-
-                document.getElementById('welcomeMessage').style.display = 'none';
-                processData();
-                loader.style.display = 'none';
-            } catch (e) { loader.style.display='none'; }
-        }
-
-        function processData() {
-            if (!rawData) return;
-            const mode = document.getElementById('viewMode').value;
-            const metric = document.getElementById('metricMode').value;
-            const header = document.getElementById('tableHeader');
-            const body = document.getElementById('tableBody');
-            
-            const metricKey = metric === 'tMax' ? 'temperature_2m_max' : 
-                             metric === 'tMin' ? 'temperature_2m_min' : 
-                             metric === 'tMean' ? 'temperature_2m_mean' : 
-                             metric === 'precip' ? 'precipitation_sum' : 'snowfall_sum';
-
-            if (mode === 'matrix-monthly') {
-                renderMonthlyMatrix(header, body, metricKey, metric);
-            } else if (mode === 'daily-annual') {
-                renderDailyAnnual(header, body, metricKey, metric);
-            } else if (mode === 'daily-compare') {
-                renderDailyCompare(header, body, metricKey, metric);
+                await loadForLocation(location);
+            } catch {
+                statusEl.textContent = "Location lookup failed.";
+                showLoader(false);
             }
         }
 
-        function renderMonthlyMatrix(header, body, key, metric) {
-            header.innerHTML = '<th class="sticky-col">YEAR</th>' + SHORT_MONTHS.map(m => `<th>${m}</th>`).join('') + '<th class="matrix-total">AVG</th>';
-            const data = {};
-            rawData.daily.time.forEach((t, i) => {
-                const [y, m] = t.split('-').map(Number);
-                if (!data[y]) data[y] = Array(12).fill(0).map(() => ({sum:0, count:0}));
-                data[y][m-1].sum += rawData.daily[key][i] || 0;
-                data[y][m-1].count++;
-            });
+        document.getElementById("loadBtn").addEventListener("click", updateLocation);
+        document.getElementById("locationInput").addEventListener("keydown", (e) => {
+            if (e.key === "Enter") updateLocation();
+        });
 
-            let globalMax = -Infinity, globalMin = Infinity;
-            Object.values(data).forEach(yr => yr.forEach(m => {
-                if (m.count > 0) {
-                    const v = m.sum/m.count;
-                    globalMax = Math.max(globalMax, v); globalMin = Math.min(globalMin, v);
-                }
-            }));
-
-            body.innerHTML = Object.keys(data).sort().reverse().map(y => {
-                let rowSum = 0, rowCount = 0;
-                const cells = data[y].map(m => {
-                    if (m.count === 0) return '<td>-</td>';
-                    const v = m.sum/m.count;
-                    rowSum += v; rowCount++;
-                    const color = getMetricColor(v, metric, {min: globalMin, max: globalMax});
-                    return `<td class="metric-cell heatmap-cell" style="background:${color}">${v.toFixed(1)}</td>`;
-                }).join('');
-                return `<tr><td class="sticky-col">${y}</td>${cells}<td class="metric-cell matrix-total">${(rowSum/rowCount).toFixed(1)}</td></tr>`;
-            }).join('');
-        }
-
-        function renderDailyAnnual(header, body, key, metric) {
-            const year = parseInt(document.getElementById('yearSelect').value);
-            header.innerHTML = '<th class="sticky-col">MONTH</th>' + Array.from({length:31}, (_,i) => `<th>${i+1}</th>`).join('');
-            
-            const data = Array(12).fill(0).map(() => Array(31).fill(null));
-            let localMax = -Infinity, localMin = Infinity;
-
-            rawData.daily.time.forEach((t, i) => {
-                if (!t.startsWith(year)) return;
-                const [_, m, d] = t.split('-').map(Number);
-                const v = rawData.daily[key][i];
-                data[m-1][d-1] = v;
-                if (v !== null) { localMax = Math.max(localMax, v); localMin = Math.min(localMin, v); }
-            });
-
-            body.innerHTML = data.map((mo, monthIdx) => {
-                const cells = mo.map((v, dayIdx) => {
-                    if (!isValidDate(year, monthIdx, dayIdx + 1)) return '<td class="invalid-day"></td>';
-                    if (v === null) return '<td></td>';
-                    const color = getMetricColor(v, metric, {min: localMin, max: localMax});
-                    return `<td class="metric-cell heatmap-cell" style="background:${color}">${v.toFixed(metric.startsWith('t')?0:2)}</td>`;
-                }).join('');
-                return `<tr><td class="sticky-col">${MONTH_NAMES[monthIdx]}</td>${cells}</tr>`;
-            }).join('');
-        }
-
-        function renderDailyCompare(header, body, key, metric) {
-            const monthIdx = parseInt(document.getElementById('monthSelect').value);
-            header.innerHTML = '<th class="sticky-col">YEAR</th>' + Array.from({length:31}, (_,i) => `<th>${i+1}</th>`).join('');
-            
-            const data = {};
-            let localMax = -Infinity, localMin = Infinity;
-
-            rawData.daily.time.forEach((t, i) => {
-                const [y, m, d] = t.split('-').map(Number);
-                if (m !== (monthIdx + 1)) return;
-                if (!data[y]) data[y] = Array(31).fill(null);
-                const v = rawData.daily[key][i];
-                data[y][d-1] = v;
-                if (v !== null) { localMax = Math.max(localMax, v); localMin = Math.min(localMin, v); }
-            });
-
-            body.innerHTML = Object.keys(data).sort().reverse().map(year => {
-                const y = parseInt(year);
-                const cells = data[year].map((v, dIdx) => {
-                    if (!isValidDate(y, monthIdx, dIdx + 1)) return '<td class="invalid-day"></td>';
-                    if (v === null) return '<td></td>';
-                    const color = getMetricColor(v, metric, {min: localMin, max: localMax});
-                    return `<td class="metric-cell heatmap-cell" style="background:${color}">${v.toFixed(metric.startsWith('t')?0:2)}</td>`;
-                }).join('');
-                return `<tr><td class="sticky-col">${year}</td>${cells}</tr>`;
-            }).join('');
-        }
-
-        window.onload = () => { document.getElementById('zipInput').value = '80134'; };
+        loadForLocation(DEFAULT_LOCATION);
     </script>
 </body>
 </html>
