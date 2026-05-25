@@ -285,9 +285,8 @@
             const max = allTemps.length ? Math.max(...allTemps) : 1;
 
             const yearHeaders = years.map((year, i) => {
-                const suffix = i === 0 ? " (This Year)" : "";
                 const klass = i === 0 ? "current-year-col" : "";
-                return `<th class="${klass}">${year}${suffix}</th>`;
+                return `<th class="${klass}">${year}</th>`;
             }).join("");
             tableHead.innerHTML = `<th class="date-col">Date</th>${yearHeaders}`;
 
@@ -311,10 +310,11 @@
                 renderCalendar(payload, currentYear, startYear, today);
                 statusEl.textContent = `Daily high temperatures from ${startYear}–${currentYear} for ${location.name}.`;
             } catch (err) {
+                console.error("Weather archive load failed:", err);
                 statusEl.textContent = "Unable to load weather data for that location.";
                 tableHead.innerHTML = "";
                 tableBody.innerHTML = `<tr><td class="date-col">Error</td><td id="errorCell"></td></tr>`;
-                document.getElementById("errorCell").textContent = err && err.message ? err.message : "Unknown error";
+                document.getElementById("errorCell").textContent = err && err.message ? err.message : "Unable to retrieve error details.";
             } finally {
                 showLoader(false);
             }
