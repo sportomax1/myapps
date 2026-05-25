@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>High Temperature Calendar</title>
+    <title>Weather Stats Calendar</title>
     <style>
         :root {
             --bg: #000000;
@@ -28,10 +28,10 @@
             position: sticky;
             top: 0;
             z-index: 20;
-            background: rgba(20, 20, 22, 0.88);
+            background: rgba(20, 20, 22, 0.9);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--separator);
-            padding: max(14px, env(safe-area-inset-top)) 16px 14px;
+            padding: max(12px, env(safe-area-inset-top)) 12px 12px;
         }
 
         .header-wrap {
@@ -39,32 +39,44 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
         }
 
         .title {
             margin: 0;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 800;
-            letter-spacing: -0.4px;
+            letter-spacing: -0.3px;
         }
 
         .subtitle {
-            margin: 4px 0 0;
+            margin: 3px 0 0;
             color: var(--text-secondary);
             font-size: 13px;
             font-weight: 600;
         }
 
         .controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .options-row {
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
         }
 
-        input[type="text"] {
+        input[type="text"], select {
             flex: 1;
-            min-width: 220px;
+            min-width: 140px;
             background: var(--card-bg);
             border: 1px solid var(--separator);
             color: var(--text);
@@ -74,17 +86,21 @@
             outline: none;
         }
 
-        input[type="text"]:focus { border-color: var(--accent); }
+        input[type="text"]:focus,
+        select:focus {
+            border-color: var(--accent);
+        }
 
         .btn {
             border: 1px solid var(--separator);
             background: var(--card-bg);
             color: var(--text);
             border-radius: 10px;
-            padding: 10px 14px;
+            padding: 10px 12px;
             font-size: 14px;
             font-weight: 700;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .btn-primary {
@@ -92,10 +108,45 @@
             border-color: var(--accent);
         }
 
+        .recent-wrap {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .recent-wrap::-webkit-scrollbar { display: none; }
+
+        .recent-chip {
+            border: 1px solid var(--separator);
+            background: #252527;
+            color: var(--text);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
         main {
             max-width: 1200px;
-            margin: 14px auto 28px;
-            padding: 0 12px;
+            margin: 12px auto 24px;
+            padding: 0 10px;
+        }
+
+        #status {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin: 0 0 8px;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
         }
 
         .table-wrap {
@@ -103,7 +154,10 @@
             border-radius: 12px;
             border: 1px solid var(--separator);
             background: var(--card-bg);
-            max-height: calc(100vh - 190px);
+            max-height: calc(100vh - 250px);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            touch-action: pan-x pan-y;
         }
 
         table {
@@ -119,16 +173,16 @@
             z-index: 5;
             background: #2c2c2e;
             color: var(--text-secondary);
-            padding: 9px 10px;
+            padding: 8px 8px;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.5px;
             font-size: 10px;
             border-bottom: 1px solid var(--separator);
             text-align: center;
         }
 
         tbody td {
-            padding: 8px 10px;
+            padding: 7px 8px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.04);
             text-align: center;
             font-family: "SF Mono", Menlo, Consolas, monospace;
@@ -144,22 +198,20 @@
             font-family: inherit;
             font-weight: 700;
             border-right: 1px solid var(--separator);
-            min-width: 110px;
+            min-width: 102px;
         }
 
         thead .date-col { z-index: 7; background: #2c2c2e; }
         .current-year-col { font-weight: 800; }
         .heat-cell { transition: transform 0.1s ease; }
-        .heat-cell:hover { transform: scale(1.08); outline: 1px solid rgba(255,255,255,0.85); }
+        .heat-cell:hover { transform: scale(1.06); outline: 1px solid rgba(255,255,255,0.85); }
         .empty-cell { color: #5d5d61; background: var(--empty-cell-bg); }
+        .projected-cell { border-top: 1px dashed rgba(255,255,255,0.2); }
+        .month-start td { border-top: 1px solid rgba(255,255,255,0.18); }
+        .today-row .date-col { color: #ffd60a; }
 
-        #status {
-            color: var(--text-secondary);
-            font-size: 13px;
-            margin: 0 2px 10px;
-        }
-
-        #loader {
+        #loader,
+        #locationSelector {
             position: fixed;
             inset: 0;
             display: none;
@@ -169,29 +221,90 @@
             z-index: 50;
             color: white;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
+        }
+
+        #locationSelector {
+            background: rgba(0,0,0,0.85);
+            z-index: 60;
+        }
+
+        .selector-content {
+            background: var(--card-bg);
+            border-radius: 14px;
+            width: min(92vw, 460px);
+            max-height: 70vh;
+            overflow: auto;
+            border: 1px solid var(--separator);
+            padding: 14px;
+        }
+
+        .selector-item {
+            border: 1px solid var(--separator);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .selector-item:last-child { margin-bottom: 0; }
+        .selector-item .loc-name { font-weight: 700; display: block; }
+        .selector-item .loc-desc { color: var(--text-secondary); font-size: 12px; display: block; margin-top: 4px; }
+
+        @media (max-width: 760px) {
+            .controls { grid-template-columns: 1fr; }
+            input[type="text"] { min-width: 0; }
+            .btn { padding: 10px; }
+            .table-wrap { max-height: calc(100vh - 280px); }
+            tbody td, thead th { font-size: 11px; }
         }
     </style>
 </head>
 <body>
-    <div id="loader">Loading historical weather…</div>
+    <div id="loader">Loading weather stats…</div>
+
+    <div id="locationSelector">
+        <div class="selector-content">
+            <h3 style="margin: 0 0 10px;">Multiple locations found</h3>
+            <div id="selectorList"></div>
+            <button class="btn" id="closeSelectorBtn" style="width: 100%; margin-top: 10px;">Cancel</button>
+        </div>
+    </div>
 
     <header>
         <div class="header-wrap">
             <div>
-                <h1 class="title">High Temperature Calendar</h1>
+                <h1 class="title">Weather Stats Calendar</h1>
                 <p class="subtitle" id="locationLabel">Halls Crossing, Utah</p>
             </div>
+
             <div class="controls">
-                <input id="locationInput" type="text" placeholder="Change location (city, state, zip)">
-                <button class="btn btn-primary" id="loadBtn">Update</button>
+                <div class="search-row">
+                    <input id="locationInput" type="text" placeholder="Search address, city, state, or zip">
+                    <button class="btn btn-primary" id="loadBtn">Update</button>
+                </div>
+                <div class="options-row">
+                    <select id="metricSelect">
+                        <option value="temperature_2m_max">Highs (°F)</option>
+                        <option value="temperature_2m_min">Lows (°F)</option>
+                        <option value="rain_sum">Rain (in)</option>
+                        <option value="snowfall_sum">Snow (in)</option>
+                        <option value="wind_speed_10m_max">Wind (mph)</option>
+                    </select>
+                </div>
             </div>
+
+            <div class="recent-wrap" id="recentLocations"></div>
         </div>
     </header>
 
     <main>
-        <p id="status">Showing daily highs for this year compared with previous years.</p>
-        <div class="table-wrap">
+        <p id="status">Showing daily weather stats from 2000 to today. Future dates in the current year use historical averages when available.</p>
+        <div class="table-actions">
+            <button class="btn" id="todayBtn">Today</button>
+            <button class="btn" id="topBtn">Top</button>
+        </div>
+        <div class="table-wrap" id="tableWrap">
             <table>
                 <thead><tr id="tableHead"></tr></thead>
                 <tbody id="tableBody"></tbody>
@@ -206,14 +319,71 @@
             longitude: -110.7071
         };
 
-        const YEARS_TO_SHOW = 15; // Keeps the table readable while still showing meaningful history.
+        const START_YEAR = 2000;
+        const RECENT_KEY = "weatherStatsRecentLocationsV1";
+        const MAX_RECENT = 6;
+        const COORDINATE_TOLERANCE = 0.0001;
+
+        const METRICS = {
+            temperature_2m_max: { label: "high temperatures", shortLabel: "Highs", unit: "°F", digits: 0 },
+            temperature_2m_min: { label: "low temperatures", shortLabel: "Lows", unit: "°F", digits: 0 },
+            rain_sum: { label: "daily rain totals", shortLabel: "Rain", unit: "in", digits: 2 },
+            snowfall_sum: { label: "daily snowfall totals", shortLabel: "Snow", unit: "in", digits: 2 },
+            wind_speed_10m_max: { label: "max wind speed", shortLabel: "Wind", unit: "mph", digits: 1 }
+        };
+
         const tableHead = document.getElementById("tableHead");
         const tableBody = document.getElementById("tableBody");
         const statusEl = document.getElementById("status");
         const loader = document.getElementById("loader");
+        const locationLabel = document.getElementById("locationLabel");
+        const metricSelect = document.getElementById("metricSelect");
+        const recentLocationsEl = document.getElementById("recentLocations");
+        const tableWrap = document.getElementById("tableWrap");
+        const locationInput = document.getElementById("locationInput");
+
+        let latestPayload = null;
+        let latestLocation = DEFAULT_LOCATION;
+        let latestCurrentYear = new Date().getFullYear();
+        let latestToday = new Date();
 
         function showLoader(show) {
             loader.style.display = show ? "flex" : "none";
+        }
+
+        function getRecentLocations() {
+            try {
+                const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (err) {
+                console.warn("Failed to parse recent locations cache:", err);
+                return [];
+            }
+        }
+
+        function saveRecentLocation(location) {
+            const matchesLocation = (a, b) => {
+                return Math.abs(a.latitude - b.latitude) < COORDINATE_TOLERANCE && Math.abs(a.longitude - b.longitude) < COORDINATE_TOLERANCE;
+            };
+            const existing = getRecentLocations().filter((loc) => {
+                return !matchesLocation(loc, location);
+            });
+            const updated = [location, ...existing].slice(0, MAX_RECENT);
+            localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
+            renderRecentLocations();
+        }
+
+        function renderRecentLocations() {
+            const recents = getRecentLocations();
+            recentLocationsEl.innerHTML = "";
+            if (!recents.length) return;
+            recents.forEach((location) => {
+                const btn = document.createElement("button");
+                btn.className = "recent-chip";
+                btn.textContent = location.name;
+                btn.addEventListener("click", () => loadForLocation(location));
+                recentLocationsEl.appendChild(btn);
+            });
         }
 
         function getColor(value, min, max) {
@@ -224,65 +394,127 @@
             return `hsl(${hue}, 90%, ${lightness}%)`;
         }
 
-        async function geocodeLocation(query) {
-            const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1&language=en&format=json`;
+        function formatValue(value, metricKey) {
+            const cfg = METRICS[metricKey];
+            if (typeof value !== "number") return "--";
+            if (cfg.digits === 0) return String(Math.round(value));
+            return Number(value).toFixed(cfg.digits);
+        }
+
+        async function geocodeLocations(query) {
+            const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=10&language=en&format=json`;
             const response = await fetch(url);
             const data = await response.json();
-            if (!data.results || !data.results.length) return null;
-            const hit = data.results[0];
-            return {
+            if (!data.results || !data.results.length) return [];
+            return data.results.map((hit) => ({
                 name: [hit.name, hit.admin1, hit.country].filter(Boolean).join(", "),
                 latitude: hit.latitude,
                 longitude: hit.longitude
-            };
+            }));
+        }
+
+        function showLocationSelector(locations) {
+            const selector = document.getElementById("locationSelector");
+            const list = document.getElementById("selectorList");
+            list.innerHTML = "";
+
+            locations.forEach((loc) => {
+                const item = document.createElement("div");
+                item.className = "selector-item";
+                const nameEl = document.createElement("span");
+                nameEl.className = "loc-name";
+                nameEl.textContent = loc.name;
+                const descEl = document.createElement("span");
+                descEl.className = "loc-desc";
+                descEl.textContent = `Lat ${loc.latitude.toFixed(2)}, Lon ${loc.longitude.toFixed(2)}`;
+                item.appendChild(nameEl);
+                item.appendChild(descEl);
+                item.addEventListener("click", async () => {
+                    selector.style.display = "none";
+                    await loadForLocation(loc);
+                });
+                list.appendChild(item);
+            });
+
+            selector.style.display = "flex";
         }
 
         async function fetchArchive(location) {
             const today = new Date();
             const currentYear = today.getFullYear();
-            const startYear = currentYear - YEARS_TO_SHOW;
             const endDate = today.toISOString().slice(0, 10);
-            const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${location.latitude}&longitude=${location.longitude}&start_date=${startYear}-01-01&end_date=${endDate}&daily=temperature_2m_max&temperature_unit=fahrenheit&timezone=auto`;
+            const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${location.latitude}&longitude=${location.longitude}&start_date=${START_YEAR}-01-01&end_date=${endDate}&daily=temperature_2m_max,temperature_2m_min,rain_sum,snowfall_sum,wind_speed_10m_max&temperature_unit=fahrenheit&wind_speed_unit=mph&precipitation_unit=inch&timezone=auto`;
             const response = await fetch(url);
-            return { payload: await response.json(), currentYear, startYear, today };
+            return { payload: await response.json(), currentYear, today };
         }
 
         function buildRows(currentYear, today) {
             const rows = [];
             const d = new Date(currentYear, 0, 1);
-            while (d <= today) {
+            const end = new Date(currentYear, 11, 31);
+            while (d <= end) {
                 rows.push({
                     monthDay: `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`,
-                    label: d.toLocaleDateString("en-US", { month: "short", day: "2-digit" })
+                    label: d.toLocaleDateString("en-US", { month: "short", day: "2-digit" }),
+                    isMonthStart: d.getDate() === 1,
+                    isToday: d.toDateString() === today.toDateString(),
+                    isFuture: d > today
                 });
                 d.setDate(d.getDate() + 1);
             }
             return rows;
         }
 
-        function renderCalendar(data, currentYear, startYear, today) {
-            const years = [];
-            for (let y = currentYear; y >= startYear; y--) years.push(y);
-
-            const dateRows = buildRows(currentYear, today);
+        function buildYearMap(data, years, metricKey) {
             const byYear = {};
-            years.forEach(y => { byYear[y] = {}; });
+            years.forEach((y) => { byYear[y] = {}; });
+            const metricValues = data.daily[metricKey] || [];
 
             data.daily.time.forEach((iso, i) => {
                 const [year, month, day] = iso.split("-");
                 if (!byYear[year]) return;
-                byYear[year][`${month}-${day}`] = data.daily.temperature_2m_max[i];
+                byYear[year][`${month}-${day}`] = metricValues[i];
             });
 
-            const allTemps = [];
-            years.forEach(y => {
-                dateRows.forEach(row => {
-                    const v = byYear[y]?.[row.monthDay];
-                    if (typeof v === "number") allTemps.push(v);
+            return byYear;
+        }
+
+        function buildAverages(dateRows, years, byYear, currentYear) {
+            const averages = {};
+            dateRows.forEach((row) => {
+                const values = years
+                    .filter((year) => year !== currentYear)
+                    .map((year) => byYear[year]?.[row.monthDay])
+                    .filter((v) => typeof v === "number");
+                if (values.length) averages[row.monthDay] = values.reduce((sum, v) => sum + v, 0) / values.length;
+            });
+            return averages;
+        }
+
+        function renderCalendar(data, currentYear, today) {
+            const metricKey = metricSelect.value;
+            const metricCfg = METRICS[metricKey];
+            const years = [];
+            for (let y = currentYear; y >= START_YEAR; y--) years.push(y);
+
+            const dateRows = buildRows(currentYear, today);
+            const byYear = buildYearMap(data, years, metricKey);
+            const averages = buildAverages(dateRows, years, byYear, currentYear);
+
+            const allValues = [];
+            years.forEach((y) => {
+                dateRows.forEach((row) => {
+                    const historical = byYear[y]?.[row.monthDay];
+                    if (typeof historical === "number") allValues.push(historical);
+                    if (y === currentYear && row.isFuture && typeof historical !== "number") {
+                        const avg = averages[row.monthDay];
+                        if (typeof avg === "number") allValues.push(avg);
+                    }
                 });
             });
-            const min = allTemps.length ? Math.min(...allTemps) : 0;
-            const max = allTemps.length ? Math.max(...allTemps) : 1;
+
+            const min = allValues.length ? Math.min(...allValues) : 0;
+            const max = allValues.length ? Math.max(...allValues) : 1;
 
             const yearHeaders = years.map((year, i) => {
                 const klass = i === 0 ? "current-year-col" : "";
@@ -290,25 +522,58 @@
             }).join("");
             tableHead.innerHTML = `<th class="date-col">Date</th>${yearHeaders}`;
 
-            tableBody.innerHTML = dateRows.map(row => {
+            tableBody.innerHTML = dateRows.map((row) => {
+                const rowClass = `${row.isMonthStart ? "month-start " : ""}${row.isToday ? "today-row" : ""}`.trim();
                 const cells = years.map((year, i) => {
-                    const v = byYear[year]?.[row.monthDay];
-                    if (typeof v !== "number") return `<td class="empty-cell">--</td>`;
-                    const bg = getColor(v, min, max);
-                    return `<td class="heat-cell ${i === 0 ? "current-year-col" : ""}" style="background:${bg}" title="${year} ${row.label}: ${Math.round(v)}°F">${Math.round(v)}°</td>`;
+                    let value = byYear[year]?.[row.monthDay];
+                    let projected = false;
+                    if (year === currentYear && row.isFuture && typeof value !== "number") {
+                        value = averages[row.monthDay];
+                        projected = typeof value === "number";
+                    }
+
+                    if (typeof value !== "number") return `<td class="empty-cell">--</td>`;
+
+                    const bg = getColor(value, min, max);
+                    const unit = metricCfg.unit;
+                    const display = formatValue(value, metricKey);
+                    const projectedText = projected ? " (historical avg)" : "";
+                    const title = `${year} ${row.label}: ${display}${unit}${projectedText}`;
+                    const classes = `heat-cell ${i === 0 ? "current-year-col" : ""} ${projected ? "projected-cell" : ""}`.trim();
+                    return `<td class="${classes}" style="background:${bg}" title="${title}">${display}</td>`;
                 }).join("");
-                return `<tr><td class="date-col">${row.label}</td>${cells}</tr>`;
+
+                const rowId = row.isToday ? ' id="todayRow"' : "";
+                return `<tr class="${rowClass}"${rowId}><td class="date-col">${row.label}</td>${cells}</tr>`;
             }).join("");
+
+            const todayRow = document.getElementById("todayRow");
+            if (todayRow) {
+                todayRow.scrollIntoView({ block: "center", inline: "start" });
+            }
+        }
+
+        function renderFromLatestData() {
+            if (!latestPayload) return;
+            renderCalendar(latestPayload, latestCurrentYear, latestToday);
+            const metricCfg = METRICS[metricSelect.value];
+            statusEl.textContent = `Daily ${metricCfg.label} from ${START_YEAR}–${latestCurrentYear} for ${latestLocation.name}. Future dates in ${latestCurrentYear} use historical averages when available.`;
         }
 
         async function loadForLocation(location) {
             showLoader(true);
             try {
-                document.getElementById("locationLabel").textContent = location.name;
-                const { payload, currentYear, startYear, today } = await fetchArchive(location);
+                locationLabel.textContent = location.name;
+                const { payload, currentYear, today } = await fetchArchive(location);
                 if (!payload.daily?.time?.length) throw new Error("No archive data returned.");
-                renderCalendar(payload, currentYear, startYear, today);
-                statusEl.textContent = `Daily high temperatures from ${startYear}–${currentYear} for ${location.name}.`;
+
+                latestPayload = payload;
+                latestCurrentYear = currentYear;
+                latestToday = today;
+                latestLocation = location;
+
+                saveRecentLocation(location);
+                renderFromLatestData();
             } catch (err) {
                 console.error("Weather archive load failed:", err);
                 statusEl.textContent = "Unable to load weather data for that location.";
@@ -321,20 +586,29 @@
         }
 
         async function updateLocation() {
-            const query = document.getElementById("locationInput").value.trim();
+            const query = locationInput.value.trim();
             if (!query) {
                 await loadForLocation(DEFAULT_LOCATION);
                 return;
             }
+
             showLoader(true);
             try {
-                const location = await geocodeLocation(query);
-                if (!location) {
-                    statusEl.textContent = "Location not found. Try a nearby city or zip code.";
+                const locations = await geocodeLocations(query);
+                if (!locations.length) {
+                    statusEl.textContent = "Location not found. Try another address, city, or zip code.";
                     showLoader(false);
                     return;
                 }
-                await loadForLocation(location);
+
+                if (locations.length > 1) {
+                    showLoader(false);
+                    statusEl.textContent = `Found ${locations.length} matching locations. Please confirm one.`;
+                    showLocationSelector(locations);
+                    return;
+                }
+
+                await loadForLocation(locations[0]);
             } catch {
                 statusEl.textContent = "Location lookup failed.";
                 showLoader(false);
@@ -342,11 +616,28 @@
         }
 
         document.getElementById("loadBtn").addEventListener("click", updateLocation);
-        document.getElementById("locationInput").addEventListener("keydown", (e) => {
+        locationInput.addEventListener("keydown", (e) => {
             if (e.key === "Enter") updateLocation();
         });
 
-        loadForLocation(DEFAULT_LOCATION);
+        metricSelect.addEventListener("change", renderFromLatestData);
+
+        document.getElementById("todayBtn").addEventListener("click", () => {
+            const todayRow = document.getElementById("todayRow");
+            if (todayRow) todayRow.scrollIntoView({ behavior: "smooth", block: "center", inline: "start" });
+        });
+
+        document.getElementById("topBtn").addEventListener("click", () => {
+            tableWrap.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+        });
+
+        document.getElementById("closeSelectorBtn").addEventListener("click", () => {
+            document.getElementById("locationSelector").style.display = "none";
+        });
+
+        renderRecentLocations();
+        const recents = getRecentLocations();
+        loadForLocation(recents.length ? recents[0] : DEFAULT_LOCATION);
     </script>
 </body>
 </html>
