@@ -322,6 +322,7 @@
         const START_YEAR = 2000;
         const RECENT_KEY = "weatherStatsRecentLocationsV1";
         const MAX_RECENT = 6;
+        const COORDINATE_TOLERANCE = 0.0001;
 
         const METRICS = {
             temperature_2m_max: { label: "high temperatures", shortLabel: "Highs", unit: "°F", digits: 0 },
@@ -354,14 +355,15 @@
             try {
                 const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
                 return Array.isArray(parsed) ? parsed : [];
-            } catch {
+            } catch (err) {
+                console.warn("Failed to parse recent locations cache:", err);
                 return [];
             }
         }
 
         function saveRecentLocation(location) {
             const matchesLocation = (a, b) => {
-                return Math.abs(a.latitude - b.latitude) < 0.0001 && Math.abs(a.longitude - b.longitude) < 0.0001;
+                return Math.abs(a.latitude - b.latitude) < COORDINATE_TOLERANCE && Math.abs(a.longitude - b.longitude) < COORDINATE_TOLERANCE;
             };
             const existing = getRecentLocations().filter((loc) => {
                 return !matchesLocation(loc, location);
@@ -419,10 +421,14 @@
             locations.forEach((loc) => {
                 const item = document.createElement("div");
                 item.className = "selector-item";
-                item.innerHTML = `
-                    <span class="loc-name">${loc.name}</span>
-                    <span class="loc-desc">Lat ${loc.latitude.toFixed(2)}, Lon ${loc.longitude.toFixed(2)}</span>
-                `;
+                const nameEl = document.createElement("span");
+                nameEl.className = "loc-name";
+                nameEl.textContent = loc.name;
+                const descEl = document.createElement("span");
+                descEl.className = "loc-desc";
+                descEl.textContent = `Lat ${loc.latitude.toFixed(2)}, Lon ${loc.longitude.toFixed(2)}`;
+                item.appendChild(nameEl);
+                item.appendChild(descEl);
                 item.addEventListener("click", async () => {
                     selector.style.display = "none";
                     await loadForLocation(loc);
@@ -572,7 +578,8 @@
                 console.error("Weather archive load failed:", err);
                 statusEl.textContent = "Unable to load weather data for that location.";
                 tableHead.innerHTML = "";
-                tableBody.innerHTML = `<tr><td class="date-col">Error</td><td>${err?.message ?? "Unable to retrieve error details."}</td></tr>`;
+                tableBody.innerHTML = `<tr><td class="date-col">Error</td><td id="errorCell"></td></tr>`;
+                document.getElementById("errorCell").textContent = err?.message ?? "Unable to retrieve error details.";
             } finally {
                 showLoader(false);
             }
