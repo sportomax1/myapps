@@ -314,7 +314,7 @@
                 statusEl.textContent = "Unable to load weather data for that location.";
                 tableHead.innerHTML = "";
                 tableBody.innerHTML = `<tr><td class="date-col">Error</td><td id="errorCell"></td></tr>`;
-                document.getElementById("errorCell").textContent = err && err.message ? err.message : "Unable to retrieve error details.";
+                document.getElementById("errorCell").textContent = err?.message ?? "Unable to retrieve error details.";
             } finally {
                 showLoader(false);
             }
