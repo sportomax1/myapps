@@ -299,7 +299,7 @@
     </header>
 
     <main>
-        <p id="status">Showing daily highs from 2000 to today. Future dates in the current year use historical averages when available.</p>
+        <p id="status">Showing daily weather stats from 2000 to today. Future dates in the current year use historical averages when available.</p>
         <div class="table-actions">
             <button class="btn" id="todayBtn">Today</button>
             <button class="btn" id="topBtn">Top</button>
@@ -360,8 +360,11 @@
         }
 
         function saveRecentLocation(location) {
+            const matchesLocation = (a, b) => {
+                return Math.abs(a.latitude - b.latitude) < 0.0001 && Math.abs(a.longitude - b.longitude) < 0.0001;
+            };
             const existing = getRecentLocations().filter((loc) => {
-                return `${loc.latitude.toFixed(4)},${loc.longitude.toFixed(4)}` !== `${location.latitude.toFixed(4)},${location.longitude.toFixed(4)}`;
+                return !matchesLocation(loc, location);
             });
             const updated = [location, ...existing].slice(0, MAX_RECENT);
             localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
@@ -626,7 +629,8 @@
         });
 
         renderRecentLocations();
-        loadForLocation(getRecentLocations()[0] || DEFAULT_LOCATION);
+        const recents = getRecentLocations();
+        loadForLocation(recents.length ? recents[0] : DEFAULT_LOCATION);
     </script>
 </body>
 </html>
